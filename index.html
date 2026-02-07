@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <title>Parla con intelligenza artificiale</title>
+  <style>
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+  </style>
+</head>
+<body>
+
+  <h1>Parla con intelligenza artificiale</h1>
+
+  <button id="startBtn">Inizia conversazione</button>
+  <button id="stopBtn" disabled>Ferma ascolto</button>
+
+  <p id="status" class="sr-only" aria-live="polite">Inattivo</p>
+
+  <!-- For screen readers (polite updates only; no forced focus) -->
+  <div id="sr" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const statusEl = document.getElementById("status");
+    const srEl = document.getElementById("sr");
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // Multi-turn history: we send the whole conversation every time.
+    const systemPrompt = "Rispondi in italiano. Usa un tono chiaro, calmo e accessibile per un utente non vedente.";
+    const messages = [{ role: "system", content: systemPrompt }];
+
+    let recognition;
+    let finalTranscript = "";
+    let lastPartial = "";
+    let listening = false;
+
+    // Stop timing/buffering so we don't miss the last words
+    let stopRequested = false;
+    let lastResultAt = 0;
+    let finalizeTimer = null;
+    let silenceTimer = null;
+
+    function sr(text) {
+      // Polite update for screen readers
+      srEl.textContent = text;
+    }
+
+    function speakIt(text) {
+      try {
+        if (!("speechSynthesis" in window)) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "it-IT";
+        u.rate = 1.0;
+        u.pitch = 1.0;
+        window.speechSynthesis.speak(u);
+      } catch (e) {
+        console.error("TTS error:", e);
+      }
+    }
+
+    function startListening() {
+      // Stop any ongoing AI speech immediately
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+      finalTranscript = "";
+      lastPartial = "";
+      listening = true;
+      stopRequested = false;
+      lastResultAt = Date.now();
+
+      if (finalizeTimer) {
+        clearInterval(finalizeTimer);
+        finalizeTimer = null;
+      }
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.lang = "it-IT";
+      recognition.interimResults = true;
+      recognition.continuous = true;
+
+      recognition.onstart = () => {
+        statusEl.textContent = "In ascolto";
+        sr("In ascolto. Premi Ferma ascolto quando hai finito.");
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        armSilenceFallback();
+      };
+
+      recognition.onresult = (event) => {
+        armSilenceFallback();
+        lastResultAt = Date.now();
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const res = event.results[i];
+          const text = res[0].transcript.trim();
+          if (res.isFinal) {
+            finalTranscript += " " + text;
+            lastPartial = "";
+          } else {
+            lastPartial = text;
+          }
+        }
+      };
+
+      recognition.onend = () => {
+        // If the user didn't press stop, keep listening across browser auto-stops
+        if (listening && !stopRequested) {
+          try { recognition.start(); } catch {}
+        }
+      };
+
+      recognition.onerror = (e) => {
+        listening = false;
+        if (silenceTimer) {
+          clearTimeout(silenceTimer);
+          silenceTimer = null;
+        }
+        statusEl.textContent = "Errore";
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        sr("Errore nel riconoscimento vocale.");
+        console.error("Speech error:", e);
+      };
+
+      try { recognition.start(); } catch {}
+    }
+
+    function buildFinalText() {
+      let text = finalTranscript.trim();
+      if (lastPartial) {
+        if (!text.endsWith(lastPartial)) {
+          text = (text + " " + lastPartial).trim();
+        }
+      }
+      return text;
+    }
+
+    function armSilenceFallback() {
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+      }
+      // If no new speech results for 5 seconds, auto-finish
+      silenceTimer = setTimeout(() => {
+        if (!listening) return;
+        stopListening();
+      }, 5000);
+    }
+
+    async function sendToAI(userText) {
+      // Add user turn to history
+      messages.push({ role: "user", content: userText });
+      sr("Sto pensando…");
+
+      try {
+        const r = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages })
+        });
+
+        if (!r.ok) {
+          const t = await r.text();
+          sr(`Errore HTTP ${r.status}`);
+          console.error("HTTP error", r.status, t);
+          return;
+        }
+
+        const data = await r.json();
+        const assistantText = String(data?.reply || "").trim();
+
+        if (!assistantText) {
+          sr("Risposta vuota dal server.");
+          return;
+        }
+
+        messages.push({ role: "assistant", content: assistantText });
+        speakIt(assistantText);
+        sr("Assistente: " + assistantText);
+      } catch (err) {
+        sr("Errore nel contattare il server.");
+        console.error(err);
+      }
+    }
+
+    function finalizeTranscriptAndRespond() {
+      if (finalizeTimer) {
+        clearInterval(finalizeTimer);
+        finalizeTimer = null;
+      }
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+      }
+
+      const text = buildFinalText();
+
+      if (!text) {
+        statusEl.textContent = "Inattivo";
+        sr("Nessun testo rilevato.");
+        return;
+      }
+
+      statusEl.textContent = "Invio del messaggio";
+      sendToAI(text);
+    }
+
+    function stopListening() {
+      if (!recognition) return;
+
+      listening = false;
+      stopRequested = true;
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+      }
+
+      statusEl.textContent = "Sto finendo…";
+      sr("Sto finendo…");
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+
+      try { recognition.stop(); } catch {}
+
+      const startedAt = Date.now();
+
+      if (finalizeTimer) {
+        clearInterval(finalizeTimer);
+        finalizeTimer = null;
+      }
+
+      // Check every 100ms: when idle for 600ms OR max 1500ms, finalize.
+      finalizeTimer = setInterval(() => {
+        const now = Date.now();
+        const idleMs = now - lastResultAt;
+        const totalMs = now - startedAt;
+
+        if (idleMs >= 600 || totalMs >= 1500) {
+          finalizeTranscriptAndRespond();
+        }
+      }, 100);
+    }
+
+    if (!SpeechRecognition) {
+      statusEl.textContent = "Riconoscimento vocale non supportato.";
+      startBtn.disabled = true;
+      stopBtn.disabled = true;
+    } else {
+      startBtn.addEventListener("click", startListening);
+      stopBtn.addEventListener("click", stopListening);
+    }
+  </script>
+
+</body>
+</html>
