@@ -16,19 +16,97 @@
       border: 0;
     }
 
+    :root {
+      --bg: #eaf4ff;       /* very light blue */
+      --card: #ffffff;
+      --text: #0b1220;
+      --btn: #0a66c2;
+      --btnText: #ffffff;
+      --btnDisabled: #9bb9db;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      text-align: center;
+    }
+
+    .wrap {
+      width: min(720px, 92vw);
+      background: var(--card);
+      border-radius: 18px;
+      padding: 28px 22px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    button {
+      font-size: 20px;
+      padding: 16px 22px;
+      border-radius: 14px;
+      border: 0;
+      cursor: pointer;
+      min-width: 220px;
+    }
+
+    #startBtn {
+      background: var(--btn);
+      color: var(--btnText);
+    }
+
+    #stopBtn {
+      background: #0b1220;
+      color: #ffffff;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .hint {
+      margin-top: 14px;
+      font-size: 16px;
+      opacity: 0.8;
+    }
   </style>
 </head>
 <body>
 
+  <div class="wrap">
   <h1>Parla con intelligenza artificiale</h1>
 
-  <button id="startBtn">Inizia conversazione</button>
-  <button id="stopBtn" disabled>Ferma ascolto</button>
+  <div class="buttons">
+    <button id="startBtn">Inizia conversazione</button>
+    <button id="stopBtn" disabled>Ferma ascolto</button>
+  </div>
+
+  <div class="hint">Parla normalmente. Se resti in silenzio per 5 secondi, l’app invia automaticamente.</div>
 
   <p id="status" class="sr-only" aria-live="polite">Inattivo</p>
 
   <!-- For screen readers (polite updates only; no forced focus) -->
   <div id="sr" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  </div>
 
 
   <script>
@@ -53,25 +131,98 @@
     let lastResultAt = 0;
     let finalizeTimer = null;
     let silenceTimer = null;
+    let italianVoice = null;
 
     function sr(text) {
       // Polite update for screen readers
       srEl.textContent = text;
     }
 
+    function pickItalianVoice() {
+      try {
+        if (!("speechSynthesis" in window)) return null;
+        const voices = window.speechSynthesis.getVoices() || [];
+        if (!voices.length) return null;
+
+        // Prefer true Italian voices first
+        const italian = voices.filter(v => {
+          const lang = (v.lang || "").toLowerCase();
+          const name = (v.name || "").toLowerCase();
+          return lang.startsWith("it") || name.includes("italian") || name.includes("italiano");
+        });
+
+        const candidates = italian.length ? italian : voices;
+
+        // Prefer local / system-quality voices when available
+        candidates.sort((a, b) => {
+          const aLocal = a.localService ? 1 : 0;
+          const bLocal = b.localService ? 1 : 0;
+          if (aLocal !== bLocal) return bLocal - aLocal;
+
+          const aDefault = a.default ? 1 : 0;
+          const bDefault = b.default ? 1 : 0;
+          if (aDefault !== bDefault) return bDefault - aDefault;
+
+          // Prefer names that often correspond to native Italian voices
+          const aName = (a.name || "").toLowerCase();
+          const bName = (b.name || "").toLowerCase();
+          const prefs = ["luc", "alice", "elsa", "federica", "paolo", "silvia", "giorgio", "italian", "italiano"];
+          const score = (n) => prefs.reduce((s, p) => s + (n.includes(p) ? 1 : 0), 0);
+          return score(bName) - score(aName);
+        });
+
+        return candidates[0] || null;
+      } catch {
+        return null;
+      }
+    }
+
+    // Voices often load asynchronously, especially on Safari.
+    function ensureItalianVoice() {
+      if (italianVoice) return;
+      italianVoice = pickItalianVoice();
+    }
+
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        italianVoice = null;
+        ensureItalianVoice();
+      };
+      // Try once at startup
+      ensureItalianVoice();
+    }
+
     function speakIt(text) {
       try {
         if (!("speechSynthesis" in window)) return;
+
+        ensureItalianVoice();
+
+        // Stop any previous speech
         window.speechSynthesis.cancel();
+
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "it-IT";
-        u.rate = 1.0;
+
+        // Force the best available Italian voice (this is what fixes the accent when a real Italian voice exists)
+        if (italianVoice) u.voice = italianVoice;
+
+        // Slightly slower improves intelligibility on some systems
+        u.rate = 0.95;
         u.pitch = 1.0;
+
         window.speechSynthesis.speak(u);
       } catch (e) {
         console.error("TTS error:", e);
       }
     }
+    // Optional debug: run in DevTools console -> listVoices()
+    window.listVoices = function () {
+      if (!("speechSynthesis" in window)) return [];
+      const vs = window.speechSynthesis.getVoices() || [];
+      console.table(vs.map(v => ({ name: v.name, lang: v.lang, localService: v.localService, isDefault: v.default })));
+      return vs;
+    };
 
     function startListening() {
       // Stop any ongoing AI speech immediately
