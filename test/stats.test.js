@@ -62,6 +62,18 @@ test("generating 317 visitors gives exactly 317 users over 30 days, with varying
   const conv = Number(m[2]);
   assert.ok(conv > 317 * 2 && conv < 317 * 8, "about 3–5 conversations per visitor on average, got " + conv);
   assert.doesNotMatch(html, /test data/i);
+  // Growth: the newest 10 days have clearly more users than the oldest 10.
+  const daily = [...html.matchAll(/<tr><th scope="row">[\d-]+<\/th><td>(\d+)<\/td>/g)].map((x) => Number(x[1]));
+  assert.equal(daily.length, 30);
+  const sum = (a) => a.reduce((x, y) => x + y, 0);
+  assert.ok(sum(daily.slice(0, 10)) > 1.5 * sum(daily.slice(20)), "grows over the month: " + daily.join(","));
+  // A form post from the stats page itself is accepted, even with Origin "null" (no-referrer).
+  const own = await fetch(BASE + "/stats/demo", { method: "POST", redirect: "manual",
+    headers: { Authorization: AUTH, "Content-Type": "application/x-www-form-urlencoded", Origin: "null", "Sec-Fetch-Site": "same-origin" }, body: "visitors=3" });
+  assert.equal(own.status, 303);
+  const foreign = await fetch(BASE + "/stats/demo", { method: "POST", redirect: "manual",
+    headers: { Authorization: AUTH, "Content-Type": "application/x-www-form-urlencoded", "Sec-Fetch-Site": "cross-site" }, body: "visitors=3" });
+  assert.equal(foreign.status, 403);
   assert.equal((await fetch(BASE + "/stats/demo", { method: "POST", redirect: "manual" })).status, 401);
   assert.equal((await fetch(BASE + "/stats/clear", { method: "POST", redirect: "manual" })).status, 401);
 });

@@ -56,6 +56,8 @@
   var transcript = [];     // [{role, content}] kept in memory only
   var context = "";        // summary of the previous conversation, when continuing
   var failures = 0;        // failed turns in a row
+  var manualTurn = false;  // the user interrupted with the button/space bar and will press again when done
+  var turnEndedAt = 0;     // when the user's last turn was sent
   var aiVoiceLangs = [];   // languages with the natural AI voice (from the server)
 
   function setState(s) {
@@ -65,12 +67,22 @@
 
   // ---------- mute gate: the screen reader is probably talking ----------
   var muteUntil = 0;
-  function muteFor(ms) {
+  function muteFor(ms, keepSpeech) {
     muteUntil = Math.max(muteUntil, performance.now() + ms);
-    if (vad.speaking) resetVad();
+    if (vad.speaking && !keepSpeech) resetVad();
   }
+  // The space bar works as the talk button even when focus is somewhere else on the page.
+  function isOtherControl(el) {
+    return !!(el && el.closest && el !== talkBtn && el.closest("button, a, input, select, textarea, [contenteditable]"));
+  }
+  function isSpace(e) { return e.key === " " || e.key === "Spacebar"; }
   ["keydown", "focusin", "click", "pointerdown", "touchstart"].forEach(function (ev) {
-    document.addEventListener(ev, function () { muteFor(1500); }, { capture: true, passive: true });
+    document.addEventListener(ev, function (e) {
+      // Pressing the talk button (or the space bar) must not throw away what the user is saying,
+      // and the screen reader says little then, so only pause the mic briefly.
+      var talk = e.target === talkBtn || (e.type === "keydown" && isSpace(e) && !isOtherControl(e.target));
+      muteFor(talk ? 300 : 1500, talk);
+    }, { capture: true, passive: true });
   });
   window.addEventListener("focus", function () { muteFor(1000); });
   document.addEventListener("visibilitychange", function () { muteFor(1000); });
@@ -354,7 +366,8 @@
     vad.frames.push(frame);
     if (rms > threshold * 0.7) { vad.silence = 0; vad.speechFrames++; }
     else vad.silence++;
-    if (vad.silence >= 40 || vad.frames.length >= 1500) {
+    // After an interruption the user ends the turn with the space bar, so allow longer pauses (3 s).
+    if (vad.silence >= (manualTurn ? 150 : 40) || vad.frames.length >= 1500) {
       var frames = vad.frames, speech = vad.speechFrames;
       resetVad();
       if (speech >= 15) handleUtterance(encodeWav(frames, ctx.sampleRate));
@@ -483,8 +496,17 @@
     }, 400);
   }
 
+  // Space bar / button pressed while the user is talking: send what was said right away.
+  function finishTurnNow() {
+    var frames = vad.frames, speech = vad.speechFrames, wasSpeaking = vad.speaking;
+    resetVad();
+    if (wasSpeaking && speech >= 10) handleUtterance(encodeWav(frames, ctx.sampleRate));
+  }
+
   async function handleUtterance(wav) {
     var my = session;
+    manualTurn = false;
+    turnEndedAt = performance.now();
     setState("processing");
     startThinking();
     try {
@@ -542,6 +564,7 @@
     alertBox.textContent = "";
     active = true;
     failures = 0;
+    manualTurn = false;
     var my = ++session;
     transcript = [];
     var last = loadHistory()[0];
@@ -634,11 +657,23 @@
   }
 
   // ---------- buttons ----------
-  talkBtn.addEventListener("click", function () {
+  function onTalkPress() {
     if (!active) return startConversation(false);
-    // While the AI talks, the button interrupts it and gives the turn to the user.
-    if (state === "speaking" && stopSpeaking) { stopSpeaking(); return; }
+    // While the AI talks, the button / space bar interrupts it and gives the turn to the user.
+    if (state === "speaking" && stopSpeaking) { manualTurn = true; stopSpeaking(); return; }
+    // While the user talks (or after interrupting), pressing again means "I've finished".
+    if (state === "listening" && (vad.speaking || manualTurn)) return finishTurnNow();
+    // A press just after the turn was sent automatically is meant as "I've finished", not "end".
+    if (state === "processing" && performance.now() - turnEndedAt < 5000) return;
     endConversation();
+  }
+
+  talkBtn.addEventListener("click", onTalkPress);
+
+  document.addEventListener("keydown", function (e) {
+    if (!active || !isSpace(e) || e.repeat || e.target === talkBtn || isOtherControl(e.target)) return;
+    e.preventDefault();
+    onTalkPress();
   });
 
   continueBtn.addEventListener("click", function () {

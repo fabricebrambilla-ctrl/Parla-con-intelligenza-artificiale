@@ -188,29 +188,47 @@ function momentOn(daysAgo) {
   return new Date(now - daysAgo * 86400000);
 }
 
-// Adds `count` made-up visitors spread over the last 30 days. Like real people,
-// most try it once or twice, some come back on several days, a few use it a lot:
-// conversations per visitor follow a skewed (log-normal) curve, median about 3.
+// Adds `count` made-up visitors spread over the last 30 days, so the total for
+// the 30 days is exactly `count`. Daily numbers grow over the month (the newest
+// days are about four to five times busier than the oldest), are quieter at
+// weekends and go up and down from day to day. Like real people, most visitors
+// try it once or twice and a few use it a lot: conversations per visitor follow
+// a skewed (log-normal) curve, median about 3; busier visitors come back on
+// more days, after their first visit.
 async function seedDemo(count = 317) {
   await ensureTables();
+  const days = lastDays(KEEP_DAYS); // index = days ago
+  const weight = days.map((d, k) => {
+    const weekday = new Date(d + "T12:00:00Z").getUTCDay();
+    const growth = 1 + (KEEP_DAYS - 1 - k) * 0.13;
+    return growth * (weekday === 0 || weekday === 6 ? 0.65 : 1) * (0.7 + Math.random() * 0.6);
+  });
+  const pick = (maxDaysAgo) => {
+    let total = 0;
+    for (let k = 0; k <= maxDaysAgo; k++) total += weight[k];
+    let r = Math.random() * total;
+    for (let k = 0; k <= maxDaysAgo; k++) { r -= weight[k]; if (r <= 0) return k; }
+    return 0;
+  };
+
   const visits = [], presses = [];
   for (let v = 0; v < count; v++) {
     const id = crypto.randomUUID();
     const total = Math.min(60, Math.max(1, Math.round(Math.exp(1.1 + 0.85 * gaussian()))));
-    // Busier visitors tend to come back on more days; newer days are a bit more likely (growth).
-    const dayCount = Math.min(total, KEEP_DAYS, 1 + Math.floor(Math.random() * Math.sqrt(total) * 1.6));
-    const days = new Set();
-    while (days.size < dayCount) days.add(Math.floor(KEEP_DAYS * Math.pow(Math.random(), 1.4)));
-    const list = [...days];
-    const perDay = new Map(list.map((d) => [d, 1]));
+    const first = pick(KEEP_DAYS - 1);
+    const dayCount = Math.min(total, first + 1, 1 + Math.floor(Math.random() * Math.sqrt(total) * 1.6));
+    const active = new Set([first]);
+    for (let tries = 0; active.size < dayCount && tries < 200; tries++) active.add(pick(first));
+    const list = [...active];
+    const perDay = new Map(list.map((k) => [k, 1]));
     for (let i = list.length; i < total; i++) {
-      const d = list[Math.floor(Math.random() * list.length)];
-      perDay.set(d, perDay.get(d) + 1);
+      const k = list[Math.floor(Math.random() * list.length)];
+      perDay.set(k, perDay.get(k) + 1);
     }
-    for (const [d, n] of perDay) {
-      visits.push([id, momentOn(d)]);
-      if (Math.random() < 0.3) visits.push([id, momentOn(d)]);
-      for (let i = 0; i < n; i++) presses.push([id, momentOn(d)]);
+    for (const [k, n] of perDay) {
+      visits.push([id, momentOn(k)]);
+      if (Math.random() < 0.3) visits.push([id, momentOn(k)]);
+      for (let i = 0; i < n; i++) presses.push([id, momentOn(k)]);
     }
   }
   await insertRows("stat_visits", visits);
@@ -281,10 +299,16 @@ function guard(req, res, next) {
 }
 
 // Buttons on the stats page post forms; only accept them from this site.
+// Browsers say where a request comes from in Sec-Fetch-Site; older ones only in Origin,
+// which can be "null" because the site sends no referrer.
 function sameSite(req, res, next) {
+  const site = req.get("sec-fetch-site");
+  if (site) return site === "same-origin" || site === "none" ? next() : res.status(403).type("text").send("Forbidden");
   const origin = req.get("origin");
-  if (origin && origin !== `${req.protocol}://${req.get("host")}` && origin !== `https://${req.get("host")}`) {
-    return res.status(403).type("text").send("Forbidden");
+  if (origin && origin !== "null") {
+    let host = "";
+    try { host = new URL(origin).host; } catch {}
+    if (host !== req.get("host")) return res.status(403).type("text").send("Forbidden");
   }
   next();
 }
@@ -303,6 +327,7 @@ router.post("/stats/clear", guard, sameSite, async (req, res) => {
 
 router.get("/stats", guard, async (req, res) => {
   // This page has two small forms, so allow form posts back to this site.
+  res.set("Referrer-Policy", "same-origin");
   res.set("Content-Security-Policy",
     "default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
   try {
