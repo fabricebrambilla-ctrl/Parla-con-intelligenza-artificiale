@@ -1,0 +1,421 @@
+# Talk with Artificial Intelligence — Project Brief for the Coding Agent
+
+---
+
+## 0. RULES FOR ALL AI AGENTS (mandatory — read first)
+
+Every AI agent (Claude, ChatGPT/Codex, Gemini, Copilot, Cursor, or any other) that works on this repository **must follow these rules**:
+
+1. **Read this whole file before doing anything.** This brief is the single source of truth for what to build and how. Build what this document asks for.
+2. **This file lives at `docs/talk-with-ai-brief.md`** and must stay inside the repository, accessible to any AI agent. Do not move, rename or delete it. `CLAUDE.md` and `AGENTS.md` at the repo root point here; keep those pointers working.
+3. **After every push to `main`, update this file** in the same push (or immediately after it):
+   - Add an entry to the **Change log** (§12): date, what changed, which files.
+   - Update **Current state of the code** (§12) so it describes what the repo actually does now.
+   - If any section of the brief is no longer accurate because of the change, fix that section.
+4. **Record changes in user preference.** Whenever the owner states a new preference, changes their mind, or rejects/approves a design choice, write it in **User preferences** (§13) with the date. Newer preferences override older ones and override anything else in this brief; mark the old one as replaced instead of silently deleting it.
+5. **Do not contradict this brief silently.** If you think something in it is wrong or outdated (e.g. a model name changed), tell the owner, and record the decision in §13.
+6. **These rules must stay at the top of this file.** Do not remove or weaken them.
+
+---
+
+Read this whole file before writing code. It explains who the site is for, how the user experience must work, how the two main screen readers (**JAWS** and **NVDA**) read web pages, how to make voice work **on normal laptop speakers without headphones**, and the technical constraints. The research is done; do not redo it, but **do test with real screen readers** (see §10).
+
+---
+
+## 1. Purpose
+
+A free, voice-only AI assistant that blind people can use **without sighted help and without special equipment**.
+
+- The owner's aunt is blind and uses **JAWS** on Windows. She wants to research things like **new inventions and technology for blind people**, which needs **current, real information from the internet**, not answers from the model's memory.
+- Mainstream AI sites are hard for screen-reader users. Blind users on the OpenAI forum report that ChatGPT's web interface has many **unlabeled buttons** (a screen reader just says "button"), that accessibility keeps breaking after updates, and that blind people often need a sighted person to start voice mode at all.
+- So this site does **one thing**: you open it, press one button, and talk. The AI talks back in a natural voice and searches the web when needed.
+- It will be shared in blind communities in **English, Italian, French, Bulgarian, Russian and Chinese** (Simplified).
+- **Must work with JAWS and NVDA equally**, plus VoiceOver on iPhone.
+- **Must work on built-in laptop speakers and microphone.** Never require or assume headphones.
+
+**Design rule above all others: fewer elements = better.** Every extra link, button or line of text is something the screen reader has to read out loud and the user has to step through.
+
+---
+
+## 2. User experience (exact flow)
+
+### 2.1 First visit
+
+1. Page loads. The screen reader announces the page `<title>`, then (with default settings) starts reading the page from the top.
+2. The page language is **auto-detected** from the browser (`navigator.languages`, falling back to the `Accept-Language` header on the server). The page renders in that language with the correct `<html lang="…">` (see §4.6 — this makes the screen reader read with the right voice/accent).
+3. The page contains only:
+   - `<h1>` — "Talk with Artificial Intelligence" (translated).
+   - **One big button**: "Start conversation" (translated).
+   - **One small button**: "Language: Italiano. Change language" (shows current language).
+   - One short sentence of help *below* the buttons: "Press the button and speak. To finish, press it again or say goodbye." (translated).
+4. If the user presses "Change language", show a list of 6 buttons, **each written in its own language** with its own `lang` attribute: `English`, `Italiano`, `Français`, `Български`, `Русский`, `中文`. Pressing one reloads the text in that language, saves the choice, and moves focus back to "Start conversation".
+5. Language choice is saved in `localStorage` so returning users skip this.
+
+### 2.2 Starting a conversation
+
+1. User presses "Start conversation" (Enter or Space).
+2. **First time only**, the browser asks for microphone permission. This is a browser dialog; both JAWS and NVDA read it. Do not add our own pop-up before it.
+3. A short, soft **start sound** (earcon) plays, then the AI greets in the chosen language, e.g. *"Hi, I'm listening. Ask me anything. When you're done, just say goodbye."*
+4. The same button **stays focused** and changes its label to "End conversation". Do **not** move focus anywhere else. Do not open new panels.
+5. The user simply talks. The AI answers by voice. The user can interrupt the AI by speaking (see §5 for how this stays reliable on speakers).
+6. The conversation ends when the user **presses the button again** or **says goodbye / stop** (the model calls an `end_conversation` function — implement it). Play an end sound; label returns to "Start conversation".
+
+### 2.3 While talking — what must NOT happen
+
+- **No transcript on screen that the screen reader reads aloud.** No `aria-live` region for transcripts or AI replies. The screen reader would speak over the AI voice, and its voice would be picked up by the microphone (see §5).
+- No spinners, toasts, "AI is typing" messages, or status text that changes every second.
+- Status is communicated with **sounds**, not text:
+  - start-listening tone, end tone,
+  - a quiet repeating "thinking" tick while the AI is searching (only if a wait is longer than ~1.5 s).
+- **Errors** (no mic, connection lost, daily limit reached): spoken once by the page using a single `role="alert"` region **after** audio has stopped, in plain words, plus what to do ("Connection lost. Press the button to try again.").
+
+### 2.4 Returning users and past conversations
+
+- On first visit, generate a random anonymous ID and store it in `localStorage` (no accounts, no login, no email).
+- After each conversation, store a **short text summary** of it (produced by the model, a few sentences) on the user's device in `localStorage`. Keep the last ~10.
+- On a return visit **if** history exists, show one extra button under "Start conversation": "Continue last conversation". It starts a session and loads the last summary into context (§7.4).
+- Optional, low priority: a separate page "My past conversations" with each conversation as an `<h2>` (date + one-line topic) followed by its summary in a paragraph, so users can jump between them with the **H** key (works in both JAWS and NVDA). Include a "Delete all my history" button.
+- Storing history only on the device means: no database, no personal data on the server, and nothing to leak. Say this in one sentence on the page ("Your conversations are saved only on this computer.").
+
+---
+
+## 3. Who uses this and with what
+
+WebAIM Screen Reader User Survey #10 (Dec 2023–Jan 2024, 1,539 respondents) is the best available data:
+
+- Primary desktop screen reader: **JAWS 40.5%**, **NVDA 37.7%** — practically a tie.
+- **By region:** JAWS leads in North America and Australia; **NVDA leads in Europe, Africa/Middle East and Asia.** This site targets Italy, France, Bulgaria, Russia and China, so **most of the target audience probably uses NVDA**, not JAWS.
+- Counting everyone who uses each one at all (not just as primary), NVDA (65.6%) is slightly ahead of JAWS (60.5%).
+- Most common combos: **JAWS + Chrome**, **NVDA + Chrome**, **JAWS + Edge**, **NVDA + Firefox**.
+- **CAPTCHA is the #1 reported barrier.** Never use a CAPTCHA.
+- 91% also use a screen reader on mobile, mostly **VoiceOver on iPhone**. The page must work on iPhone Safari + VoiceOver too.
+
+If everything is built with plain, correct HTML, it works in all of them. Screen-reader-specific tricks are not needed and should be avoided.
+
+---
+
+## 4. How screen readers read web pages: JAWS and NVDA
+
+### 4.1 The two screen readers
+
+| | **JAWS** | **NVDA** |
+|---|---|---|
+| Maker | Freedom Scientific (Vispero) | NV Access (non-profit) |
+| Price | Paid licence (expensive) | **Free and open source** |
+| Platform | Windows | Windows |
+| Typical users | Workplaces, government, North America | Individuals, Europe, Asia, Africa, developing countries |
+| Modifier key | Insert (JAWS key) | Insert, Numpad 0, or Caps Lock (NVDA key) |
+| Stop speaking | Control | Control |
+| Test version | 40-minute demo mode (restart Windows for more) | Free download, no limit |
+
+Both work the same way on the web. The differences below are mostly key names.
+
+### 4.2 Two modes (same idea, different names)
+
+| | JAWS name | NVDA name | What it does |
+|---|---|---|---|
+| Reading mode | **Virtual cursor** (virtual PC cursor) | **Browse mode** | The screen reader builds its own copy of the page (the "virtual buffer") and **captures every key press** for navigation. Arrow keys read; single letters jump. |
+| Typing mode | **Forms mode** | **Focus mode** | Keys go straight to the page so the user can type. |
+| Switch on | Automatic on text fields; Enter on a field | Automatic when tabbing into an editable field; Enter/Space on a field | |
+| Switch off | Escape or Numpad Plus | Escape | |
+| Manual toggle | Insert+Z (toggle virtual cursor) | **NVDA+Space** | |
+| Feedback | — | Rising tone = focus mode, falling tone = browse mode (or speaks the mode name) | |
+
+NVDA notes:
+- NVDA's own docs warn that some **single-page web apps don't work well in browse mode because of dynamic content updates**. Keep the page's DOM static during a conversation. If the page content does change, NVDA users may need NVDA+F5 to refresh the virtual buffer — design so they never need to.
+- NVDA has a setting "Automatic say all on page load" (on by default), so the page is read from the top as soon as it loads. That is why the page must be very short.
+
+Consequences for both:
+- **Do not rely on custom keyboard shortcuts** (e.g. "press T to talk"). In reading mode the screen reader swallows single letters for its own navigation, so the page never receives them.
+- **Avoid text inputs** on the main screen; they switch the screen reader into typing mode and change how keys behave.
+- A native `<button>` works in every mode in both readers: Enter or Space activates it. That is why the whole app is driven by **one native button** (plus voice commands).
+
+### 4.3 How users move around a page
+
+Single-letter jumps in reading mode (add Shift to go backwards):
+
+| Jump to | JAWS | NVDA |
+|---|---|---|
+| Next heading | H | H |
+| Next button | B | B |
+| Next landmark/region | **R** | **D** |
+| Next link | Tab / U (unvisited) | K |
+| Next form field | F | F |
+| List of all elements | Insert+F6 headings, Insert+F5 form fields, Insert+F7 links | **NVDA+F7** (Elements list, one dialog for links/headings/landmarks/buttons) |
+| Read everything from here | Insert+Down Arrow | NVDA+Down Arrow |
+
+Consequences:
+- Use exactly one `<h1>`. Put everything inside one `<main>` (landmark for R / D).
+- Every button must have **visible text** that says what it does. Never an icon-only button. Never a `<div>` or `<span>` styled as a button.
+- Keep the order on screen = the order in the HTML.
+
+### 4.4 What is read on page load
+
+- The `<title>` first, then the page from the top (default in both readers).
+- So the `<title>` should be the action, e.g. `Talk with Artificial Intelligence – press the button to start`. Translate it.
+- Nothing else should appear before the `<h1>` (no logo text, no menu, no cookie banner, no "skip to content" maze).
+
+### 4.5 Live regions (dynamic announcements)
+
+- `aria-live="polite"` waits until the screen reader finishes speaking; `aria-live="assertive"` / `role="alert"` interrupts.
+- JAWS and NVDA behave differently and inconsistently: NVDA reads polite messages at the end of the current utterance and can double-announce when `role="alert"` is combined with other live attributes; JAWS can buffer several quick updates and read them in sequence, and sometimes misses messages entirely if the region is created at the same moment as its text.
+- Rules for this project:
+  - Create the one alert region **empty** on page load; only insert text later.
+  - Use `role="alert"` alone (don't also add `aria-live`).
+  - Use it **only for errors**, never for transcripts or status.
+  - One short sentence per message, and never while the AI is speaking.
+
+### 4.6 Focus
+
+- Never move focus without the user asking. After changing language, put focus back on "Start conversation".
+- Do not use modals, dialogs, overlays, or "toast" pop-ups.
+- Visible focus outline (thick, high contrast) for low-vision users.
+
+### 4.7 Language and the `lang` attribute
+
+- **JAWS** can switch its speech voice automatically based on the `lang` attribute.
+- **NVDA** has "Automatic language switching (when supported)" in its speech settings; it works when the user's voice/synthesizer has that language installed (NVDA's built-in eSpeak NG voice covers all six target languages).
+- If `lang` is wrong, the screen reader reads Italian text with an English voice and it becomes nonsense.
+- Set `<html lang="it">` (etc.) to match the displayed language. Use simple codes: `en`, `it`, `fr`, `bg`, `ru`, `zh-Hans` (for Chinese, also test plain `zh` — older readers can mishandle region/script subtags).
+- In the language list, each language name must carry its own `lang` (e.g. `<button lang="ru">Русский</button>`).
+
+### 4.8 Other things that make blind users leave
+
+- Cookie consent banners (a whole popup to navigate before anything works). Avoid by **not using tracking/analytics cookies at all**; only keep strictly necessary `localStorage` (language, anonymous ID, history). Have a human check the EU ePrivacy/GDPR position before launch.
+- Auto-playing audio before the user presses anything (also blocked by browsers).
+- Timeouts that close the session without warning.
+- Images without `alt`, decorative SVGs not hidden (`aria-hidden="true"`).
+
+---
+
+## 5. Making voice work on laptop speakers (no headphones)
+
+### 5.1 The problem
+
+On a laptop without headphones, the microphone hears everything coming out of the speakers. There are **three voices** that could come out of them:
+
+1. **The user** — the only one the AI should hear.
+2. **The AI's own voice** — if the mic hears it, the AI hears itself, interrupts itself, or answers itself.
+3. **The screen reader's voice (JAWS/NVDA)** — a separate program. If the mic hears it, the AI treats "End conversation, button" as something the user said.
+
+Browser **echo cancellation** solves #2 well, because the browser knows exactly what the page played and subtracts it. It **cannot** solve #3, because the browser has no copy of the screen reader's audio — it's another program.
+
+So the design must make sure the screen reader is **almost never speaking** during a conversation, and must protect against the moments when it does. Use **all** of the layers below; each covers a gap in the others.
+
+### 5.2 Layer 1 — keep the screen reader silent (most important)
+
+A screen reader only speaks when (a) the page changes, or (b) the user presses keys. So:
+- During a conversation, **the page must not change at all**: no text updates, no live regions, no label changes (except the one button label at start/end), no focus moves.
+- Everything the user needs to know is said by the **AI voice** or a **sound**, never by page text.
+- Ending by **voice** ("goodbye", "stop", in any of the six languages) means the user usually doesn't need to touch the keyboard during the conversation, so the screen reader has no reason to speak.
+
+### 5.3 Layer 2 — mute the mic whenever the screen reader is likely speaking
+
+The page can't hear the screen reader, but it can tell when the user just did something that makes it speak:
+- On **any** `keydown`, `focusin`, `click` or `pointerdown` event on the page, **mute the microphone input for ~1.5 seconds** (stop sending audio frames; keep the mic stream open). Restart the timer on each event. In reading mode not every key reaches the page, but focus changes and button presses do, and those are exactly when the screen reader speaks about our page.
+- When the page itself sends an error to the alert region, mute the mic until a few seconds after.
+- Also mute the mic for ~1 second when the window regains focus (`window` `focus` / `visibilitychange`), because switching back to the browser makes the screen reader announce the page.
+
+### 5.4 Layer 3 — strong echo cancellation for the AI's own voice
+
+```js
+navigator.mediaDevices.getUserMedia({
+  audio: {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+    voiceIsolation: { ideal: true }, // used where the OS/browser supports it (e.g. Safari/macOS, iOS); ignored elsewhere
+    channelCount: 1
+  }
+});
+```
+- **Play the AI audio through the same page** (Web Audio in this tab), never through a separate tab, `<iframe>`, or system TTS. Echo cancellation only works on audio the page itself plays.
+- Echo cancellation needs a few seconds of playback to "learn" the room. That's another reason the AI speaks a short greeting first: by the time the user talks, it has adapted.
+- Keep AI playback volume normal; don't boost it with gain nodes (distortion breaks echo cancellation).
+
+### 5.5 Layer 4 — tell the AI to ignore non-human speech
+
+- In the system prompt (§7.5): *"The user is blind and uses a screen reader. You may sometimes hear a fast synthetic voice reading interface words such as 'button', 'heading level 1', 'browse mode', 'focus mode', 'link', or page text. That is the screen reader, not the user. Ignore it completely and do not reply to it. Also ignore your own voice if you hear it echoed."*
+- Turn on the Live API's **proactive audio** option (lets the model decide not to respond to input that isn't meant for it) **if the chosen model supports it** — check the model page at build time.
+
+### 5.6 Layer 5 — less trigger-happy interruption
+
+- Keep the API's automatic voice-activity detection, but set **start-of-speech sensitivity to LOW** so short sounds, clicks and stray screen-reader words don't interrupt the AI. Real users interrupting with a full sentence still work.
+- Keep `silenceDurationMs` around 600–800 ms (Google recommends 500–800; lower values chop the user's sentences into pieces).
+- Keep `prefixPaddingMs` above 0 so first syllables aren't cut.
+
+### 5.7 Layer 6 — automatic fallback to "turn-taking" mode
+
+Some cheap laptops have poor echo cancellation. Detect it and adapt automatically, with no setting for the user to find:
+- Enable `outputAudioTranscription` and `inputAudioTranscription` (kept in memory, never displayed).
+- If what the API says the **user** said closely matches what the **AI** just said (simple word-overlap similarity on the last few seconds), the mic is hearing the speakers → switch the session to **turn-taking mode**:
+  - Mic input is muted while the AI is speaking, plus ~400 ms after it finishes.
+  - A soft "your turn" tone plays when the mic re-opens.
+  - The user can still interrupt by **pressing the button once while the AI is talking** (stops the AI and opens the mic). In turn-taking mode, the button ends the conversation only when the AI is silent; saying "goodbye" always ends it.
+  - The AI tells the user once, briefly: "I'll pause after each answer so I can hear you clearly."
+- Same fallback if the AI interrupts itself more than twice in a minute.
+
+### 5.8 What not to do
+
+- Don't tell users to buy or wear headphones, or to change screen reader settings. It should just work.
+- Don't use push-to-talk as the default (holding a key is awkward with a screen reader, and many keys are captured by it).
+
+---
+
+## 6. Hosting on Render
+
+- Backend: Render **Web Service** (Node). Frontend: a Render **Static Site** (loads instantly) or served by the same service.
+- Render's free web services go to sleep after inactivity and take a while to wake. A blind user hearing nothing after pressing a button will think it's broken. Prefer: static site for the page, and on button press play a gentle "connecting" sound; if the token request takes > 3 s, the alert region says "Connecting, please wait." Consider a cheap paid instance once people use it. (Check Render's current free-tier terms at deploy time.)
+- Deploy from GitHub `main` with auto-deploy on push.
+
+---
+
+## 7. AI and back-end architecture
+
+### 7.1 AI: Google Gemini Live API
+
+Chosen because it is the only major speech-to-speech API with **both a free tier and built-in Google Search grounding**.
+
+- Model: `gemini-3.8-live` (Google's current default Live model as of Oct 2026; check the models page at build time, Live model names change often).
+- Native audio in and out: input raw 16-bit PCM (send at 16 kHz, `audio/pcm;rate=16000`), output 24 kHz PCM.
+- Supports all six target languages (en, it, fr, bg, ru, zh) and switches language naturally.
+- **Google Search tool enabled** in the session config so the model looks things up.
+- When the server sends `interrupted`, **stop playback and clear the audio queue immediately**.
+- Function calling: `end_conversation` (§2.2).
+- Voice: native audio models use the Gemini TTS voice list (e.g. `Kore`). The owner wants "the standard, most familiar voice". ChatGPT's voices only exist on OpenAI. Use Gemini's default (leave voice unset) unless the owner picks one after listening in Google AI Studio → Live.
+
+### 7.2 Cost and limits (tell the owner, design for it)
+
+- **Free tier**: audio in/out free, Google Search grounding supported, but **rate-limited** and **content is used by Google to improve its products**. The site's privacy line must say this honestly while on the free tier.
+- **Paid tier** (if the site gets real users): about **$0.005/min audio in + $0.018/min audio out ≈ $0.023/min** (~$1.40 per hour of talking), plus Google Search at 5,000 free requests/month then $14 per 1,000. Content not used for training on paid.
+- Protect the key and the quota:
+  - Per-anonymous-ID and per-IP limits (e.g. 60 minutes/day), and a global daily cap the owner can set.
+  - When a limit is hit, say so in plain words ("Today's free limit is used up. Please try again tomorrow.").
+
+### 7.3 Security: never put the API key in the browser
+
+- Google's Live API is server-to-server by default; for browser-to-Google connections Google requires **ephemeral tokens**.
+- Small backend (Node.js) with one endpoint `POST /api/token` that checks rate limits and returns a short-lived ephemeral token locked to our model + config (system prompt, tools). The browser uses that token to open the WebSocket directly to Google (lowest latency).
+- API key stored as an environment variable on Render. Never committed to GitHub. Add `.env` to `.gitignore`.
+
+### 7.4 Session length and history
+
+- Audio-only Live sessions are limited to **15 minutes** unless you use Google's session-management features (session resumption / context window compression). Implement them so long conversations don't cut off silently. If a reconnect is needed, do it without user action and without any announcement unless it fails.
+- "Continue last conversation": send the stored summary as the first context turn (`sendClientContent` with `turnComplete: false`) before streaming audio.
+- At the end of a session, use the in-memory transcriptions (§5.7) and ask a cheap text model to summarize them; save the summary to `localStorage`.
+
+### 7.5 System prompt (core of the "don't make things up" requirement)
+
+Write it so the AI:
+- Speaks in the user's selected language unless the user switches.
+- Gives **short spoken answers** (2–5 sentences), then offers to go deeper. No lists, no markdown, no "as you can see", no describing visuals. Short answers also mean less talking over each other on speakers.
+- **Searches the web for anything about recent events, products, prices, research, organizations, or anything it is not certain of** — especially assistive technology and inventions for blind people.
+- Says **where** information comes from in a spoken way ("According to the RNIB website, updated in March…").
+- If it can't find something, says so plainly. **Never invents** products, studies, names, dates or links. Separates "confirmed" from "reported" or "announced".
+- Does **not** just agree with the user; corrects them politely if the facts differ.
+- Ignores screen-reader speech and its own echo (§5.5).
+- Calls `end_conversation` when the user says goodbye/stop.
+- Never claims to be human.
+
+Note: search grounding **reduces** made-up answers a lot but does not make them impossible. Keep the source-naming behavior so users can check.
+
+### 7.6 Front-end tech
+
+- Plain HTML + CSS + a small vanilla JS module. No React/framework needed. Fast load matters, and a static DOM keeps NVDA's browse mode happy.
+- Audio: `AudioWorklet` for mic capture (downsample to 16 kHz PCM, apply the mute gate from §5.3/§5.7) and for gapless playback of 24 kHz PCM.
+- Official SDK `@google/genai` is fine in the browser with an ephemeral token.
+
+---
+
+## 8. Visual design (for sighted helpers and low-vision users)
+
+- The owner wants it "nice and visual", but the screen-reader structure in §2 and §4 comes first.
+- Large central button (min 200×200 px, high contrast), large type (≥ 20 px body), respects `prefers-color-scheme` and `prefers-reduced-motion`, WCAG AA contrast minimum (aim AAA).
+- A gentle visual pulse while the AI speaks/listens is fine, as long as it is `aria-hidden="true"` and doesn't change any text.
+- Works at 400% zoom and on a phone.
+
+---
+
+## 9. Minimal HTML skeleton (reference, not final)
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Talk with Artificial Intelligence – press the button to start</title>
+</head>
+<body>
+  <main>
+    <h1>Talk with Artificial Intelligence</h1>
+    <button id="talk" type="button">Start conversation</button>
+    <button id="continue" type="button" hidden>Continue last conversation</button>
+    <button id="lang" type="button">Language: English. Change language</button>
+    <p>Press the button and speak. To finish, press it again or say goodbye.
+       Your conversations are saved only on this computer.</p>
+    <div id="alert" role="alert"></div>
+  </main>
+</body>
+</html>
+```
+
+---
+
+## 10. Testing checklist (do not ship without this)
+
+Tools: **NVDA** (free, nvaccess.org; its *Speech Viewer* under Tools shows everything NVDA says, useful for sighted testers) and **JAWS** (40-minute demo mode).
+
+With the **monitor off / eyes closed**, keyboard only, on **JAWS+Chrome, JAWS+Edge, NVDA+Chrome, NVDA+Firefox**:
+- [ ] Page title and heading are read on load in the right language/voice.
+- [ ] Press **B** → lands on "Start conversation". Enter starts it. Space also works.
+- [ ] Mic permission prompt is readable and the choice is remembered.
+- [ ] AI greeting is heard; talking works; interrupting the AI by voice works.
+- [ ] The screen reader stays silent during the conversation.
+- [ ] Saying "goodbye" ends it; pressing the button ends it; label reads "Start conversation" again.
+- [ ] Change language → all 6 language names are pronounced correctly (NVDA: with automatic language switching on).
+- [ ] Error cases (mic unplugged, Wi-Fi off, limit reached) are spoken once, clearly.
+- [ ] Ask about a recent assistive-tech product: the AI searches and names a source.
+
+**Speaker tests (no headphones), on at least two different laptops, one cheap:**
+- [ ] 10-minute conversation on built-in speakers + mic at normal volume: the AI never answers itself or the screen reader.
+- [ ] While the AI is talking, press Tab/arrow keys so the screen reader speaks: the AI does not treat it as user speech.
+- [ ] Force poor echo cancellation (turn speaker volume high, laptop in a small room): fallback to turn-taking mode triggers and the conversation still works.
+- [ ] Noisy room (TV on): the AI is not constantly interrupted.
+
+Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public launch. Real users find things testers don't.
+
+---
+
+## 11. Out of scope (do not build)
+
+- Accounts, logins, emails, payments.
+- Text chat box, file upload, images, settings pages, menus, footers with many links.
+- Analytics/tracking cookies.
+- Any requirement for headphones or screen reader setting changes.
+
+---
+
+## 12. Current state of the code and change log
+
+### Current state of the code (keep this up to date)
+
+As of 2026-10-10 the repo contains an **earlier prototype that does not yet follow this brief**:
+- `index.html` — Italian-only page (`<html lang="it">`), browser speech + TTS, sends text to `/api/chat`.
+- `server.js` — Express server, serves static files, `POST /api/chat` proxies to Groq (`GROQ_API_KEY`), `GET /health`.
+- `package.json` — dependencies: express, cors, dotenv, openai.
+- No Gemini Live API, no ephemeral tokens, no multi-language UI, no on-device history yet.
+
+### Change log (add an entry after every push to `main`)
+
+| Date | Change | Files |
+|---|---|---|
+| 2026-10-10 | Added this brief and the agent rules (§0). No app code changed. | `docs/talk-with-ai-brief.md`, `CLAUDE.md`, `AGENTS.md` |
+
+---
+
+## 13. User preferences (newest first; these override the rest of the brief)
+
+| Date | Preference |
+|---|---|
+| 2026-10-10 | The brief must live in the repo, be readable by any AI agent, and be updated after every push to `main` with code changes and any changes in user preference. |
