@@ -9,7 +9,7 @@ after(() => servers.forEach((s) => s.kill()));
 
 async function startServer(port, env) {
   const s = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], {
-    env: { PATH: process.env.PATH, PORT: String(port), GROQ_API_KEY: "", TAVILY_API_KEY: "", ...env },
+    env: { PATH: process.env.PATH, NODE_ENV: "test", PORT: String(port), GROQ_API_KEY: "", TAVILY_API_KEY: "", ...env },
     stdio: "ignore",
   });
   servers.push(s);
@@ -46,7 +46,7 @@ function transcribe(port, body) {
 test("request limit blocks everything once reached, and a new ID does not help", async () => {
   const port = 4101;
   await startServer(port, { DAILY_REQUESTS_PER_USER: "3", DAILY_REQUESTS_PER_IP: "3" });
-  for (let i = 0; i < 3; i++) assert.equal(await chat(port), 502); // allowed (fails only because there is no key)
+  for (let i = 0; i < 3; i++) assert.notEqual(await chat(port), 429); // allowed (it fails later only because there is no key)
   assert.equal(await chat(port), 429);
   assert.equal(await chat(port, { "X-Anon-Id": "someone-else-1" }), 429);
   assert.equal((await fetch(`http://127.0.0.1:${port}/api/limit`)).status, 429);
@@ -56,10 +56,10 @@ test("request limit blocks everything once reached, and a new ID does not help",
 test("speech minutes are charged from the audio and capped", async () => {
   const port = 4102;
   await startServer(port, { DAILY_MINUTES_PER_USER: "0.05", DAILY_MINUTES_PER_IP: "0.05" }); // 3 seconds
-  assert.equal(await transcribe(port, wav(2)), 502);
+  assert.notEqual(await transcribe(port, wav(2)), 429);
   assert.equal(await transcribe(port, wav(2)), 429); // would reach 4 s > 3 s
-  assert.equal(await chat(port), 502); // 2 s used, under the limit
-  assert.equal(await transcribe(port, wav(1)), 502); // exactly 3 s
+  assert.notEqual(await chat(port), 429); // 2 s used, under the limit
+  assert.notEqual(await transcribe(port, wav(1)), 429); // exactly 3 s
   assert.equal(await chat(port), 429); // limit reached: everything blocks
 });
 
@@ -75,8 +75,8 @@ test("only real 16 kHz mono WAV is accepted", async () => {
 test("burst limit per minute", async () => {
   const port = 4104;
   await startServer(port, { REQUESTS_PER_MINUTE_PER_IP: "2" });
-  assert.equal(await chat(port), 502);
-  assert.equal(await chat(port), 502);
+  assert.notEqual(await chat(port), 429);
+  assert.notEqual(await chat(port), 429);
   assert.equal(await chat(port), 429);
 });
 
@@ -90,8 +90,8 @@ test("with Redis, limits survive a restart and the server fails closed", { skip:
   const env = { REDIS_URL: "redis://127.0.0.1:6391", DAILY_REQUESTS_PER_USER: "2", DAILY_REQUESTS_PER_IP: "2" };
 
   let s = await startServer(4105, env);
-  assert.equal(await chat(4105), 502);
-  assert.equal(await chat(4105), 502);
+  assert.notEqual(await chat(4105), 429);
+  assert.notEqual(await chat(4105), 429);
   s.kill();
 
   s = await startServer(4106, env);

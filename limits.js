@@ -7,6 +7,7 @@
 // in memory and reset whenever the server restarts.
 
 const net = require("net");
+const crypto = require("crypto");
 
 function num(name, fallback) {
   const v = Number(process.env[name]);
@@ -17,10 +18,11 @@ const LIMITS = {
   userSeconds: num("DAILY_MINUTES_PER_USER", 60) * 60,
   ipSeconds: num("DAILY_MINUTES_PER_IP", 60) * 60,
   globalSeconds: num("DAILY_MINUTES_GLOBAL", 600) * 60,
-  userRequests: num("DAILY_REQUESTS_PER_USER", 600),
-  ipRequests: num("DAILY_REQUESTS_PER_IP", 600),
-  globalRequests: num("DAILY_REQUESTS_GLOBAL", 6000),
-  burstPerMinute: num("REQUESTS_PER_MINUTE_PER_IP", 30),
+  // Each turn uses about 2 requests plus one per spoken sentence in English.
+  userRequests: num("DAILY_REQUESTS_PER_USER", 1500),
+  ipRequests: num("DAILY_REQUESTS_PER_IP", 1500),
+  globalRequests: num("DAILY_REQUESTS_GLOBAL", 15000),
+  burstPerMinute: num("REQUESTS_PER_MINUTE_PER_IP", 60),
   tavilyPerDay: num("DAILY_TAVILY_SEARCHES", 30),
   tavilyPerMonth: num("MONTHLY_TAVILY_SEARCHES", 950),
 };
@@ -80,6 +82,12 @@ function normalize(ip) {
   return ip;
 }
 
+// Addresses are never stored as they are, only as a keyed hash (GDPR: pseudonymisation).
+const SECRET = process.env.LIMITS_SECRET || process.env.GROQ_API_KEY || "local-development";
+function pseudonym(value) {
+  return crypto.createHmac("sha256", SECRET).update(value).digest("base64url").slice(0, 22);
+}
+
 // Render sits behind Cloudflare, which overwrites CF-Connecting-IP with the
 // real visitor address. X-Forwarded-For can be faked by the client, so only
 // its right-most public entry is used as a fallback.
@@ -107,7 +115,7 @@ const month = () => new Date().toISOString().slice(0, 7);
 // Adds this request's cost and returns false if any limit is now exceeded.
 // The request that crosses a limit is refused too, so limits are never exceeded.
 async function charge(req, { seconds = 0, requests = 1, burst = true } = {}) {
-  const d = day(), ip = clientIp(req), id = clientId(req);
+  const d = day(), ip = pseudonym(clientIp(req)), id = clientId(req);
   if (burst) {
     const minute = Math.floor(Date.now() / 60000);
     if ((await store.incr(`b:${minute}:${ip}`, 1, 120)) > LIMITS.burstPerMinute) return false;

@@ -7,6 +7,7 @@
 
   var lang = I.pick(get("lang") ? [get("lang")] : navigator.languages || [navigator.language]);
   I.applyPage(lang);
+  document.querySelector("main a").href = "/?lang=" + lang;
 
   var history = [];
   try { history = JSON.parse(get("history") || "[]"); } catch (e) {}

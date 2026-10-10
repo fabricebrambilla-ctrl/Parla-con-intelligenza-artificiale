@@ -10,7 +10,7 @@ let server;
 
 before(async () => {
   server = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], {
-    env: { ...process.env, PORT: String(PORT), GROQ_API_KEY: "", TAVILY_API_KEY: "" },
+    env: { ...process.env, NODE_ENV: "test", PORT: String(PORT), GROQ_API_KEY: "", TAVILY_API_KEY: "" },
     stdio: "ignore",
   });
   for (let i = 0; i < 50; i++) {
@@ -56,6 +56,27 @@ test("API errors are reported without leaking details", async () => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ lang: "en", messages: [{ role: "user", content: "hi" }] }),
   });
-  assert.equal(r.status, 502);
-  assert.deepEqual(await r.json(), { error: "chat" });
+  assert.equal(r.status, 200);
+  assert.deepEqual(JSON.parse((await r.text()).trim()), { type: "error", error: "busy" });
+  const t = await fetch(BASE + "/api/transcribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+  assert.equal(t.status, 400);
+});
+
+test("legal pages exist in every language", async () => {
+  for (const lang of I18N.LANGS) {
+    for (const page of ["privacy", "accessibility"]) {
+      const r = await fetch(`${BASE}/${page}?lang=${lang}`);
+      assert.equal(r.status, 200);
+      const html = await r.text();
+      assert.match(html, new RegExp(`<html lang="${I18N.META[lang].html}">`));
+      assert.equal(html.match(/<h1/g).length, 1);
+      assert.doesNotMatch(html, /\{(owner|email)\}/);
+    }
+  }
+});
+
+test("security headers are set", async () => {
+  const r = await fetch(BASE + "/");
+  assert.match(r.headers.get("content-security-policy"), /frame-ancestors 'none'/);
+  assert.equal(r.headers.get("x-content-type-options"), "nosniff");
 });

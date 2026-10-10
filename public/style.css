@@ -85,6 +85,15 @@ button:focus-visible, a:focus-visible {
 #langs { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; }
 #langs[hidden], [hidden] { display: none !important; }
 
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0 1rem 2rem;
+  font-size: 1rem;
+}
+
 .help { color: var(--muted); max-width: 32rem; margin: 0; }
 a { color: inherit; }
 

@@ -3,6 +3,10 @@
   var I = window.I18N;
   var $ = function (id) { return document.getElementById(id); };
 
+  // iPhone/iPad (also iPadOS, which reports itself as a Mac with touch).
+  var IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+               (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
   // ---------- storage (never required to work) ----------
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -33,6 +37,10 @@
   function renderTexts() {
     I.applyPage(lang);
     talkBtn.textContent = active ? tt("end") : tt("start");
+    // Keep the chosen language on the other pages too.
+    historyP.querySelector("a").href = "/history?lang=" + lang;
+    $("privacyLink").href = "/privacy?lang=" + lang;
+    $("accessibilityLink").href = "/accessibility?lang=" + lang;
   }
 
   function showHistoryControls() {
@@ -47,6 +55,8 @@
   var state = "idle";      // idle | listening | processing | speaking
   var transcript = [];     // [{role, content}] kept in memory only
   var context = "";        // summary of the previous conversation, when continuing
+  var failures = 0;        // failed turns in a row
+  var aiVoiceLangs = [];   // languages with the natural AI voice (from the server)
 
   function setState(s) {
     state = s;
@@ -59,8 +69,8 @@
     muteUntil = Math.max(muteUntil, performance.now() + ms);
     if (vad.speaking) resetVad();
   }
-  ["keydown", "focusin", "click", "pointerdown"].forEach(function (ev) {
-    document.addEventListener(ev, function () { muteFor(1500); }, true);
+  ["keydown", "focusin", "click", "pointerdown", "touchstart"].forEach(function (ev) {
+    document.addEventListener(ev, function () { muteFor(1500); }, { capture: true, passive: true });
   });
   window.addEventListener("focus", function () { muteFor(1000); });
   document.addEventListener("visibilitychange", function () { muteFor(1000); });
@@ -72,8 +82,13 @@
     setTimeout(function () { alertBox.textContent = tt(key); }, 150);
   }
 
-  // ---------- sounds ----------
+  // ---------- audio context and sounds ----------
   var ctx = null;
+  function ensureContext() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // iOS can leave the context "interrupted" after a call or another app.
+    if (ctx.state !== "running") ctx.resume().catch(function () {});
+  }
   function tone(freq, startIn, dur, vol) {
     if (!ctx) return;
     var t0 = ctx.currentTime + startIn;
@@ -107,63 +122,71 @@
     thinkDelay = thinkTimer = null;
   }
 
-  // ---------- speech output (browser voice) ----------
+  // ---------- speech output ----------
+  // English: natural AI voice from the server, played in this page (so echo
+  // cancellation knows about it). Other languages, or if that fails: the best
+  // voice installed on the device.
   var voices = [];
   function loadVoices() { if (window.speechSynthesis) voices = speechSynthesis.getVoices() || []; }
   if (window.speechSynthesis) {
     loadVoices();
-    speechSynthesis.addEventListener ? speechSynthesis.addEventListener("voiceschanged", loadVoices)
-                                     : (speechSynthesis.onvoiceschanged = loadVoices);
+    if (speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", loadVoices);
+    else speechSynthesis.onvoiceschanged = loadVoices;
   }
 
   function pickVoice() {
     var want = I.META[lang].speech.toLowerCase();
     var base = want.split("-")[0];
-    var best = null, bestScore = -1;
+    var best = null, bestScore = -Infinity;
     voices.forEach(function (v) {
       var vl = String(v.lang || "").replace("_", "-").toLowerCase();
       if (vl.split("-")[0] !== base) return;
       var n = String(v.name || "").toLowerCase();
       var s = 0;
-      if (vl === want) s += 3;
-      if (/natural|neural/.test(n)) s += 4;
-      if (/online|google|premium|enhanced|siri/.test(n)) s += 2;
+      if (vl === want) s += 2;
+      if (/natural|neural/.test(n)) s += 8;          // Edge online voices, Windows 11 natural voices
+      if (/premium|enhanced|siri/.test(n)) s += 6;   // Apple high-quality voices
+      if (/google/.test(n)) s += 4;                  // Chrome and Android voices
+      if (/online/.test(n)) s += 2;
+      if (/espeak|compact|robot|novelty/.test(n)) s -= 6;
       if (s > bestScore) { best = v; bestScore = s; }
     });
     return best;
   }
 
-  function splitSentences(text) {
-    var parts = String(text).match(/[^.!?。！？]+[.!?。！？]*\s*/g) || [String(text)];
+  function splitSentences(text, max) {
+    var parts = String(text).match(/[^.!?;。！？；]+[.!?;。！？；]*["'»”)]*\s*/g) || [String(text)];
     var out = [], cur = "";
     parts.forEach(function (p) {
-      if ((cur + p).length > 220 && cur) { out.push(cur); cur = p; } else cur += p;
+      if ((cur + p).length > max && cur) { out.push(cur); cur = p; } else cur += p;
     });
     if (cur.trim()) out.push(cur);
-    return out;
+    // Very long sentences are cut at a comma or space so nothing is dropped.
+    var final = [];
+    out.forEach(function (c) {
+      while (c.length > max) {
+        var cut = Math.max(c.lastIndexOf(",", max), c.lastIndexOf(" ", max));
+        if (cut < max / 2) cut = max;
+        final.push(c.slice(0, cut + 1));
+        c = c.slice(cut + 1);
+      }
+      if (c.trim()) final.push(c);
+    });
+    return final;
   }
 
-  var speakingResolve = null;
-  function say(text) {
+  var stopSpeaking = null;  // set while something is being said
+  var aiVoiceFailures = 0;
+
+  function speakBrowser(chunks, isCancelled) {
     return new Promise(function (resolve) {
-      if (!window.speechSynthesis || !text) return resolve();
-      setState("speaking");
-      speechSynthesis.cancel();
-      var chunks = splitSentences(text);
+      if (!window.speechSynthesis || !chunks.length) return resolve();
       var voice = pickVoice();
-      var i = 0, watchdog = null, done = false;
-      function finish() {
-        if (done) return;
-        done = true;
-        clearTimeout(watchdog);
-        speakingResolve = null;
-        resolve();
-      }
-      speakingResolve = function () { speechSynthesis.cancel(); finish(); };
+      var i = 0, watchdog = null;
       function next() {
         clearTimeout(watchdog);
-        if (done) return;
-        if (i >= chunks.length) return finish();
+        if (isCancelled()) return resolve();
+        if (i >= chunks.length) return resolve();
         var chunk = chunks[i++];
         var u = new SpeechSynthesisUtterance(chunk);
         u.lang = I.META[lang].speech;
@@ -171,16 +194,87 @@
         u.onend = next;
         u.onerror = next;
         // Some browsers never fire onend; never get stuck.
-        var perChar = lang === "zh" ? 280 : 110;
-        watchdog = setTimeout(next, 3000 + chunk.length * perChar);
+        var perChar = lang === "zh" ? 300 : 110;
+        watchdog = setTimeout(next, 4000 + chunk.length * perChar);
         speechSynthesis.speak(u);
       }
       next();
     });
   }
 
+  function fetchAiVoice(text) {
+    var ctl = new AbortController();
+    var timer = setTimeout(function () { ctl.abort(); }, 12000);
+    return fetch("/api/speak", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Anon-Id": anonId },
+      body: JSON.stringify({ lang: lang, text: text }),
+      signal: ctl.signal
+    }).then(function (r) {
+      if (!r.ok) throw new Error("voice " + r.status);
+      return r.arrayBuffer();
+    }).then(function (buf) {
+      return new Promise(function (ok, bad) { ctx.decodeAudioData(buf, ok, bad); });
+    }).finally(function () { clearTimeout(timer); });
+  }
+
+  function playBuffer(buffer, isCancelled) {
+    return new Promise(function (resolve) {
+      if (isCancelled()) return resolve();
+      ensureContext();
+      var src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(ctx.destination);
+      var done = false;
+      function finish() { if (!done) { done = true; clearInterval(poll); resolve(); } }
+      src.onended = finish;
+      var poll = setInterval(function () { if (isCancelled()) { try { src.stop(); } catch (e) {} finish(); } }, 100);
+      src.start();
+    });
+  }
+
+  // Returns the chunks that could not be said with the AI voice.
+  async function speakAi(chunks, isCancelled) {
+    var next = fetchAiVoice(chunks[0]);
+    for (var i = 0; i < chunks.length; i++) {
+      var buffer;
+      try { buffer = await next; } catch (e) {
+        aiVoiceFailures++;
+        return chunks.slice(i);
+      }
+      // Fetch the next sentence while this one plays.
+      if (i + 1 < chunks.length) { next = fetchAiVoice(chunks[i + 1]); next.catch(function () {}); }
+      await playBuffer(buffer, isCancelled);
+      if (isCancelled()) return [];
+    }
+    aiVoiceFailures = 0;
+    return [];
+  }
+
+  async function say(text) {
+    text = String(text || "").trim();
+    if (!text) return;
+    if (stopSpeaking) stopSpeaking();
+    var cancelled = false;
+    var isCancelled = function () { return cancelled; };
+    stopSpeaking = function () {
+      cancelled = true;
+      if (window.speechSynthesis) speechSynthesis.cancel();
+    };
+    setState("speaking");
+    // iPhone: release the microphone while talking, or the voice comes out of the earpiece.
+    if (IS_IOS) closeMic();
+
+    var rest = splitSentences(text, 220);
+    if (aiVoiceLangs.indexOf(lang) !== -1 && aiVoiceFailures < 3) {
+      rest = await speakAi(splitSentences(text, 300), isCancelled);
+    }
+    if (rest.length && !cancelled) await speakBrowser(rest, isCancelled);
+    if (!cancelled) stopSpeaking = null;
+  }
+
   // ---------- microphone + voice activity detection ----------
-  var stream = null, source = null, node = null, sink = null, workletLoaded = false;
+  var stream = null, source = null, node = null, sink = null, workletCtx = null;
 
   var vad;
   function resetVad() {
@@ -198,11 +292,20 @@
         channelCount: 1
       }
     });
-    if (!workletLoaded) {
-      await ctx.audioWorklet.addModule("/capture-worklet.js");
-      workletLoaded = true;
+    try {
+      source = ctx.createMediaStreamSource(stream);
+    } catch (e) {
+      // Firefox refuses a microphone whose sample rate differs from the context.
+      var rate = stream.getAudioTracks()[0].getSettings().sampleRate;
+      if (!rate) throw e;
+      try { ctx.close(); } catch (e2) {}
+      ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: rate });
+      source = ctx.createMediaStreamSource(stream);
     }
-    source = ctx.createMediaStreamSource(stream);
+    if (workletCtx !== ctx) {
+      await ctx.audioWorklet.addModule("/capture-worklet.js");
+      workletCtx = ctx;
+    }
     node = new AudioWorkletNode(ctx, "capture");
     node.port.onmessage = function (e) { onFrame(e.data); };
     sink = ctx.createGain();
@@ -219,8 +322,9 @@
     stream = source = node = sink = null;
   }
 
-  // Frames are 20 ms. Start needs ~200 ms of voice (low sensitivity),
-  // end after ~800 ms of silence, 300 ms of audio kept before the start.
+  // Frames are 20 ms. Start needs ~200 ms of voice (low sensitivity, short
+  // pauses between sounds are allowed), end after ~800 ms of silence,
+  // 300 ms of audio kept from before the start.
   function onFrame(frame) {
     if (state !== "listening") return;
     if (performance.now() < muteUntil) return;
@@ -234,7 +338,7 @@
       if (vad.pre.length > 25) vad.pre.shift();
       if (rms > threshold) vad.voiced++;
       else {
-        vad.voiced = 0;
+        vad.voiced = Math.max(0, vad.voiced - 2);
         vad.noise = Math.min(0.05, vad.noise * 0.95 + rms * 0.05);
       }
       if (vad.voiced >= 10) {
@@ -283,7 +387,9 @@
   }
 
   // ---------- server calls ----------
-  async function api(url, opts) {
+  // Errors: {code: "errLimit"} (daily limit, ends the conversation) or
+  // {code: "temporary"} (network, sleeping server, busy AI: ask to repeat).
+  async function request(url, opts) {
     var ctl = new AbortController();
     // Generous: a sleeping free server can take ~50 s to wake up.
     var timer = setTimeout(function () { ctl.abort(); }, 60000);
@@ -292,13 +398,60 @@
     try {
       var res = await fetch(url, opts);
       if (res.status === 429) throw { code: "errLimit" };
-      if (!res.ok) throw { code: "errConnection" };
-      return await res.json();
+      if (!res.ok) throw { code: "temporary" };
+      return res;
     } catch (e) {
-      throw e && e.code ? e : { code: "errConnection" };
+      throw e && e.code ? e : { code: "temporary" };
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  async function api(url, opts) {
+    var res = await request(url, opts);
+    try { return await res.json(); } catch (e) { throw { code: "temporary" }; }
+  }
+
+  // /api/chat sends lines of JSON: maybe {"type":"searching"}, then the reply.
+  async function chat(body, onSearching) {
+    var res = await request("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    var text = "";
+    var handle = function (line) {
+      if (!line.trim()) return null;
+      var msg = JSON.parse(line);
+      if (msg.type === "searching") { onSearching(); return null; }
+      if (msg.type === "error") throw { code: msg.error === "limit" ? "errLimit" : "temporary" };
+      if (msg.type === "reply") return msg;
+      return null;
+    };
+    try {
+      if (res.body && res.body.getReader) {
+        var reader = res.body.getReader(), dec = new TextDecoder(), buf = "";
+        for (;;) {
+          var part = await reader.read();
+          if (part.done) break;
+          buf += dec.decode(part.value, { stream: true });
+          var nl;
+          while ((nl = buf.indexOf("\n")) !== -1) {
+            var reply = handle(buf.slice(0, nl));
+            buf = buf.slice(nl + 1);
+            if (reply) return reply;
+          }
+        }
+        text = buf;
+      } else {
+        text = await res.text();
+      }
+      var lines = text.split("\n");
+      for (var i = 0; i < lines.length; i++) { var r = handle(lines[i]); if (r) return r; }
+    } catch (e) {
+      throw e && e.code ? e : { code: "temporary" };
+    }
+    throw { code: "temporary" };
   }
 
   // ---------- goodbye detection (backup for the model's end_conversation) ----------
@@ -318,8 +471,12 @@
   // ---------- conversation ----------
   function backToListening() {
     var my = session;
-    setTimeout(function () {
+    setTimeout(async function () {
       if (!active || my !== session) return;
+      if (!stream) {
+        try { await openMic(); } catch (e) { if (my === session) fail("errMic"); return; }
+        if (!active || my !== session) return closeMic();
+      }
       resetVad();
       setState("listening");
       sounds.turn();
@@ -346,14 +503,20 @@
         return;
       }
 
-      var r2 = await api("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lang: lang, context: context, messages: transcript.slice(-20) })
+      // If the assistant searches the web, say so instead of staying silent.
+      var searching = Promise.resolve();
+      var r2 = await chat({ lang: lang, context: context, messages: transcript.slice(-20) }, function () {
+        if (my !== session) return;
+        stopThinking();
+        searching = say(tt("searching")).then(function () {
+          if (my === session && state === "speaking") { setState("processing"); startThinking(); }
+        });
       });
+      await searching;
       stopThinking();
       if (my !== session) return;
-      var reply = String(r2.reply || "");
+      failures = 0;
+      var reply = String(r2.text || "");
       if (reply) transcript.push({ role: "assistant", content: reply });
       await say(reply || (r2.end ? tt("farewell") : ""));
       if (my !== session) return;
@@ -362,7 +525,12 @@
     } catch (e) {
       stopThinking();
       if (my !== session) return;
-      fail(e.code || "errConnection");
+      // The last question got no answer; forget it so it is not sent twice.
+      if (transcript.length && transcript[transcript.length - 1].role === "user") transcript.pop();
+      if (e.code === "errLimit") return fail("errLimit");
+      if (++failures >= 3) return fail("errConnection");
+      await say(tt("errRetry"));
+      if (my === session) backToListening();
     }
   }
 
@@ -373,14 +541,14 @@
     }
     alertBox.textContent = "";
     active = true;
+    failures = 0;
     var my = ++session;
     transcript = [];
     var last = loadHistory()[0];
     context = withContext && last ? last.summary || "" : "";
 
     // Must happen inside the click: unlock audio and speech (iOS Safari).
-    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === "suspended") ctx.resume();
+    ensureContext();
     if (window.speechSynthesis) {
       var unlock = new SpeechSynthesisUtterance(" ");
       unlock.volume = 0;
@@ -402,9 +570,10 @@
 
     // Once a daily limit is reached, nothing starts until it resets.
     try {
-      await api("/api/limit", { method: "GET" });
+      var status = await api("/api/limit", { method: "GET" });
+      aiVoiceLangs = Array.isArray(status.aiVoice) ? status.aiVoice : [];
     } catch (e) {
-      if (my === session) giveUp(e.code || "errConnection");
+      if (my === session) giveUp(e.code === "errLimit" ? "errLimit" : "errConnection");
       return;
     }
     if (my !== session) return;
@@ -420,7 +589,10 @@
     sounds.start();
     await new Promise(function (r) { setTimeout(r, 500); });
     if (my !== session) return;
-    await say(context ? tt("greetingContinue") : tt("greeting"));
+    // EU AI Act: the greeting says it is an AI. The first time, also say where the voice goes.
+    var intro = context ? tt("greetingContinue") : tt("greeting");
+    if (!get("noticeHeard")) { intro = tt("notice") + " " + intro; set("noticeHeard", "1"); }
+    await say(intro);
     if (my !== session) return;
     backToListening();
   }
@@ -430,8 +602,7 @@
     active = false;
     session++;
     stopThinking();
-    if (speakingResolve) speakingResolve();
-    if (window.speechSynthesis) speechSynthesis.cancel();
+    if (stopSpeaking) { stopSpeaking(); stopSpeaking = null; }
     closeMic();
     resetVad();
     setState("idle");
@@ -466,7 +637,7 @@
   talkBtn.addEventListener("click", function () {
     if (!active) return startConversation(false);
     // While the AI talks, the button interrupts it and gives the turn to the user.
-    if (state === "speaking" && speakingResolve) return speakingResolve();
+    if (state === "speaking" && stopSpeaking) { stopSpeaking(); return; }
     endConversation();
   });
 
