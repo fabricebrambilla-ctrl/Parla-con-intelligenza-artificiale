@@ -154,6 +154,16 @@
     else speechSynthesis.onvoiceschanged = loadVoices;
   }
 
+  // Voices known to sound natural (Microsoft Edge online voices, Apple and Google voices).
+  var NICE_VOICES = {
+    en: /aria|jenny|ava|andrew|emma|brian|guy|samantha|ava|zoe|serena|daniel|google us english/,
+    it: /elsa|isabella|diego|giuseppe|alice|federica|luca|google italiano/,
+    fr: /denise|vivienne|henri|remy|eloise|amélie|amelie|thomas|audrey|google français/,
+    bg: /kalina|borislav|daria/,
+    ru: /svetlana|dariya|dmitry|milena|yuri|katya|google русский/,
+    zh: /xiaoxiao|xiaoyi|yunxi|yunjian|tingting|lili|google 普通话|google 中文/
+  };
+
   function pickVoice(code) {
     var want = I.META[code].speech.toLowerCase();
     var base = want.split("-")[0];
@@ -169,6 +179,8 @@
       if (/google/.test(n)) s += 4;                  // Chrome and Android voices
       if (/online/.test(n)) s += 2;
       if (/espeak|compact|robot|novelty/.test(n)) s -= 6;
+      if (/desktop/.test(n)) s -= 2;                 // older Windows voices
+      if (NICE_VOICES[code] && NICE_VOICES[code].test(n)) s += 3;
       if (s > bestScore) { best = v; bestScore = s; }
     });
     return best;

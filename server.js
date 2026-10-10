@@ -18,10 +18,19 @@ const CHAT_MODEL = process.env.GROQ_CHAT_MODEL || "openai/gpt-oss-120b";
 const SUMMARY_MODEL = process.env.GROQ_SUMMARY_MODEL || "openai/gpt-oss-20b";
 const STT_MODEL = process.env.GROQ_STT_MODEL || "whisper-large-v3-turbo";
 const SEARCH_FALLBACK_MODEL = process.env.GROQ_SEARCH_MODEL || "groq/compound";
-// Natural AI voice. Groq's voice models only speak English; other languages use the device voice.
+// Natural AI voice, tried in this order:
+// 1. Fish Audio (FISH_API_KEY) for all six languages, on its free developer model.
+// 2. Groq Orpheus for English only.
+// 3. Otherwise the browser uses the best voice on the device.
 const TTS_MODEL = process.env.GROQ_TTS_MODEL || "canopylabs/orpheus-v1-english";
 const TTS_VOICE = process.env.GROQ_TTS_VOICE || "hannah";
 const TTS_ENABLED = process.env.GROQ_TTS !== "off";
+const FISH_URL = process.env.FISH_BASE_URL || "https://api.fish.audio/v1/tts";
+const FISH_MODEL = process.env.FISH_MODEL || "s2.1-pro-free";
+// A voice from the Fish Audio voice library for each language (FISH_VOICE_IT, ...), or one for all (FISH_VOICE).
+const fishVoice = (lang) => process.env["FISH_VOICE_" + lang.toUpperCase()] || process.env.FISH_VOICE || "";
+const aiVoiceLangs = () =>
+  process.env.FISH_API_KEY ? I18N.LANGS : TTS_ENABLED && process.env.GROQ_API_KEY ? ["en"] : [];
 
 const app = express();
 app.disable("x-powered-by");
@@ -136,7 +145,7 @@ function pickLang(value) {
 // Answers whether the visitor can start a conversation (costs nothing), and
 // which languages have the natural AI voice.
 app.get("/api/limit", limit({ seconds: 0, requests: 0, burst: false }), (req, res) =>
-  res.json({ ok: true, aiVoice: TTS_ENABLED && !!process.env.GROQ_API_KEY ? ["en"] : [] })
+  res.json({ ok: true, aiVoice: aiVoiceLangs() })
 );
 
 // ---------- errors ----------
@@ -235,31 +244,52 @@ app.post(
   }
 );
 
-// ---------- natural voice (English) ----------
-app.post("/api/speak", express.json({ limit: "4kb" }), limit({ requests: 1 }), async (req, res) => {
-  try {
-    const text = String(req.body?.text || "").trim().slice(0, 400);
-    if (!TTS_ENABLED || pickLang(req.body?.lang) !== "en" || !text) return res.status(404).json({ error: "no voice" });
-    const key = process.env.GROQ_API_KEY;
-    if (!key) throw new Error("GROQ_API_KEY is not set");
-    const r = await fetch(GROQ_URL + "/audio/speech", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: TTS_MODEL, voice: TTS_VOICE, input: text, response_format: "wav" }),
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!r.ok) {
-      const data = await r.json().catch(() => null);
-      throw providerError(r.status, data?.error?.message, "Groq TTS");
-    }
-    res.set("Content-Type", "audio/wav");
-    res.set("Cache-Control", "no-store");
-    res.send(Buffer.from(await r.arrayBuffer()));
-  } catch (err) {
-    // The browser falls back to the device voice; this is never shown to the user.
-    console.error("speak:", err.message);
-    res.status(503).json({ error: "busy" });
+// ---------- natural voice ----------
+async function fishSpeak(text, lang) {
+  const body = { text, format: "mp3" };
+  if (fishVoice(lang)) body.reference_id = fishVoice(lang);
+  const r = await fetch(FISH_URL, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + process.env.FISH_API_KEY, "Content-Type": "application/json", model: FISH_MODEL },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!r.ok) throw providerError(r.status, (await r.text().catch(() => "")).slice(0, 200), "Fish TTS");
+  return { type: "audio/mpeg", data: Buffer.from(await r.arrayBuffer()) };
+}
+
+async function groqSpeak(text) {
+  const key = process.env.GROQ_API_KEY;
+  if (!key) throw new Error("GROQ_API_KEY is not set");
+  const r = await fetch(GROQ_URL + "/audio/speech", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: TTS_MODEL, voice: TTS_VOICE, input: text, response_format: "wav" }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!r.ok) {
+    const data = await r.json().catch(() => null);
+    throw providerError(r.status, data?.error?.message, "Groq TTS");
   }
+  return { type: "audio/wav", data: Buffer.from(await r.arrayBuffer()) };
+}
+
+app.post("/api/speak", express.json({ limit: "4kb" }), limit({ requests: 1 }), async (req, res) => {
+  const text = String(req.body?.text || "").trim().slice(0, 400);
+  const lang = pickLang(req.body?.lang);
+  if (!text || !aiVoiceLangs().includes(lang)) return res.status(404).json({ error: "no voice" });
+  let audio = null;
+  if (process.env.FISH_API_KEY) {
+    try { audio = await fishSpeak(text, lang); } catch (err) { console.error("speak (Fish):", err.message); }
+  }
+  if (!audio && lang === "en" && TTS_ENABLED) {
+    try { audio = await groqSpeak(text); } catch (err) { console.error("speak (Groq):", err.message); }
+  }
+  // The browser falls back to the device voice; this is never shown to the user.
+  if (!audio) return res.status(503).json({ error: "busy" });
+  res.set("Content-Type", audio.type);
+  res.set("Cache-Control", "no-store");
+  res.send(audio.data);
 });
 
 // ---------- search: Tavily first, Groq Compound as fallback ----------
@@ -522,6 +552,9 @@ async function selfCheck() {
     console.error("check: could not reach Groq:", err.message);
   }
   console.log("check: Tavily key " + (process.env.TAVILY_API_KEY ? "is set" : "is missing (searches will use Groq)"));
+  console.log("check: Fish Audio key " + (process.env.FISH_API_KEY
+    ? "is set: natural AI voice in all six languages" + (fishVoice("en") || process.env.FISH_VOICE_IT ? "" : " (no FISH_VOICE chosen, using Fish Audio's default)")
+    : "is missing: natural AI voice in English only, device voice for the other languages"));
   if (!process.env.OWNER_NAME || !process.env.OWNER_EMAIL) {
     console.warn("check: OWNER_NAME / OWNER_EMAIL are not set; the privacy notice needs them.");
   }
