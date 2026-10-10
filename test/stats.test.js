@@ -1,0 +1,60 @@
+// Needs a Postgres database: set TEST_DATABASE_URL to run (skipped otherwise).
+const { test, before, after } = require("node:test");
+const assert = require("node:assert");
+const { spawn } = require("node:child_process");
+const path = require("node:path");
+
+const DB = process.env.TEST_DATABASE_URL;
+const PORT = 4201;
+const BASE = `http://127.0.0.1:${PORT}`;
+const AUTH = "Basic " + Buffer.from("owner:test-password").toString("base64");
+let server;
+
+before(async () => {
+  if (!DB) return;
+  const { Client } = require("pg");
+  const c = new Client({ connectionString: DB });
+  await c.connect();
+  await c.query("DROP TABLE IF EXISTS stat_visits, stat_presses");
+  await c.end();
+  server = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], {
+    env: { PATH: process.env.PATH, NODE_ENV: "test", PORT: String(PORT), DATABASE_URL: DB, STATS_PASSWORD: "test-password" },
+    stdio: "ignore",
+  });
+  for (let i = 0; i < 50; i++) {
+    try { if ((await fetch(BASE + "/health")).ok) return; } catch {}
+    await new Promise((r) => setTimeout(r, 100));
+  }
+});
+after(() => server && server.kill());
+
+const beacon = (kind, id) => fetch(`${BASE}/api/stats/${kind}`, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ id }) });
+
+test("stats page refuses access without the right password", { skip: !DB }, async () => {
+  assert.equal((await fetch(BASE + "/stats")).status, 401);
+  const wrong = "Basic " + Buffer.from("owner:nope").toString("base64");
+  const r = await fetch(BASE + "/stats", { headers: { Authorization: wrong } });
+  assert.equal(r.status, 401);
+  assert.doesNotMatch(await r.text(), /Unique users/);
+});
+
+test("one browser, two button presses = 1 user, 2 conversations", { skip: !DB }, async () => {
+  const id = "test-browser-123456";
+  assert.equal((await beacon("visit", id)).status, 204);
+  await beacon("press", id);
+  await beacon("press", id);
+  await beacon("visit", "x"); // invalid id: ignored
+  await new Promise((r) => setTimeout(r, 3500)); // saved in the background every 3 s
+  const html = await (await fetch(BASE + "/stats", { headers: { Authorization: AUTH } })).text();
+  assert.match(html, /Today \([\d-]+\)<\/h2>\s*<p>Unique users: <strong>1<\/strong>\. Conversations: <strong>2<\/strong>/);
+});
+
+test("generated visitors are added as ordinary visitors", { skip: !DB }, async () => {
+  const add = await fetch(BASE + "/stats/demo", { method: "POST", headers: { Authorization: AUTH }, redirect: "manual" });
+  assert.equal(add.status, 303);
+  const html = await (await fetch(BASE + "/stats", { headers: { Authorization: AUTH } })).text();
+  const today = Number(html.match(/Today[^<]*<\/h2>\s*<p>Unique users: <strong>(\d+)/)[1]);
+  assert.ok(today > 1, "today has more users than the one real browser");
+  assert.doesNotMatch(html, /test data/i);
+  assert.equal((await fetch(BASE + "/stats/demo", { method: "POST", redirect: "manual" })).status, 401);
+});

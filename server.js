@@ -6,6 +6,7 @@ const path = require("path");
 const I18N = require("./public/i18n.js");
 const LEGAL = require("./legal.js");
 const { limit, takeTavilySearch } = require("./limits.js");
+const stats = require("./stats.js");
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC = path.join(__dirname, "public");
@@ -115,6 +116,9 @@ ${body}
     sendHtml(res, lang, html);
   };
 }
+
+// Private usage statistics (beacons and the password-protected /stats page).
+app.use(stats.router);
 
 app.get("/", renderPage("index"));
 app.get("/history", renderPage("history"));

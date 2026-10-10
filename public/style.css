@@ -101,6 +101,10 @@ a { color: inherit; }
 .history h2 { font-size: 1.4rem; margin: 1.5rem 0 0.25rem; }
 .history p { margin: 0; }
 
+.stats table { border-collapse: collapse; width: 100%; }
+.stats caption { text-align: left; padding-bottom: 0.5rem; color: var(--muted); }
+.stats th, .stats td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; }
 }
