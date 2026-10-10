@@ -412,13 +412,18 @@ How a conversation works:
 7. At the end, `POST /api/summary` (Groq `openai/gpt-oss-20b`) makes a short summary that is saved only in `localStorage` (last 10). "Continue last conversation" and the "My past conversations" page (`/history`, one `<h2>` per conversation, "Delete all my history") appear once history exists.
 8. Errors (no mic, connection, daily limit, unsupported browser) are spoken once through the single empty `role="alert"` region.
 
-Files: `server.js` (Express: pages, API, limits), `public/i18n.js` (all text in en/it/fr/bg/ru/zh, shared by server and browser), `public/app.js`, `public/capture-worklet.js`, `public/history.html` + `public/history.js`, `public/style.css`, `test/server.test.js` (`npm test`).
+9. **Limits** (`limits.js`) are decided only on the server from environment variables; the browser can't change them. Every API call is charged before any AI provider is called: speech minutes (from the exact length of the 16 kHz WAV, which must be valid), requests per day, and requests per minute, each per visitor (anonymous ID + address), per address (IP; IPv6 counted per /64) and for the whole site. The request that would cross a limit is refused (and costs nothing); once any limit is reached, every call, including starting a conversation (`GET /api/limit`), is refused until the next day (UTC), and the page says "Today's free limit is used up". Tavily searches are capped per day and per month. Groq's own free-tier limit also shows the same message. Counters are stored in Redis / Render Key Value when `REDIS_URL` is set (they survive restarts; if the store is down, every request is refused). Without `REDIS_URL`, they are kept in memory and **reset whenever the server restarts** (on Render's free plan that happens after 15 minutes without visitors).
+10. Security: security headers (CSP, no framing, mic only for this site), no stack traces shown to visitors, no CORS, dependencies audited (`npm audit`: 0 vulnerabilities as of 2026-10-10). There is no database of user data, so there are no rows to protect; the only stored data is the usage counters.
+
+Files: `server.js` (Express: pages, API), `limits.js` (limits and counters), `public/i18n.js` (all text in en/it/fr/bg/ru/zh, shared by server and browser), `public/app.js`, `public/capture-worklet.js`, `public/history.html` + `public/history.js`, `public/style.css`, `test/server.test.js` (`npm test`).
 
 Environment variables on Render:
 - Required: `GROQ_API_KEY`, `TAVILY_API_KEY`.
-- Optional: `DAILY_MINUTES_PER_USER` (default 60), `DAILY_MINUTES_PER_IP` (default 3× per user), `DAILY_MINUTES_GLOBAL` (default 600), `DAILY_TAVILY_SEARCHES` (default 30), `GROQ_CHAT_MODEL`, `GROQ_SUMMARY_MODEL`, `GROQ_STT_MODEL`, `GROQ_SEARCH_MODEL`.
+- Strongly recommended: `REDIS_URL` (internal URL of a Render Key Value instance) so limits survive restarts.
+- Optional limits: `DAILY_MINUTES_PER_USER` (60), `DAILY_MINUTES_PER_IP` (60), `DAILY_MINUTES_GLOBAL` (600), `DAILY_REQUESTS_PER_USER` (600), `DAILY_REQUESTS_PER_IP` (600), `DAILY_REQUESTS_GLOBAL` (6000), `REQUESTS_PER_MINUTE_PER_IP` (30), `DAILY_TAVILY_SEARCHES` (30), `MONTHLY_TAVILY_SEARCHES` (950).
+- Optional models: `GROQ_CHAT_MODEL`, `GROQ_SUMMARY_MODEL`, `GROQ_STT_MODEL`, `GROQ_SEARCH_MODEL`.
 - `GEMINI_API_KEY` is not used (the owner's Gemini project is restricted to paid use).
-- Limits are counted in server memory and reset at midnight UTC or when the server restarts.
+- Known limit: people who share one internet address (a family, a school, an association) share the per-address limits; raise `DAILY_MINUTES_PER_IP` / `DAILY_REQUESTS_PER_IP` if that becomes a problem. The visitor's address is read from Cloudflare's `CF-Connecting-IP` header (Render is behind Cloudflare); check this on the live site if per-address limits behave oddly.
 
 Deviations from this brief (decided with the owner, see §13):
 - **No Gemini Live** (§5.4–5.6, §7.1, §7.3 ephemeral tokens, §7.4 session resumption): voice in = Groq Whisper, voice out = browser speech synthesis. Consequences: voice quality depends on the computer (Edge's "Natural" voices are best; Bulgarian may be missing on some systems), answers take a few seconds, and interrupting by voice is not possible — only by pressing the button.
@@ -430,6 +435,7 @@ Deviations from this brief (decided with the owner, see §13):
 | Date | Change | Files |
 |---|---|---|
 | 2026-10-10 | Added this brief and the agent rules (§0). No app code changed. | `docs/talk-with-ai-brief.md`, `CLAUDE.md`, `AGENTS.md` |
+| 2026-10-10 | Security and limits: fixed 4 dependency vulnerabilities (`npm audit fix`), added strict server-side limits in `limits.js` (per visitor, per address, global, per minute; refused requests cost nothing; everything blocks once a limit is reached; fail closed), optional Redis/Key Value storage for counters, strict WAV validation, Tavily daily+monthly caps, security headers, JSON-only error handler, limit check before a conversation starts, tests in `test/limits.test.js`. | `limits.js`, `server.js`, `public/app.js`, `test/limits.test.js`, `package.json`, `package-lock.json`, this brief |
 | 2026-10-10 | Replaced the Italian-only prototype with the full app: 6 languages, one-button voice conversation, Groq Whisper + Groq gpt-oss + Tavily search (Groq Compound fallback), browser voice, turn-taking, screen-reader mute gate, goodbye detection, on-device history page, daily limits, tests. Removed `index.html` at root and the unused `openai`/`cors` dependencies. | `server.js`, `public/*`, `test/server.test.js`, `package.json`, `package-lock.json`, this brief |
 
 ---
@@ -438,6 +444,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Preference |
 |---|---|
+| 2026-10-10 | Limits **must** always be enforced: once a limit is reached, everything is blocked, and visitors must not be able to change or get around the limits. Fix security vulnerabilities when found. |
 | 2026-10-10 | Build with what is available for free now: **Groq key + Tavily key**. Gemini is not used because the owner's Google AI Studio project says "API access is restricted, set up billing"; the owner does not want to pay. Gemini Live can be added later as the main voice mode if a working free key is obtained. |
 | 2026-10-10 | All changes are pushed to `main` (the owner asked for this). |
 | 2026-10-10 | The brief must live in the repo, be readable by any AI agent, and be updated after every push to `main` with code changes and any changes in user preference. |

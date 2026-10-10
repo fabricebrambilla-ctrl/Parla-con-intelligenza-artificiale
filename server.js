@@ -4,6 +4,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const I18N = require("./public/i18n.js");
+const { limit, takeTavilySearch } = require("./limits.js");
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC = path.join(__dirname, "public");
@@ -15,16 +16,21 @@ const SUMMARY_MODEL = process.env.GROQ_SUMMARY_MODEL || "openai/gpt-oss-20b";
 const STT_MODEL = process.env.GROQ_STT_MODEL || "whisper-large-v3-turbo";
 const SEARCH_FALLBACK_MODEL = process.env.GROQ_SEARCH_MODEL || "groq/compound";
 
-// Daily limits (minutes of user speech). Counters live in memory and reset each day.
-const USER_MINUTES = Number(process.env.DAILY_MINUTES_PER_USER || 60);
-const IP_MINUTES = Number(process.env.DAILY_MINUTES_PER_IP || USER_MINUTES * 3);
-const GLOBAL_MINUTES = Number(process.env.DAILY_MINUTES_GLOBAL || 600);
-// Tavily free plan is 1,000 searches a month; after this many per day, use the Groq fallback.
-const TAVILY_PER_DAY = Number(process.env.DAILY_TAVILY_SEARCHES || 30);
-
 const app = express();
-app.set("trust proxy", 1);
 app.disable("x-powered-by");
+
+app.use((req, res, next) => {
+  res.set({
+    "Content-Security-Policy":
+      "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; " +
+      "media-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "Permissions-Policy": "microphone=(self), camera=(), geolocation=()",
+    "Strict-Transport-Security": "max-age=31536000",
+  });
+  next();
+});
 
 // ---------- pages, rendered in the visitor's language ----------
 const templates = {
@@ -68,48 +74,12 @@ app.get("/history.html", (req, res) => res.redirect(301, "/history"));
 app.get("/health", (req, res) => res.status(200).send("ok"));
 app.use(express.static(PUBLIC, { index: false }));
 
-// ---------- limits ----------
-let usageDay = "";
-const usage = new Map();
-let tavilyToday = 0;
-
-function today() {
-  const d = new Date().toISOString().slice(0, 10);
-  if (d !== usageDay) {
-    usageDay = d;
-    usage.clear();
-    tavilyToday = 0;
-  }
-  return d;
-}
-
-function clientKeys(req) {
-  const id = String(req.get("x-anon-id") || "");
-  return {
-    user: "u:" + (/^[\w-]{8,64}$/.test(id) ? id : "none:" + req.ip),
-    ip: "i:" + req.ip,
-  };
-}
-
-function overLimit(req) {
-  today();
-  const k = clientKeys(req);
-  return (
-    (usage.get("global") || 0) >= GLOBAL_MINUTES * 60 ||
-    (usage.get(k.user) || 0) >= USER_MINUTES * 60 ||
-    (usage.get(k.ip) || 0) >= IP_MINUTES * 60
-  );
-}
-
-function addUsage(req, seconds) {
-  today();
-  const k = clientKeys(req);
-  for (const key of ["global", k.user, k.ip]) usage.set(key, (usage.get(key) || 0) + seconds);
-}
-
 function pickLang(value) {
   return I18N.LANGS.includes(value) ? value : "en";
 }
+
+// Answers whether the visitor can start a conversation (costs nothing).
+app.get("/api/limit", limit({ seconds: 0, requests: 0, burst: false }), (req, res) => res.json({ ok: true }));
 
 // ---------- Groq ----------
 async function groqChat(body) {
@@ -132,11 +102,34 @@ async function groqChat(body) {
 // Whisper often "hears" these in silence or noise.
 const HALLUCINATIONS = /(thank(s| you) for watching|subtitles by|amara\.org|sottotitoli|sous-titr|субтитр|продолжение следует|字幕|请不吝点赞|订阅)/i;
 
-app.post("/api/transcribe", express.raw({ type: "audio/wav", limit: "3mb" }), async (req, res) => {
+// Only plain 16 kHz, 16-bit mono PCM WAV is accepted, so the length in bytes
+// gives the exact duration that is charged against the limits.
+function wavSeconds(buf) {
+  if (!Buffer.isBuffer(buf) || buf.length < 44 || buf.length > 1100000) return null;
+  if (buf.toString("ascii", 0, 4) !== "RIFF" || buf.toString("ascii", 8, 12) !== "WAVE") return null;
+  if (buf.toString("ascii", 12, 16) !== "fmt " || buf.toString("ascii", 36, 40) !== "data") return null;
+  if (buf.readUInt16LE(20) !== 1 || buf.readUInt16LE(22) !== 1 || buf.readUInt32LE(24) !== 16000 || buf.readUInt16LE(34) !== 16) return null;
+  if (buf.readUInt32LE(40) !== buf.length - 44) return null;
+  return (buf.length - 44) / 32000;
+}
+
+// Groq's own free-tier limit counts as "today's limit is used up".
+function sendError(res, err, name) {
+  console.error(name + ":", err.message);
+  res.status(err.status === 429 ? 429 : 502).json({ error: err.status === 429 ? "limit" : name });
+}
+
+app.post(
+  "/api/transcribe",
+  express.raw({ type: "audio/wav", limit: "1100kb" }),
+  limit((req) => {
+    const seconds = wavSeconds(req.body);
+    return seconds === null ? null : { seconds };
+  }),
+  async (req, res) => {
   try {
-    if (overLimit(req)) return res.status(429).json({ error: "limit" });
     const buf = req.body;
-    if (!Buffer.isBuffer(buf) || buf.length < 2000) return res.json({ text: "" });
+    if (buf.length < 2000) return res.json({ text: "" });
 
     const key = process.env.GROQ_API_KEY;
     if (!key) throw new Error("GROQ_API_KEY is not set");
@@ -155,9 +148,11 @@ app.post("/api/transcribe", express.raw({ type: "audio/wav", limit: "3mb" }), as
       body: form,
     });
     const data = await r.json().catch(() => null);
-    if (!r.ok) throw new Error("Groq STT " + r.status + ": " + (data?.error?.message || "unknown error"));
-
-    addUsage(req, (buf.length - 44) / 32000); // 16 kHz, 16-bit mono
+    if (!r.ok) {
+      const err = new Error("Groq STT " + r.status + ": " + (data?.error?.message || "unknown error"));
+      err.status = r.status;
+      throw err;
+    }
 
     const segments = Array.isArray(data.segments) ? data.segments : null;
     let text = segments
@@ -167,16 +162,15 @@ app.post("/api/transcribe", express.raw({ type: "audio/wav", limit: "3mb" }), as
     if (HALLUCINATIONS.test(text)) text = "";
     res.json({ text });
   } catch (err) {
-    console.error("transcribe:", err.message);
-    res.status(502).json({ error: "transcribe" });
+    sendError(res, err, "transcribe");
   }
-});
+  }
+);
 
 // ---------- search: Tavily first, Groq Compound as fallback ----------
 async function tavilySearch(query) {
   const key = process.env.TAVILY_API_KEY;
-  if (!key || tavilyToday >= TAVILY_PER_DAY) return null;
-  tavilyToday++;
+  if (!key || !(await takeTavilySearch())) return null;
   const r = await fetch(TAVILY_URL, {
     method: "POST",
     headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
@@ -304,9 +298,8 @@ function cleanMessages(list) {
     .filter((m) => m.content.trim());
 }
 
-app.post("/api/chat", express.json({ limit: "200kb" }), async (req, res) => {
+app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), async (req, res) => {
   try {
-    if (overLimit(req)) return res.status(429).json({ error: "limit" });
     const lang = pickLang(req.body?.lang);
     const context = String(req.body?.context || "").slice(0, 2000);
     const messages = [{ role: "system", content: systemPrompt(lang, context) }, ...cleanMessages(req.body?.messages).slice(-20)];
@@ -361,13 +354,12 @@ app.post("/api/chat", express.json({ limit: "200kb" }), async (req, res) => {
     }
     res.json({ reply: "", end });
   } catch (err) {
-    console.error("chat:", err.message);
-    res.status(502).json({ error: "chat" });
+    sendError(res, err, "chat");
   }
 });
 
 // ---------- summary for the on-device history ----------
-app.post("/api/summary", express.json({ limit: "300kb" }), async (req, res) => {
+app.post("/api/summary", express.json({ limit: "300kb" }), limit({ requests: 1 }), async (req, res) => {
   try {
     const lang = pickLang(req.body?.lang);
     const context = String(req.body?.context || "").slice(0, 2000);
@@ -400,9 +392,14 @@ app.post("/api/summary", express.json({ limit: "300kb" }), async (req, res) => {
       summary: forSpeech(out.summary || text).slice(0, 1200),
     });
   } catch (err) {
-    console.error("summary:", err.message);
-    res.status(502).json({ error: "summary" });
+    sendError(res, err, "summary");
   }
+});
+
+// Never show stack traces or internals to visitors.
+app.use((err, req, res, next) => {
+  if (err.status !== 413 && err.status !== 400) console.error("request:", err.message);
+  res.status(err.status === 413 || err.status === 400 ? err.status : 500).json({ error: "request" });
 });
 
 app.listen(PORT, "0.0.0.0", () => {

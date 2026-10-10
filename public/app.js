@@ -390,16 +390,30 @@
     talkBtn.setAttribute("data-active", "true");
     setState("processing");
 
-    try {
-      await openMic();
-    } catch (e) {
+    function giveUp(code) {
       active = false;
       session++;
       closeMic();
       setState("idle");
       talkBtn.textContent = tt("start");
       talkBtn.removeAttribute("data-active");
-      return announce("errMic");
+      announce(code);
+    }
+
+    // Once a daily limit is reached, nothing starts until it resets.
+    try {
+      await api("/api/limit", { method: "GET" });
+    } catch (e) {
+      if (my === session) giveUp(e.code || "errConnection");
+      return;
+    }
+    if (my !== session) return;
+
+    try {
+      await openMic();
+    } catch (e) {
+      if (my === session) giveUp("errMic");
+      return;
     }
     if (my !== session) return closeMic();
 
