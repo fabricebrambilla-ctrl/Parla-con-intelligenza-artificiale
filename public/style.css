@@ -106,6 +106,13 @@ a { color: inherit; }
 .stats input { font: inherit; padding: 0.4rem; border: 3px solid var(--border); border-radius: 0.5rem; width: 8rem; margin-left: 0.5rem; }
 .stats th, .stats td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; }
 
+/* Windows High Contrast / forced colours: keep borders and focus visible. */
+@media (forced-colors: active) {
+  button { border: 3px solid ButtonText; }
+  .talk[data-active="true"] { border-style: double; border-width: 6px; }
+  button:focus-visible, a:focus-visible { outline: 5px solid Highlight; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; }
 }

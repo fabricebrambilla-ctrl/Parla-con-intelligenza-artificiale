@@ -10,7 +10,10 @@
 <body>
   <main>
     <h1 data-i18n="h1">{{h1}}</h1>
-    <button id="talk" type="button" class="talk">{{start}}</button>
+    <!-- Focused on load: screen readers announce it with its description, and Space works at once.
+         Space/Enter in browse mode (NVDA) / virtual cursor (JAWS) arrive as a click on this button. -->
+    <button id="talk" type="button" class="talk" autofocus aria-describedby="helpText">{{start}}</button>
+    <button id="endConv" type="button" data-i18n="end" hidden>{{end}}</button>
     <button id="continue" type="button" data-i18n="continue" hidden>{{continue}}</button>
     <button id="lang" type="button" aria-expanded="false" data-i18n="langButton">{{langButton}}</button>
     <div id="langs" hidden>
@@ -21,7 +24,7 @@
       <button type="button" lang="ru" data-set-lang="ru">Русский</button>
       <button type="button" lang="zh-Hans" data-set-lang="zh">中文</button>
     </div>
-    <p class="help"><span data-i18n="help">{{help}}</span> <span data-i18n="privacy">{{privacy}}</span></p>
+    <p class="help"><span id="helpText" data-i18n="help">{{help}}</span> <span data-i18n="privacy">{{privacy}}</span></p>
     <p id="history" hidden><a href="/history" data-i18n="historyLink">{{historyLink}}</a></p>
     <div id="alert" role="alert"></div>
   </main>

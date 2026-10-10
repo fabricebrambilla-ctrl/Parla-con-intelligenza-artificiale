@@ -23,7 +23,7 @@
       end: "End conversation",
       continue: "Continue last conversation",
       langButton: "Language: English. Change language",
-      help: "Press the button to start. The first time, say your language. Then press the space bar to start talking, and press it again when you've finished to get an answer. To end, say goodbye.",
+      help: "Press the button to start. The first time, say your language. Then press the space bar to start talking, and press it again when you've finished to get an answer. To end, say goodbye or press End conversation.",
       privacy: "Your conversations are saved only on this computer.",
       historyLink: "My past conversations",
       greeting: "Hi, I'm an AI assistant. Press the space bar to start talking, and press it again when you've finished, to get my answer. If you stop talking for seven seconds, I'll answer anyway. To end, just say goodbye.",
@@ -47,7 +47,12 @@
       askLanguage: "Which language would you like to use? Say it after the tone.",
       langNotUnderstood: "Sorry, I didn't understand. Please say the name of your language again.",
       notHeard: "I didn't hear anything. Press the space bar when you want to talk.",
-      talk: "Talk"
+      talk: "Talk",
+      helpTouch: "Press the button to start. The first time, say your language. Then press the Talk button to start talking, and press it again when you've finished to get an answer. To end, say goodbye or press End conversation.",
+      greetingTouch: "Hi, I'm an AI assistant. Press the Talk button to start talking, and press it again when you've finished, to get my answer. If you stop talking for seven seconds, I'll answer anyway. To end, just say goodbye.",
+      greetingContinueTouch: "Welcome back. I'm your AI assistant, and we can continue where we left off. Press the Talk button to talk, and press it again when you've finished.",
+      notHeardTouch: "I didn't hear anything. Press the Talk button when you want to talk.",
+      errRetryTouch: "Sorry, something went wrong. Please press the Talk button and say that again."
     },
     it: {
       title: "Parla con l'Intelligenza Artificiale – premi il pulsante per iniziare",
@@ -56,7 +61,7 @@
       end: "Termina conversazione",
       continue: "Continua l'ultima conversazione",
       langButton: "Lingua: Italiano. Cambia lingua",
-      help: "Premi il pulsante per iniziare. La prima volta, di' la tua lingua. Poi premi la barra spaziatrice per iniziare a parlare, e premila di nuovo quando hai finito per avere una risposta. Per finire, di' arrivederci.",
+      help: "Premi il pulsante per iniziare. La prima volta, di' la tua lingua. Poi premi la barra spaziatrice per iniziare a parlare, e premila di nuovo quando hai finito per avere una risposta. Per finire, di' arrivederci o premi Termina conversazione.",
       privacy: "Le tue conversazioni sono salvate solo su questo computer.",
       historyLink: "Le mie conversazioni passate",
       greeting: "Ciao, sono un assistente di intelligenza artificiale. Premi la barra spaziatrice per iniziare a parlare, e premila di nuovo quando hai finito, per avere la mia risposta. Se smetti di parlare per sette secondi, rispondo comunque. Per finire, di' semplicemente arrivederci.",
@@ -80,7 +85,12 @@
       askLanguage: "Quale lingua vuoi usare? Dilla dopo il suono.",
       langNotUnderstood: "Scusa, non ho capito. Ripeti il nome della tua lingua, per favore.",
       notHeard: "Non ho sentito niente. Premi la barra spaziatrice quando vuoi parlare.",
-      talk: "Parla"
+      talk: "Parla",
+      helpTouch: "Premi il pulsante per iniziare. La prima volta, di' la tua lingua. Poi premi il pulsante Parla per iniziare a parlare, e premilo di nuovo quando hai finito per avere una risposta. Per finire, di' arrivederci o premi Termina conversazione.",
+      greetingTouch: "Ciao, sono un assistente di intelligenza artificiale. Premi il pulsante Parla per iniziare a parlare, e premilo di nuovo quando hai finito, per avere la mia risposta. Se smetti di parlare per sette secondi, rispondo comunque. Per finire, di' semplicemente arrivederci.",
+      greetingContinueTouch: "Eccoci di nuovo. Sono il tuo assistente di intelligenza artificiale e possiamo riprendere da dove eravamo rimasti. Premi il pulsante Parla per parlare, e premilo di nuovo quando hai finito.",
+      notHeardTouch: "Non ho sentito niente. Premi il pulsante Parla quando vuoi parlare.",
+      errRetryTouch: "Scusa, qualcosa non ha funzionato. Premi il pulsante Parla e ripeti, per favore."
     },
     fr: {
       title: "Parler avec l'intelligence artificielle – appuyez sur le bouton pour commencer",
@@ -89,7 +99,7 @@
       end: "Terminer la conversation",
       continue: "Reprendre la dernière conversation",
       langButton: "Langue : Français. Changer de langue",
-      help: "Appuyez sur le bouton pour commencer. La première fois, dites votre langue. Ensuite, appuyez sur la barre d'espace pour commencer à parler, puis appuyez de nouveau quand vous avez fini pour obtenir une réponse. Pour terminer, dites au revoir.",
+      help: "Appuyez sur le bouton pour commencer. La première fois, dites votre langue. Ensuite, appuyez sur la barre d'espace pour commencer à parler, puis appuyez de nouveau quand vous avez fini pour obtenir une réponse. Pour terminer, dites au revoir ou appuyez sur Terminer la conversation.",
       privacy: "Vos conversations sont enregistrées uniquement sur cet ordinateur.",
       historyLink: "Mes conversations précédentes",
       greeting: "Bonjour, je suis un assistant d'intelligence artificielle. Appuyez sur la barre d'espace pour commencer à parler, puis appuyez de nouveau quand vous avez fini, pour avoir ma réponse. Si vous arrêtez de parler pendant sept secondes, je réponds quand même. Pour terminer, dites simplement au revoir.",
@@ -113,7 +123,12 @@
       askLanguage: "Quelle langue voulez-vous utiliser ? Dites-la après le son.",
       langNotUnderstood: "Désolé, je n'ai pas compris. Redites le nom de votre langue, s'il vous plaît.",
       notHeard: "Je n'ai rien entendu. Appuyez sur la barre d'espace quand vous voulez parler.",
-      talk: "Parler"
+      talk: "Parler",
+      helpTouch: "Appuyez sur le bouton pour commencer. La première fois, dites votre langue. Ensuite, appuyez sur le bouton Parler pour commencer à parler, puis appuyez de nouveau quand vous avez fini pour obtenir une réponse. Pour terminer, dites au revoir ou appuyez sur Terminer la conversation.",
+      greetingTouch: "Bonjour, je suis un assistant d'intelligence artificielle. Appuyez sur le bouton Parler pour commencer à parler, puis appuyez de nouveau quand vous avez fini, pour avoir ma réponse. Si vous arrêtez de parler pendant sept secondes, je réponds quand même. Pour terminer, dites simplement au revoir.",
+      greetingContinueTouch: "Bon retour. Je suis votre assistant d'intelligence artificielle, et nous pouvons reprendre là où nous nous étions arrêtés. Appuyez sur le bouton Parler pour parler, puis de nouveau quand vous avez fini.",
+      notHeardTouch: "Je n'ai rien entendu. Appuyez sur le bouton Parler quand vous voulez parler.",
+      errRetryTouch: "Désolé, quelque chose n'a pas fonctionné. Appuyez sur le bouton Parler et répétez, s'il vous plaît."
     },
     bg: {
       title: "Говорете с изкуствен интелект – натиснете бутона, за да започнете",
@@ -122,7 +137,7 @@
       end: "Край на разговора",
       continue: "Продължи последния разговор",
       langButton: "Език: Български. Смяна на езика",
-      help: "Натиснете бутона, за да започнете. Първия път кажете езика си. След това натиснете интервала, за да започнете да говорите, и го натиснете отново, когато приключите, за да получите отговор. За да приключите, кажете довиждане.",
+      help: "Натиснете бутона, за да започнете. Първия път кажете езика си. След това натиснете интервала, за да започнете да говорите, и го натиснете отново, когато приключите, за да получите отговор. За да приключите, кажете довиждане или натиснете Край на разговора.",
       privacy: "Вашите разговори се запазват само на този компютър.",
       historyLink: "Моите предишни разговори",
       greeting: "Здравейте, аз съм асистент с изкуствен интелект. Натиснете интервала, за да започнете да говорите, и го натиснете отново, когато приключите, за да чуете отговора ми. Ако спрете да говорите за седем секунди, ще отговоря и така. За да приключите, просто кажете довиждане.",
@@ -146,7 +161,12 @@
       askLanguage: "Кой език искате да използвате? Кажете го след сигнала.",
       langNotUnderstood: "Извинете, не разбрах. Кажете отново името на езика си, моля.",
       notHeard: "Не чух нищо. Натиснете интервала, когато искате да говорите.",
-      talk: "Говорете"
+      talk: "Говорете",
+      helpTouch: "Натиснете бутона, за да започнете. Първия път кажете езика си. След това натиснете бутона Говорете, за да започнете да говорите, и го натиснете отново, когато приключите, за да получите отговор. За да приключите, кажете довиждане или натиснете Край на разговора.",
+      greetingTouch: "Здравейте, аз съм асистент с изкуствен интелект. Натиснете бутона Говорете, за да започнете да говорите, и го натиснете отново, когато приключите, за да чуете отговора ми. Ако спрете да говорите за седем секунди, ще отговоря и така. За да приключите, просто кажете довиждане.",
+      greetingContinueTouch: "Добре дошли отново. Аз съм вашият асистент с изкуствен интелект и можем да продължим оттам, докъдето стигнахме. Натиснете бутона Говорете, за да говорите, и отново, когато приключите.",
+      notHeardTouch: "Не чух нищо. Натиснете бутона Говорете, когато искате да говорите.",
+      errRetryTouch: "Извинете, нещо се обърка. Натиснете бутона Говорете и повторете, моля."
     },
     ru: {
       title: "Поговорите с искусственным интеллектом – нажмите кнопку, чтобы начать",
@@ -155,7 +175,7 @@
       end: "Завершить разговор",
       continue: "Продолжить последний разговор",
       langButton: "Язык: Русский. Сменить язык",
-      help: "Нажмите кнопку, чтобы начать. В первый раз назовите свой язык. Затем нажмите пробел, чтобы начать говорить, и нажмите его ещё раз, когда закончите, чтобы получить ответ. Чтобы закончить, скажите «до свидания».",
+      help: "Нажмите кнопку, чтобы начать. В первый раз назовите свой язык. Затем нажмите пробел, чтобы начать говорить, и нажмите его ещё раз, когда закончите, чтобы получить ответ. Чтобы закончить, скажите «до свидания» или нажмите «Завершить разговор».",
       privacy: "Ваши разговоры сохраняются только на этом компьютере.",
       historyLink: "Мои прошлые разговоры",
       greeting: "Здравствуйте, я ассистент с искусственным интеллектом. Нажмите пробел, чтобы начать говорить, и нажмите его ещё раз, когда закончите, чтобы услышать мой ответ. Если вы замолчите на семь секунд, я всё равно отвечу. Чтобы закончить, просто скажите «до свидания».",
@@ -179,7 +199,12 @@
       askLanguage: "Какой язык вы хотите использовать? Скажите его после сигнала.",
       langNotUnderstood: "Извините, я не понял. Повторите, пожалуйста, название языка.",
       notHeard: "Я ничего не услышал. Нажмите пробел, когда захотите говорить.",
-      talk: "Говорить"
+      talk: "Говорить",
+      helpTouch: "Нажмите кнопку, чтобы начать. В первый раз назовите свой язык. Затем нажмите кнопку «Говорить», чтобы начать говорить, и нажмите её ещё раз, когда закончите, чтобы получить ответ. Чтобы закончить, скажите «до свидания» или нажмите «Завершить разговор».",
+      greetingTouch: "Здравствуйте, я ассистент с искусственным интеллектом. Нажмите кнопку «Говорить», чтобы начать говорить, и нажмите её ещё раз, когда закончите, чтобы услышать мой ответ. Если вы замолчите на семь секунд, я всё равно отвечу. Чтобы закончить, просто скажите «до свидания».",
+      greetingContinueTouch: "С возвращением. Я ваш ассистент с искусственным интеллектом, и мы можем продолжить с того места, где остановились. Нажмите кнопку «Говорить», чтобы говорить, и ещё раз, когда закончите.",
+      notHeardTouch: "Я ничего не услышал. Нажмите кнопку «Говорить», когда захотите говорить.",
+      errRetryTouch: "Извините, что-то пошло не так. Нажмите кнопку «Говорить» и повторите, пожалуйста."
     },
     zh: {
       title: "与人工智能对话 – 按下按钮开始",
@@ -188,7 +213,7 @@
       end: "结束对话",
       continue: "继续上次的对话",
       langButton: "语言：中文。更改语言",
-      help: "按下按钮开始。第一次使用时，请说出您的语言。然后按空格键开始说话，说完后再按一次，就能得到回答。要结束时，请说“再见”。",
+      help: "按下按钮开始。第一次使用时，请说出您的语言。然后按空格键开始说话，说完后再按一次，就能得到回答。要结束时，请说“再见”或按“结束对话”。",
       privacy: "您的对话只保存在这台电脑上。",
       historyLink: "我以前的对话",
       greeting: "您好，我是人工智能助手。按空格键开始说话，说完后再按一次，就能听到我的回答。如果您停下来七秒钟不说话，我也会回答。要结束时，说一声“再见”就可以。",
@@ -212,7 +237,12 @@
       askLanguage: "您想使用哪种语言？请在提示音后说出来。",
       langNotUnderstood: "抱歉，我没听懂。请再说一遍您的语言。",
       notHeard: "我没有听到声音。想说话时请按空格键。",
-      talk: "说话"
+      talk: "说话",
+      helpTouch: "按下按钮开始。第一次使用时，请说出您的语言。然后按“说话”按钮开始说话，说完后再按一次，就能得到回答。要结束时，请说“再见”或按“结束对话”。",
+      greetingTouch: "您好，我是人工智能助手。按“说话”按钮开始说话，说完后再按一次，就能听到我的回答。如果您停下来七秒钟不说话，我也会回答。要结束时，说一声“再见”就可以。",
+      greetingContinueTouch: "欢迎回来。我是您的人工智能助手，我们可以接着上次的话题继续。按“说话”按钮说话，说完后再按一次。",
+      notHeardTouch: "我没有听到声音。想说话时请按“说话”按钮。",
+      errRetryTouch: "抱歉，出了点问题。请按“说话”按钮再说一遍。"
     }
   };
 

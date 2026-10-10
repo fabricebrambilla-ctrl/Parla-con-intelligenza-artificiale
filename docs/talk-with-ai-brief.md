@@ -149,6 +149,15 @@ Consequences:
 - Every button must have **visible text** that says what it does. Never an icon-only button. Never a `<div>` or `<span>` styled as a button.
 - Keep the order on screen = the order in the HTML.
 
+### 4.3b Facts the push-to-talk design relies on (checked 2026-10-10)
+
+- In NVDA browse mode and the JAWS virtual cursor, the screen reader captures the keyboard. **Space or Enter on a focused button is not delivered to the page as a key press**; the screen reader activates the button (a synthetic click, sometimes a simulated mouse click at its position, or the accessibility API "invoke"). So the app's real control is the **Talk button's click handler**; the page-wide Space shortcut only helps when no screen reader is running or it is in focus mode. Keep the button's content plain text (no child elements), never call `stopPropagation` on its click, and never move it while a conversation runs.
+- Users must keep the reading cursor on the Talk button for Space to work; the accessibility statement says so. Focus stays there because the app never moves it.
+- VoiceOver on iPhone and TalkBack on Android activate the button with a double tap (a click); there is no space bar, so phones and tablets (`pointer: coarse` and no fine pointer) get "press the Talk button" wording.
+- **`autofocus` on the Talk button**: W3C notes autofocus overrides reading from the top, and NVDA's developers consider that the intended effect. For this single-purpose page it means the screen reader announces the title and "Start conversation, button" plus its description (`aria-describedby` = the help text), and Space works immediately. The description is removed during a conversation so returning to the button stays short.
+- The End conversation button appears right after Talk during a conversation; when it disappears and had focus, focus goes back to Talk (never left on a hidden element). Escape also ends a conversation when the screen reader lets it through.
+- Windows High Contrast (`forced-colors`) keeps button borders and the focus outline visible.
+
 ### 4.4 What is read on page load
 
 - The `<title>` first, then the page from the top (default in both readers).
@@ -446,6 +455,7 @@ Deviations from this brief (decided with the owner, see §13):
 | Date | Change | Files |
 |---|---|---|
 | 2026-10-10 | Added this brief and the agent rules (§0). No app code changed. | `docs/talk-with-ai-brief.md`, `CLAUDE.md`, `AGENTS.md` |
+| 2026-10-10 | Screen-reader fit: Talk button focused on load with the help as its description (removed during a conversation); End conversation button during a conversation (focus returns to Talk when it hides); Escape ends; phone/tablet wording ("press the Talk button") in 6 languages; Android vibration when recording starts/stops; forced-colors styles; accessibility statement explains keeping the cursor on the Talk button; §4.3b documents the screen-reader facts. | `public/index.html`, `public/app.js`, `public/i18n.js`, `public/style.css`, `legal.js`, this brief |
 | 2026-10-10 | Push-to-talk: first conversation asks for the language by voice (auto-detected transcription, page switches language); spoken instructions for space bar to start / stop talking; 7 s of silence sends the turn, 7 s with nothing said gives a spoken hint; button label "Talk" during a conversation; help line, greeting and accessibility statement rewritten in 6 languages. | `public/app.js`, `public/i18n.js`, `server.js`, `legal.js`, this brief |
 | 2026-10-10 | Space bar / button to interrupt the assistant and again to finish speaking (longer pauses allowed in that turn), explained in greeting, help line and accessibility statement in 6 languages. Stats: fixed "Forbidden" when pressing the stats buttons (browsers send `Origin: null` with our no-referrer policy; now checked with `Sec-Fetch-Site`); generated visitors grow over the 30 days with weekend dips and daily variation. | `public/app.js`, `public/i18n.js`, `legal.js`, `stats.js`, `test/stats.test.js`, this brief |
 | 2026-10-10 | Stats page: choose how many visitors to generate (default 317) with realistic varying conversations, "Delete all statistics" button, 30-day totals line. | `stats.js`, `public/style.css`, `test/stats.test.js`, this brief |
@@ -460,6 +470,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Preference |
 |---|---|
+| 2026-10-10 | Every part of the site must fit how **all** screen readers work (JAWS, NVDA, Narrator, VoiceOver, TalkBack, Orca), with **zero friction**. |
 | 2026-10-10 | **Conversation design (replaces earlier turn-taking):** first ask "say your language"; then tell the user to press **space to start talking and space again to stop and get the AI's answer** – "that's all"; if the user is silent for **more than 7 seconds**, the AI answers automatically. |
 | 2026-10-10 | Users can always interrupt the assistant with the **space bar** and press it **again when they have finished speaking**. Generated statistics must **vary and grow across the days**, with the requested **total over the 30 days**. |
 | 2026-10-10 | Statistics: store in **Render's free Postgres** (accepting the 30-day expiry); a **unique user** = a device that opened the website, a **conversation** = any button press; keep raw records **30 days**; **do not** change the privacy notice; generated test visitors must be stored as **ordinary data, not marked as test data**. Stats must never affect the conversation or anything a screen reader hears. |

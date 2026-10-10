@@ -6,6 +6,8 @@
   // iPhone/iPad (also iPadOS, which reports itself as a Mac with touch).
   var IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  // Phones and tablets without a keyboard or mouse: instructions say "the Talk button", not "the space bar".
+  var IS_TOUCH = !!(window.matchMedia && matchMedia("(pointer: coarse)").matches && !matchMedia("(any-pointer: fine)").matches);
 
   // ---------- storage (never required to work) ----------
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -30,13 +32,18 @@
   // ---------- language ----------
   var lang = I.pick(get("lang") ? [get("lang")] : navigator.languages || [navigator.language]);
   var tt = function (key) { return I.t(lang, key); };
+  // Same, but with the touch wording on phones and tablets.
+  var tk = function (key) { return IS_TOUCH && I.S[lang][key + "Touch"] ? tt(key + "Touch") : tt(key); };
 
-  var talkBtn = $("talk"), continueBtn = $("continue"), langBtn = $("lang"),
+  var talkBtn = $("talk"), endBtn = $("endConv"), continueBtn = $("continue"), langBtn = $("lang"),
       langsBox = $("langs"), historyP = $("history"), alertBox = $("alert");
+
+  if (IS_TOUCH) $("helpText").setAttribute("data-i18n", "helpTouch");
 
   function renderTexts() {
     I.applyPage(lang);
     talkBtn.textContent = active ? tt("talk") : tt("start");
+    endBtn.textContent = tt("end");
     // Keep the chosen language on the other pages too.
     historyP.querySelector("a").href = "/history?lang=" + lang;
     $("privacyLink").href = "/privacy?lang=" + lang;
@@ -477,6 +484,20 @@
     return GOODBYE.some(function (w) { return padded.indexOf(" " + w + " ") !== -1; });
   }
 
+  // ---------- conversation controls ----------
+  // During a conversation: the Talk button (no description, so moving back to it is short to hear)
+  // and an End conversation button right after it.
+  function showConversationControls(on) {
+    talkBtn.textContent = on ? tt("talk") : tt("start");
+    if (on) { talkBtn.setAttribute("data-active", "true"); talkBtn.removeAttribute("aria-describedby"); }
+    else { talkBtn.removeAttribute("data-active"); talkBtn.setAttribute("aria-describedby", "helpText"); }
+    // Never leave focus on a button that disappears.
+    if (!on && document.activeElement === endBtn) talkBtn.focus();
+    endBtn.hidden = !on;
+  }
+
+  function buzz(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
+
   // ---------- conversation ----------
   // Waiting for the user to press the space bar (or the button) to talk.
   function goReady() {
@@ -494,6 +515,7 @@
     rec = { auto: auto, frames: [], elapsed: 0, voiced: 0, silence: 0, speechFrames: 0, speechStarted: false };
     setState("listening");
     sounds.turn();
+    buzz(40);
   }
 
   var recResolve = null; // used by the language question
@@ -507,13 +529,14 @@
     var wav = heard ? encodeWav(frames, ctx.sampleRate) : null;
     if (r.auto) { setState("processing"); var done = recResolve; recResolve = null; if (done) done(wav); return; }
     sounds.stop();
+    buzz([30, 60, 30]);
     if (heard) handleUtterance(wav);
     else nothingHeard();
   }
 
   async function nothingHeard() {
     var my = session;
-    await say(tt("notHeard"));
+    await say(tk("notHeard"));
     if (my === session) goReady();
   }
 
@@ -634,7 +657,7 @@
       if (transcript.length && transcript[transcript.length - 1].role === "user") transcript.pop();
       if (e.code === "errLimit") return fail("errLimit");
       if (++failures >= 3) return fail("errConnection");
-      await say(tt("errRetry"));
+      await say(tk("errRetry"));
       if (my === session) goReady();
     }
   }
@@ -661,8 +684,7 @@
       unlock.volume = 0;
       speechSynthesis.speak(unlock);
     }
-    talkBtn.textContent = tt("talk");
-    talkBtn.setAttribute("data-active", "true");
+    showConversationControls(true);
     setState("processing");
 
     function giveUp(code) {
@@ -670,8 +692,7 @@
       session++;
       closeMic();
       setState("idle");
-      talkBtn.textContent = tt("start");
-      talkBtn.removeAttribute("data-active");
+      showConversationControls(false);
       announce(code);
     }
 
@@ -704,7 +725,7 @@
     }
 
     // EU AI Act: the greeting says it is an AI. The first time, also say where the voice goes.
-    var intro = context ? tt("greetingContinue") : tt("greeting");
+    var intro = context ? tk("greetingContinue") : tk("greeting");
     if (!get("noticeHeard")) { intro = tt("notice") + " " + intro; set("noticeHeard", "1"); }
     await say(intro);
     if (my !== session) return;
@@ -723,8 +744,7 @@
     rec = null;
     if (recResolve) { var done = recResolve; recResolve = null; done(null); }
     setState("idle");
-    talkBtn.textContent = tt("start");
-    talkBtn.removeAttribute("data-active");
+    showConversationControls(false);
     if (!silent) sounds.end();
     summarize(transcript.slice(), context);
   }
@@ -768,8 +788,11 @@
   }
 
   talkBtn.addEventListener("click", onTalkPress);
+  endBtn.addEventListener("click", function () { endConversation(); });
 
   document.addEventListener("keydown", function (e) {
+    // Escape ends the conversation (when the screen reader lets the key through).
+    if (active && e.key === "Escape" && !e.repeat) { endConversation(); return; }
     if (!active || !isSpace(e) || e.repeat || e.target === talkBtn || isOtherControl(e.target)) return;
     e.preventDefault();
     onTalkPress();
