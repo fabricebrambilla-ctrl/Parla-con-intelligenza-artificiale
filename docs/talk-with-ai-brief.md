@@ -400,17 +400,37 @@ Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public 
 
 ### Current state of the code (keep this up to date)
 
-As of 2026-10-10 the repo contains an **earlier prototype that does not yet follow this brief**:
-- `index.html` — Italian-only page (`<html lang="it">`), browser speech + TTS, sends text to `/api/chat`.
-- `server.js` — Express server, serves static files, `POST /api/chat` proxies to Groq (`GROQ_API_KEY`), `GET /health`.
-- `package.json` — dependencies: express, cors, dotenv, openai.
-- No Gemini Live API, no ephemeral tokens, no multi-language UI, no on-device history yet.
+As of 2026-10-10 the app is a full first version built with **Groq + Tavily** (Gemini Live is not used yet, see "Deviations" below).
+
+How a conversation works:
+1. The page (`public/index.html`) is rendered by the server in the visitor's language (from `Accept-Language`); `public/app.js` then applies the language saved in `localStorage`, if any.
+2. Pressing **Start conversation** asks for the microphone, plays a start tone, and the browser speaks the greeting.
+3. The browser listens with its own voice-activity detection (`public/capture-worklet.js` + `app.js`): low sensitivity start (~200 ms of voice), end after ~800 ms of silence, 300 ms of audio kept before speech. The mic is ignored for 1.5 s after any key/focus/click/pointer event, 1 s after the window regains focus, and 4 s after an error alert (screen-reader protection, §5.3).
+4. Each finished utterance is sent as 16 kHz WAV to `POST /api/transcribe` → Groq Whisper (`whisper-large-v3-turbo`), with known Whisper "silence hallucinations" filtered out.
+5. The text goes to `POST /api/chat` → Groq `openai/gpt-oss-120b` with two tools: `web_search` (Tavily basic search; after `DAILY_TAVILY_SEARCHES` per day, or if Tavily fails, falls back to Groq `groq/compound`) and `end_conversation`. The system prompt follows §7.5. Replies are cleaned of markdown/links for speech.
+6. The reply is spoken with the browser's speech synthesis (best voice for the language is picked automatically). The mic is closed while it speaks (**turn-taking mode is always on**, §5.7); a soft tone means "your turn". Pressing the button while the AI speaks interrupts it and gives the turn to the user; pressing it at any other time ends the conversation. Saying goodbye/stop in any of the six languages also ends it (client check + model tool).
+7. At the end, `POST /api/summary` (Groq `openai/gpt-oss-20b`) makes a short summary that is saved only in `localStorage` (last 10). "Continue last conversation" and the "My past conversations" page (`/history`, one `<h2>` per conversation, "Delete all my history") appear once history exists.
+8. Errors (no mic, connection, daily limit, unsupported browser) are spoken once through the single empty `role="alert"` region.
+
+Files: `server.js` (Express: pages, API, limits), `public/i18n.js` (all text in en/it/fr/bg/ru/zh, shared by server and browser), `public/app.js`, `public/capture-worklet.js`, `public/history.html` + `public/history.js`, `public/style.css`, `test/server.test.js` (`npm test`).
+
+Environment variables on Render:
+- Required: `GROQ_API_KEY`, `TAVILY_API_KEY`.
+- Optional: `DAILY_MINUTES_PER_USER` (default 60), `DAILY_MINUTES_PER_IP` (default 3× per user), `DAILY_MINUTES_GLOBAL` (default 600), `DAILY_TAVILY_SEARCHES` (default 30), `GROQ_CHAT_MODEL`, `GROQ_SUMMARY_MODEL`, `GROQ_STT_MODEL`, `GROQ_SEARCH_MODEL`.
+- `GEMINI_API_KEY` is not used (the owner's Gemini project is restricted to paid use).
+- Limits are counted in server memory and reset at midnight UTC or when the server restarts.
+
+Deviations from this brief (decided with the owner, see §13):
+- **No Gemini Live** (§5.4–5.6, §7.1, §7.3 ephemeral tokens, §7.4 session resumption): voice in = Groq Whisper, voice out = browser speech synthesis. Consequences: voice quality depends on the computer (Edge's "Natural" voices are best; Bulgarian may be missing on some systems), answers take a few seconds, and interrupting by voice is not possible — only by pressing the button.
+- Because browser speech is not played through the page's audio, echo cancellation can't remove it, so the mic is always closed while the AI speaks.
+- Not yet tested with real JAWS/NVDA/VoiceOver or on real laptop speakers (§10 still to do).
 
 ### Change log (add an entry after every push to `main`)
 
 | Date | Change | Files |
 |---|---|---|
 | 2026-10-10 | Added this brief and the agent rules (§0). No app code changed. | `docs/talk-with-ai-brief.md`, `CLAUDE.md`, `AGENTS.md` |
+| 2026-10-10 | Replaced the Italian-only prototype with the full app: 6 languages, one-button voice conversation, Groq Whisper + Groq gpt-oss + Tavily search (Groq Compound fallback), browser voice, turn-taking, screen-reader mute gate, goodbye detection, on-device history page, daily limits, tests. Removed `index.html` at root and the unused `openai`/`cors` dependencies. | `server.js`, `public/*`, `test/server.test.js`, `package.json`, `package-lock.json`, this brief |
 
 ---
 
@@ -418,4 +438,6 @@ As of 2026-10-10 the repo contains an **earlier prototype that does not yet foll
 
 | Date | Preference |
 |---|---|
+| 2026-10-10 | Build with what is available for free now: **Groq key + Tavily key**. Gemini is not used because the owner's Google AI Studio project says "API access is restricted, set up billing"; the owner does not want to pay. Gemini Live can be added later as the main voice mode if a working free key is obtained. |
+| 2026-10-10 | All changes are pushed to `main` (the owner asked for this). |
 | 2026-10-10 | The brief must live in the repo, be readable by any AI agent, and be updated after every push to `main` with code changes and any changes in user preference. |

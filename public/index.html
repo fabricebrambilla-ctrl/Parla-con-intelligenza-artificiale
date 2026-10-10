@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="{{htmlLang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="title">{{title}}</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <h1 data-i18n="h1">{{h1}}</h1>
+    <button id="talk" type="button" class="talk">{{start}}</button>
+    <button id="continue" type="button" data-i18n="continue" hidden>{{continue}}</button>
+    <button id="lang" type="button" aria-expanded="false" data-i18n="langButton">{{langButton}}</button>
+    <div id="langs" hidden>
+      <button type="button" lang="en" data-set-lang="en">English</button>
+      <button type="button" lang="it" data-set-lang="it">Italiano</button>
+      <button type="button" lang="fr" data-set-lang="fr">Français</button>
+      <button type="button" lang="bg" data-set-lang="bg">Български</button>
+      <button type="button" lang="ru" data-set-lang="ru">Русский</button>
+      <button type="button" lang="zh-Hans" data-set-lang="zh">中文</button>
+    </div>
+    <p class="help"><span data-i18n="help">{{help}}</span> <span data-i18n="privacy">{{privacy}}</span></p>
+    <p id="history" hidden><a href="/history" data-i18n="historyLink">{{historyLink}}</a></p>
+    <div id="alert" role="alert"></div>
+  </main>
+  <script src="/i18n.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
