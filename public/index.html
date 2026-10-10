@@ -24,7 +24,9 @@
       <button type="button" lang="ru" data-set-lang="ru">Русский</button>
       <button type="button" lang="zh-Hans" data-set-lang="zh">中文</button>
     </div>
-    <p class="help"><span id="helpText" data-i18n="help">{{help}}</span> <span data-i18n="privacy">{{privacy}}</span></p>
+    <!-- The help is read as the Talk button's description; hidden here so screen readers don't read it twice.
+         No space between the spans: a lone space becomes an empty stop for VoiceOver swipes. -->
+    <p class="help"><span id="helpText" data-i18n="help" aria-hidden="true">{{help}}</span><span class="privacy" data-i18n="privacy">{{privacy}}</span></p>
     <p id="history" hidden><a href="/history" data-i18n="historyLink">{{historyLink}}</a></p>
     <div id="alert" role="alert"></div>
   </main>

@@ -42,7 +42,7 @@
 
   function renderTexts() {
     I.applyPage(lang);
-    talkBtn.textContent = active ? tt("talk") : tt("start");
+    talkBtn.textContent = talkLabel ? tt("talk") : tt("start");
     endBtn.textContent = tt("end");
     // Keep the chosen language on the other pages too.
     historyP.querySelector("a").href = "/history?lang=" + lang;
@@ -64,6 +64,7 @@
   var context = "";        // summary of the previous conversation, when continuing
   var failures = 0;        // failed turns in a row
   var choosing = false;    // the assistant is asking which language to use
+  var talkLabel = false;   // the button reads "Talk" (from the first time the assistant waits for the user)
   var pendingTalk = false; // the space bar interrupted the assistant: start recording when it has stopped
   var aiVoiceLangs = [];   // languages with the natural AI voice (from the server)
 
@@ -499,8 +500,10 @@
   // ---------- conversation controls ----------
   // During a conversation: the Talk button (no description, so moving back to it is short to hear)
   // and an End conversation button right after it.
+  // The label becomes "Talk" only when the assistant first waits for the user (see goReady), so the
+  // screen reader's "Talk, button" doesn't talk over the greeting and works as the cue to press it.
   function showConversationControls(on) {
-    talkBtn.textContent = on ? tt("talk") : tt("start");
+    if (!on) { talkLabel = false; talkBtn.textContent = tt("start"); }
     if (on) { talkBtn.setAttribute("data-active", "true"); talkBtn.removeAttribute("aria-describedby"); }
     else { talkBtn.removeAttribute("data-active"); talkBtn.setAttribute("aria-describedby", "helpText"); }
     // Never leave focus on a button that disappears.
@@ -514,6 +517,7 @@
   // Waiting for the user to press the space bar (or the button) to talk.
   function goReady() {
     if (!active) return;
+    if (!talkLabel) { talkLabel = true; talkBtn.textContent = tt("talk"); }
     if (pendingTalk) { pendingTalk = false; return startRecording(false); }
     setState("ready");
   }
@@ -585,9 +589,10 @@
   async function chooseLanguage(my) {
     choosing = true;
     for (var attempt = 0; attempt < 2; attempt++) {
-      await say(attempt ? tt("langNotUnderstood") : tt("askLanguage"));
+      // Pressing Space/Talk during the question skips the list and goes straight to answering.
+      var skipped = await say(attempt ? tt("langNotUnderstood") : tt("askLanguage"));
       if (my !== session) return;
-      if (!attempt) {
+      if (!attempt && !skipped) {
         // Each language name in its own voice.
         for (var i = 0; i < I.LANGS.length; i++) {
           var code = I.LANGS[i];

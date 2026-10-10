@@ -95,6 +95,7 @@ footer {
 }
 
 .help { color: var(--muted); max-width: 32rem; margin: 0; }
+.help .privacy { display: block; margin-top: 0.5rem; }
 a { color: inherit; }
 
 .history { align-items: stretch; text-align: left; }

@@ -157,6 +157,9 @@ Consequences:
 - **`autofocus` on the Talk button**: W3C notes autofocus overrides reading from the top, and NVDA's developers consider that the intended effect. For this single-purpose page it means the screen reader announces the title and "Start conversation, button" plus its description (`aria-describedby` = the help text), and Space works immediately. The description is removed during a conversation so returning to the button stays short.
 - The End conversation button appears right after Talk during a conversation; when it disappears and had focus, focus goes back to Talk (never left on a hidden element). Escape also ends a conversation when the screen reader lets it through.
 - Windows High Contrast (`forced-colors`) keeps button borders and the focus outline visible.
+- The visible help text is `aria-hidden` (it is already the Talk button's description, so it isn't read twice), and there is no whitespace text node between the help and privacy spans (VoiceOver on iPhone stopped on an empty " " item).
+- The Talk button's label changes from "Start conversation" to "Talk" only when the assistant first waits for the user, so the screen reader's "Talk, button" comes right after the instructions, as the cue to press it, instead of talking over the greeting. Screen readers stop their own speech when a key is pressed, so pressing Space at once is safe.
+- Simulated walk-through (2026-10-10, Chromium accessibility tree; NVDA = accessibility "invoke" click, JAWS = simulated mouse click, VoiceOver iPhone = swipe order + tap; controllable fake microphone; stand-in Groq/Tavily/Fish services): language question skipped with Space, answer by voice, ask, send with Space, interrupt with Space, auto-send 7.0–7.1 s after silence, hint after 7 s with nothing said, "goodbye" ends and focus returns to Start — passed for all three. Real screen-reader testing (§10) is still required.
 
 ### 4.4 What is read on page load
 
@@ -457,6 +460,7 @@ Deviations from this brief (decided with the owner, see §13):
 | Date | Change | Files |
 |---|---|---|
 | 2026-10-10 | Added this brief and the agent rules (§0). No app code changed. | `docs/talk-with-ai-brief.md`, `CLAUDE.md`, `AGENTS.md` |
+| 2026-10-10 | Screen-reader walk-through fixes: Space during the language question now also skips the list of language names; "Talk" label appears only when the assistant first waits (screen reader cue instead of talking over the greeting); greeting and help explain interrupting with Space / the Talk button in 6 languages; help text no longer read twice; empty VoiceOver stop removed. | `public/app.js`, `public/i18n.js`, `public/index.html`, `public/style.css`, this brief |
 | 2026-10-10 | Natural AI voice in all six languages via Fish Audio (free developer model), with per-language voice choice, falling back to Groq (English) and the device voice; better device-voice ranking by known natural voice names; privacy notice and accessibility statement updated for the new voice service. | `server.js`, `public/app.js`, `legal.js`, this brief |
 | 2026-10-10 | Screen-reader fit: Talk button focused on load with the help as its description (removed during a conversation); End conversation button during a conversation (focus returns to Talk when it hides); Escape ends; phone/tablet wording ("press the Talk button") in 6 languages; Android vibration when recording starts/stops; forced-colors styles; accessibility statement explains keeping the cursor on the Talk button; §4.3b documents the screen-reader facts. | `public/index.html`, `public/app.js`, `public/i18n.js`, `public/style.css`, `legal.js`, this brief |
 | 2026-10-10 | Push-to-talk: first conversation asks for the language by voice (auto-detected transcription, page switches language); spoken instructions for space bar to start / stop talking; 7 s of silence sends the turn, 7 s with nothing said gives a spoken hint; button label "Talk" during a conversation; help line, greeting and accessibility statement rewritten in 6 languages. | `public/app.js`, `public/i18n.js`, `server.js`, `legal.js`, this brief |
@@ -473,6 +477,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Preference |
 |---|---|
+| 2026-10-10 | Must be explained clearly that you **start with Space, stop with Space, and can interrupt at any time with Space and answer straight away**. |
 | 2026-10-10 | Wants the voice to sound as natural as possible **in all languages**, still free. |
 | 2026-10-10 | Every part of the site must fit how **all** screen readers work (JAWS, NVDA, Narrator, VoiceOver, TalkBack, Orca), with **zero friction**. |
 | 2026-10-10 | **Conversation design (replaces earlier turn-taking):** first ask "say your language"; then tell the user to press **space to start talking and space again to stop and get the AI's answer** – "that's all"; if the user is silent for **more than 7 seconds**, the AI answers automatically. |
