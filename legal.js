@@ -116,7 +116,7 @@ const ACCESSIBILITY = {
     h1: "Accessibility statement",
     sections: [
       ["Our goal", "This website is made to be used entirely by voice and with screen readers. We aim to meet the Web Content Accessibility Guidelines (WCAG) 2.2 at level AA and the European standard EN 301 549."],
-      ["How to use it", "The page has one heading and one large button. Press it and speak. After each answer a short tone tells you it is your turn. To interrupt the assistant, press the button or the space bar, and press it again when you have finished speaking. To end the conversation, say goodbye, or press the button while nobody is speaking."],
+      ["How to use it", "The page has one heading and one large button. Press it to start. The first time, the assistant asks which language you want to use: just say it. Then press the space bar (or the button) to start talking, and press it again when you have finished to get the answer. If you stop talking for seven seconds, the assistant answers anyway. Pressing the space bar while the assistant is talking interrupts it. To end the conversation, say goodbye."],
       ["Supported screen readers and devices", "It is designed for JAWS, NVDA and Narrator on Windows, VoiceOver on Mac and iPhone, TalkBack on Android and Orca on Linux, with current versions of Chrome, Edge, Firefox and Safari. No headphones and no special settings are needed."],
       ["Known limitations", "In English the assistant uses a natural AI voice. In other languages it uses the best voice installed on your device: Microsoft Edge on Windows, iPhones and Android phones usually have natural voices for all six languages. You cannot interrupt the assistant by speaking; press the button instead."],
       ["Feedback", "If something does not work for you, please write to {email}. Every message is read."],
@@ -129,7 +129,7 @@ const ACCESSIBILITY = {
     h1: "Dichiarazione di accessibilità",
     sections: [
       ["Il nostro obiettivo", "Questo sito è fatto per essere usato interamente con la voce e con i lettori di schermo. Puntiamo a rispettare le Linee guida per l'accessibilità dei contenuti web (WCAG) 2.2 al livello AA e la norma europea EN 301 549."],
-      ["Come si usa", "La pagina ha un titolo e un grande pulsante. Premilo e parla. Dopo ogni risposta un breve suono ti dice che è il tuo turno. Per interrompere l'assistente, premi il pulsante o la barra spaziatrice, e premilo di nuovo quando hai finito di parlare. Per terminare la conversazione, di' arrivederci, oppure premi il pulsante quando nessuno sta parlando."],
+      ["Come si usa", "La pagina ha un titolo e un grande pulsante. Premilo per iniziare. La prima volta l'assistente ti chiede quale lingua vuoi usare: basta dirla. Poi premi la barra spaziatrice (o il pulsante) per iniziare a parlare, e premila di nuovo quando hai finito per avere la risposta. Se smetti di parlare per sette secondi, l'assistente risponde comunque. Se premi la barra spaziatrice mentre l'assistente parla, lo interrompi. Per terminare la conversazione, di' arrivederci."],
       ["Lettori di schermo e dispositivi supportati", "È pensato per JAWS, NVDA e Assistente vocale su Windows, VoiceOver su Mac e iPhone, TalkBack su Android e Orca su Linux, con le versioni attuali di Chrome, Edge, Firefox e Safari. Non servono cuffie né impostazioni speciali."],
       ["Limiti noti", "In inglese l'assistente usa una voce naturale generata dall'intelligenza artificiale. Nelle altre lingue usa la migliore voce installata sul tuo dispositivo: Microsoft Edge su Windows, gli iPhone e i telefoni Android di solito hanno voci naturali per tutte e sei le lingue. Non puoi interrompere l'assistente parlando; premi invece il pulsante."],
       ["Segnalazioni", "Se qualcosa non funziona per te, scrivi a {email}. Leggiamo ogni messaggio."],
@@ -142,7 +142,7 @@ const ACCESSIBILITY = {
     h1: "Déclaration d'accessibilité",
     sections: [
       ["Notre objectif", "Ce site est conçu pour être utilisé entièrement à la voix et avec les lecteurs d'écran. Nous visons le respect des Règles pour l'accessibilité des contenus web (WCAG) 2.2 au niveau AA et de la norme européenne EN 301 549."],
-      ["Comment l'utiliser", "La page contient un titre et un grand bouton. Appuyez dessus et parlez. Après chaque réponse, un petit son vous indique que c'est à vous. Pour interrompre l'assistant, appuyez sur le bouton ou sur la barre d'espace, puis appuyez de nouveau quand vous avez fini de parler. Pour terminer la conversation, dites au revoir, ou appuyez sur le bouton quand personne ne parle."],
+      ["Comment l'utiliser", "La page contient un titre et un grand bouton. Appuyez dessus pour commencer. La première fois, l'assistant vous demande quelle langue vous voulez utiliser : il suffit de la dire. Ensuite, appuyez sur la barre d'espace (ou sur le bouton) pour commencer à parler, puis appuyez de nouveau quand vous avez fini pour obtenir la réponse. Si vous arrêtez de parler pendant sept secondes, l'assistant répond quand même. Appuyer sur la barre d'espace pendant que l'assistant parle l'interrompt. Pour terminer la conversation, dites au revoir."],
       ["Lecteurs d'écran et appareils pris en charge", "Il est conçu pour JAWS, NVDA et le Narrateur sous Windows, VoiceOver sur Mac et iPhone, TalkBack sur Android et Orca sous Linux, avec les versions actuelles de Chrome, Edge, Firefox et Safari. Aucun casque ni réglage particulier n'est nécessaire."],
       ["Limites connues", "En anglais, l'assistant utilise une voix naturelle générée par intelligence artificielle. Dans les autres langues, il utilise la meilleure voix installée sur votre appareil : Microsoft Edge sous Windows, les iPhone et les téléphones Android ont généralement des voix naturelles pour les six langues. Vous ne pouvez pas interrompre l'assistant en parlant ; appuyez plutôt sur le bouton."],
       ["Vos retours", "Si quelque chose ne fonctionne pas pour vous, écrivez à {email}. Chaque message est lu."],
@@ -155,7 +155,7 @@ const ACCESSIBILITY = {
     h1: "Декларация за достъпност",
     sections: [
       ["Нашата цел", "Този сайт е създаден да се използва изцяло с глас и с екранни четци. Стремим се да отговаряме на Указанията за достъпност на уеб съдържанието (WCAG) 2.2 на ниво AA и на европейския стандарт EN 301 549."],
-      ["Как се използва", "Страницата има едно заглавие и един голям бутон. Натиснете го и говорете. След всеки отговор кратък сигнал ви казва, че е ваш ред. За да прекъснете асистента, натиснете бутона или интервала, и натиснете отново, когато приключите да говорите. За да приключите разговора, кажете довиждане или натиснете бутона, когато никой не говори."],
+      ["Как се използва", "Страницата има едно заглавие и един голям бутон. Натиснете го, за да започнете. Първия път асистентът ви пита кой език искате да използвате: просто го кажете. След това натиснете интервала (или бутона), за да започнете да говорите, и го натиснете отново, когато приключите, за да чуете отговора. Ако спрете да говорите за седем секунди, асистентът отговаря и така. Натискането на интервала, докато асистентът говори, го прекъсва. За да приключите разговора, кажете довиждане."],
       ["Поддържани екранни четци и устройства", "Създаден е за JAWS, NVDA и Разказвач в Windows, VoiceOver на Mac и iPhone, TalkBack на Android и Orca в Linux, с актуалните версии на Chrome, Edge, Firefox и Safari. Не са нужни слушалки или специални настройки."],
       ["Известни ограничения", "На английски асистентът използва естествен глас, създаден от изкуствен интелект. На другите езици използва най-добрия глас, инсталиран на устройството ви: Microsoft Edge в Windows, iPhone и телефоните с Android обикновено имат естествени гласове и за шестте езика. Не можете да прекъснете асистента с говорене; натиснете бутона."],
       ["Обратна връзка", "Ако нещо не работи за вас, пишете на {email}. Четем всяко съобщение."],
@@ -168,7 +168,7 @@ const ACCESSIBILITY = {
     h1: "Заявление о доступности",
     sections: [
       ["Наша цель", "Этот сайт сделан так, чтобы им можно было пользоваться полностью голосом и с программами экранного доступа. Мы стремимся соответствовать Руководству по доступности веб-контента (WCAG) 2.2 на уровне AA и европейскому стандарту EN 301 549."],
-      ["Как пользоваться", "На странице один заголовок и одна большая кнопка. Нажмите её и говорите. После каждого ответа короткий сигнал сообщает, что теперь ваша очередь. Чтобы перебить ассистента, нажмите кнопку или пробел, а когда закончите говорить, нажмите ещё раз. Чтобы завершить разговор, скажите «до свидания» или нажмите кнопку, когда никто не говорит."],
+      ["Как пользоваться", "На странице один заголовок и одна большая кнопка. Нажмите её, чтобы начать. В первый раз ассистент спросит, какой язык вы хотите использовать: просто назовите его. Затем нажмите пробел (или кнопку), чтобы начать говорить, и нажмите ещё раз, когда закончите, чтобы получить ответ. Если вы замолчите на семь секунд, ассистент всё равно ответит. Нажатие пробела, пока ассистент говорит, прерывает его. Чтобы завершить разговор, скажите «до свидания»."],
       ["Поддерживаемые программы и устройства", "Сайт рассчитан на JAWS, NVDA и Экранный диктор в Windows, VoiceOver на Mac и iPhone, TalkBack на Android и Orca в Linux, в текущих версиях Chrome, Edge, Firefox и Safari. Наушники и особые настройки не нужны."],
       ["Известные ограничения", "На английском ассистент использует естественный голос, созданный искусственным интеллектом. На других языках используется лучший голос, установленный на вашем устройстве: в Microsoft Edge на Windows, на iPhone и телефонах Android обычно есть естественные голоса для всех шести языков. Перебить ассистента голосом нельзя — нажмите кнопку."],
       ["Обратная связь", "Если что-то у вас не работает, напишите на {email}. Мы читаем каждое сообщение."],
@@ -181,7 +181,7 @@ const ACCESSIBILITY = {
     h1: "无障碍声明",
     sections: [
       ["我们的目标", "本网站可以完全通过语音和读屏软件使用。我们的目标是符合《网页内容无障碍指南》（WCAG）2.2 AA 级和欧洲标准 EN 301 549。"],
-      ["如何使用", "页面上有一个标题和一个大按钮。按下按钮后说话。每次回答后，一声短提示音表示轮到您说话。想打断助手时，请按按钮或空格键，说完后再按一次。要结束对话，请说“再见”，或在没有人说话时按下按钮。"],
+      ["如何使用", "页面上有一个标题和一个大按钮。按下它即可开始。第一次使用时，助手会问您想使用哪种语言，您直接说出来即可。然后按空格键（或按钮）开始说话，说完后再按一次即可听到回答。如果您停下来七秒钟不说话，助手也会回答。助手说话时按空格键可以打断它。要结束对话，请说“再见”。"],
       ["支持的读屏软件和设备", "本网站适用于 Windows 上的 JAWS、NVDA 和讲述人，Mac 和 iPhone 上的 VoiceOver，Android 上的 TalkBack，以及 Linux 上的 Orca，并支持最新版本的 Chrome、Edge、Firefox 和 Safari。不需要耳机，也不需要特别设置。"],
       ["已知限制", "英语使用人工智能生成的自然语音。其他语言使用您设备上安装的最佳语音：Windows 上的 Microsoft Edge、iPhone 和 Android 手机通常都有六种语言的自然语音。您不能通过说话打断助手，请按按钮。"],
       ["反馈", "如果有什么对您不起作用，请写信至 {email}。我们会阅读每一封来信。"],

@@ -203,12 +203,13 @@ app.post(
 
       const key = process.env.GROQ_API_KEY;
       if (!key) throw new Error("GROQ_API_KEY is not set");
-      const lang = pickLang(req.query.lang);
+      // "auto": the language question, where we don't know the language yet.
+      const auto = req.query.lang === "auto";
 
       const form = new FormData();
       form.append("file", new Blob([buf], { type: "audio/wav" }), "speech.wav");
       form.append("model", STT_MODEL);
-      form.append("language", lang);
+      if (!auto) form.append("language", pickLang(req.query.lang));
       form.append("response_format", "verbose_json");
       form.append("temperature", "0");
 
@@ -227,7 +228,7 @@ app.post(
         : data.text || "";
       text = text.replace(/\s+/g, " ").trim();
       if (HALLUCINATIONS.test(text)) text = "";
-      res.json({ text });
+      res.json(auto ? { text, language: String(data.language || "") } : { text });
     } catch (err) {
       sendError(res, err, "transcribe");
     }
