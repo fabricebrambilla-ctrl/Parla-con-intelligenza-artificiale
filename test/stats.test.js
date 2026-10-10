@@ -49,12 +49,19 @@ test("one browser, two button presses = 1 user, 2 conversations", { skip: !DB },
   assert.match(html, /Today \([\d-]+\)<\/h2>\s*<p>Unique users: <strong>1<\/strong>\. Conversations: <strong>2<\/strong>/);
 });
 
-test("generated visitors are added as ordinary visitors", { skip: !DB }, async () => {
-  const add = await fetch(BASE + "/stats/demo", { method: "POST", headers: { Authorization: AUTH }, redirect: "manual" });
-  assert.equal(add.status, 303);
+test("generating 317 visitors gives exactly 317 users over 30 days, with varying conversations", { skip: !DB }, async () => {
+  const post = (url, body) => fetch(BASE + url, {
+    method: "POST", redirect: "manual",
+    headers: { Authorization: AUTH, "Content-Type": "application/x-www-form-urlencoded" }, body,
+  });
+  assert.equal((await post("/stats/clear", "")).status, 303);
+  assert.equal((await post("/stats/demo", "visitors=317")).status, 303);
   const html = await (await fetch(BASE + "/stats", { headers: { Authorization: AUTH } })).text();
-  const today = Number(html.match(/Today[^<]*<\/h2>\s*<p>Unique users: <strong>(\d+)/)[1]);
-  assert.ok(today > 1, "today has more users than the one real browser");
+  const m = html.match(/Last 30 days<\/h2>\s*<p>Unique users: <strong>(\d+)<\/strong>\. Conversations: <strong>(\d+)/);
+  assert.equal(Number(m[1]), 317);
+  const conv = Number(m[2]);
+  assert.ok(conv > 317 * 2 && conv < 317 * 8, "about 3–5 conversations per visitor on average, got " + conv);
   assert.doesNotMatch(html, /test data/i);
   assert.equal((await fetch(BASE + "/stats/demo", { method: "POST", redirect: "manual" })).status, 401);
+  assert.equal((await fetch(BASE + "/stats/clear", { method: "POST", redirect: "manual" })).status, 401);
 });

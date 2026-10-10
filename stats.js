@@ -136,13 +136,16 @@ async function readStats() {
   const day = `(ts AT TIME ZONE '${TZ}')::date`;
   const all = `SELECT anon_id, ts FROM stat_visits UNION ALL SELECT anon_id, ts FROM stat_presses`;
 
-  const [perDay, presses, week] = await Promise.all([
+  const totals = (from) =>
+    p.query(`SELECT (SELECT COUNT(DISTINCT anon_id)::int FROM (${all}) e WHERE ${day} >= $1::date) AS users,
+                    (SELECT COUNT(*)::int FROM stat_presses WHERE ${day} >= $1::date) AS presses`, [from]);
+  const [perDay, presses, week, month] = await Promise.all([
     p.query(`SELECT to_char(${day}, 'YYYY-MM-DD') AS d, COUNT(DISTINCT anon_id)::int AS users
              FROM (${all}) e WHERE ${day} >= $1::date GROUP BY 1`, [since]),
     p.query(`SELECT to_char(${day}, 'YYYY-MM-DD') AS d, COUNT(*)::int AS n
              FROM stat_presses WHERE ${day} >= $1::date GROUP BY 1`, [since]),
-    p.query(`SELECT (SELECT COUNT(DISTINCT anon_id)::int FROM (${all}) e WHERE ${day} >= $1::date) AS users,
-                    (SELECT COUNT(*)::int FROM stat_presses WHERE ${day} >= $1::date) AS presses`, [days[6]]),
+    totals(days[6]),
+    totals(since),
   ]);
 
   const users = Object.fromEntries(perDay.rows.map((r) => [r.d, r.users]));
@@ -152,6 +155,7 @@ async function readStats() {
     rows,
     today: rows[0],
     week: { users: week.rows[0].users, conversations: week.rows[0].presses },
+    month: { users: month.rows[0].users, conversations: month.rows[0].presses },
   };
 }
 
@@ -167,29 +171,57 @@ async function insertRows(table, rows) {
   }
 }
 
-async function seedDemo() {
+// Normally distributed random number (Box–Muller).
+function gaussian() {
+  return Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
+}
+
+// A random moment on the Zurich day that is `daysAgo` days back, between 7:00
+// and 23:00 local time, never in the future.
+function momentOn(daysAgo) {
+  const now = Date.now();
+  for (let tries = 0; tries < 20; tries++) {
+    const t = now - daysAgo * 86400000 - Math.random() * 86400000;
+    const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "numeric", hourCycle: "h23" }).format(new Date(t)));
+    if (hour >= 7 && hour <= 22 && zurichDate(new Date(t)) === zurichDate(new Date(now - daysAgo * 86400000))) return new Date(t);
+  }
+  return new Date(now - daysAgo * 86400000);
+}
+
+// Adds `count` made-up visitors spread over the last 30 days. Like real people,
+// most try it once or twice, some come back on several days, a few use it a lot:
+// conversations per visitor follow a skewed (log-normal) curve, median about 3.
+async function seedDemo(count = 317) {
   await ensureTables();
-  const pool = Array.from({ length: 900 + Math.floor(Math.random() * 700) }, () => crypto.randomUUID());
   const visits = [], presses = [];
-  for (let k = 0; k < KEEP_DAYS; k++) {
-    // Irregular daily numbers: a slow upward trend, quieter weekends, plenty of noise.
-    const date = new Date(Date.now() - k * 86400000);
-    const weekend = [0, 6].includes(date.getDay());
-    const users = Math.round((60 + (KEEP_DAYS - k) * 4) * (weekend ? 0.7 : 1) * (0.75 + Math.random() * 0.5)) + Math.floor(Math.random() * 9);
-    const today = new Set();
-    while (today.size < Math.min(users, pool.length)) today.add(pool[Math.floor(Math.random() * pool.length)]);
-    for (const id of today) {
-      // Times spread over the hours before this moment on day k.
-      const at = () => new Date(date.getTime() - Math.random() * 6 * 3600000);
-      const opens = 1 + (Math.random() < 0.25 ? 1 : 0);
-      for (let i = 0; i < opens; i++) visits.push([id, at()]);
-      const n = Math.floor(Math.random() * 9) + (Math.random() < 0.15 ? 0 : 1);
-      for (let i = 0; i < n; i++) presses.push([id, at()]);
+  for (let v = 0; v < count; v++) {
+    const id = crypto.randomUUID();
+    const total = Math.min(60, Math.max(1, Math.round(Math.exp(1.1 + 0.85 * gaussian()))));
+    // Busier visitors tend to come back on more days; newer days are a bit more likely (growth).
+    const dayCount = Math.min(total, KEEP_DAYS, 1 + Math.floor(Math.random() * Math.sqrt(total) * 1.6));
+    const days = new Set();
+    while (days.size < dayCount) days.add(Math.floor(KEEP_DAYS * Math.pow(Math.random(), 1.4)));
+    const list = [...days];
+    const perDay = new Map(list.map((d) => [d, 1]));
+    for (let i = list.length; i < total; i++) {
+      const d = list[Math.floor(Math.random() * list.length)];
+      perDay.set(d, perDay.get(d) + 1);
+    }
+    for (const [d, n] of perDay) {
+      visits.push([id, momentOn(d)]);
+      if (Math.random() < 0.3) visits.push([id, momentOn(d)]);
+      for (let i = 0; i < n; i++) presses.push([id, momentOn(d)]);
     }
   }
   await insertRows("stat_visits", visits);
   await insertRows("stat_presses", presses);
-  return { visits: visits.length, presses: presses.length };
+  return { visitors: count, conversations: presses.length };
+}
+
+async function clearAll() {
+  await ensureTables();
+  await db().query("DELETE FROM stat_visits");
+  await db().query("DELETE FROM stat_presses");
 }
 
 // ---------- access ----------
@@ -257,8 +289,15 @@ function sameSite(req, res, next) {
   next();
 }
 
-router.post("/stats/demo", guard, sameSite, async (req, res) => {
-  try { await seedDemo(); } catch (err) { console.error("stats demo:", err.message); }
+router.post("/stats/demo", express.urlencoded({ extended: false, limit: "1kb" }), guard, sameSite, async (req, res) => {
+  const n = Math.round(Number(req.body?.visitors));
+  const count = Number.isFinite(n) && n >= 1 && n <= 5000 ? n : 317;
+  try { await seedDemo(count); } catch (err) { console.error("stats demo:", err.message); }
+  res.redirect(303, "/stats");
+});
+
+router.post("/stats/clear", guard, sameSite, async (req, res) => {
+  try { await clearAll(); } catch (err) { console.error("stats clear:", err.message); }
   res.redirect(303, "/stats");
 });
 
@@ -278,6 +317,7 @@ router.get("/stats", guard, async (req, res) => {
     <h2>Last 7 days</h2>
     <p>Unique users: <strong>${s.week.users}</strong>. Conversations: <strong>${s.week.conversations}</strong>.</p>
     <h2>Last 30 days</h2>
+    <p>Unique users: <strong>${s.month.users}</strong>. Conversations: <strong>${s.month.conversations}</strong>.</p>
     <table>
       <caption>Days in Europe/Zurich time, newest first. A unique user is a device that opened the site; a conversation is a button press.</caption>
       <thead><tr><th scope="col">Date</th><th scope="col">Unique users</th><th scope="col">Conversations</th></tr></thead>
@@ -285,7 +325,14 @@ router.get("/stats", guard, async (req, res) => {
 ${tr}
       </tbody>
     </table>
-    <form method="post" action="/stats/demo"><button type="submit">Generate visitors (for testing)</button></form>`));
+    <h2>Generate visitors (for testing)</h2>
+    <form method="post" action="/stats/demo">
+      <p><label for="visitors">Number of visitors</label>
+      <input id="visitors" name="visitors" type="number" min="1" max="5000" value="317"></p>
+      <p><button type="submit">Generate visitors</button></p>
+    </form>
+    <h2>Start again</h2>
+    <form method="post" action="/stats/clear"><p><button type="submit">Delete all statistics</button></p></form>`));
   } catch (err) {
     console.error("stats page:", err.message);
     res.status(503).type("html").send(page("Stats unavailable", `
@@ -294,4 +341,4 @@ ${tr}
   }
 });
 
-module.exports = { router, flush, cleanup, readStats, seedDemo };
+module.exports = { router, flush, cleanup, readStats, seedDemo, clearAll };

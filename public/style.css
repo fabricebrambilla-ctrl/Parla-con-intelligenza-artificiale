@@ -103,6 +103,7 @@ a { color: inherit; }
 
 .stats table { border-collapse: collapse; width: 100%; }
 .stats caption { text-align: left; padding-bottom: 0.5rem; color: var(--muted); }
+.stats input { font: inherit; padding: 0.4rem; border: 3px solid var(--border); border-radius: 0.5rem; width: 8rem; margin-left: 0.5rem; }
 .stats th, .stats td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; }
 
 @media (prefers-reduced-motion: reduce) {
