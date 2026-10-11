@@ -460,6 +460,7 @@ Deviations from this brief (decided with the owner, see §13):
 | Date | Change | Files |
 |---|---|---|
 | 2026-10-10 | Added this brief and the agent rules (§0). No app code changed. | `docs/talk-with-ai-brief.md`, `CLAUDE.md`, `AGENTS.md` |
+| 2026-10-11 | Shorter UX after a second simulated walk-through (JAWS, NVDA, VoiceOver iPhone; first and second visit): spoken privacy notice cut to two short sentences (first layer of the notice; full text stays on /privacy); first-time instructions shortened (~5 s with the notice instead of ~20 s); returning users get a one-sentence greeting (`introHeard`); Talk button description shortened, so screen readers repeat less at the end of a conversation; all six languages. | `public/i18n.js`, `public/app.js`, this brief |
 | 2026-10-10 | Screen-reader walk-through fixes: Space during the language question now also skips the list of language names; "Talk" label appears only when the assistant first waits (screen reader cue instead of talking over the greeting); greeting and help explain interrupting with Space / the Talk button in 6 languages; help text no longer read twice; empty VoiceOver stop removed. | `public/app.js`, `public/i18n.js`, `public/index.html`, `public/style.css`, this brief |
 | 2026-10-10 | Natural AI voice in all six languages via Fish Audio (free developer model), with per-language voice choice, falling back to Groq (English) and the device voice; better device-voice ranking by known natural voice names; privacy notice and accessibility statement updated for the new voice service. | `server.js`, `public/app.js`, `legal.js`, this brief |
 | 2026-10-10 | Screen-reader fit: Talk button focused on load with the help as its description (removed during a conversation); End conversation button during a conversation (focus returns to Talk when it hides); Escape ends; phone/tablet wording ("press the Talk button") in 6 languages; Android vibration when recording starts/stops; forced-colors styles; accessibility statement explains keeping the cursor on the Talk button; §4.3b documents the screen-reader facts. | `public/index.html`, `public/app.js`, `public/i18n.js`, `public/style.css`, `legal.js`, this brief |
@@ -477,6 +478,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Preference |
 |---|---|
+| 2026-10-11 | The spoken legal notice must be **as short as possible**; keep improving the UX from the screen-reader point of view. |
 | 2026-10-10 | Must be explained clearly that you **start with Space, stop with Space, and can interrupt at any time with Space and answer straight away**. |
 | 2026-10-10 | Wants the voice to sound as natural as possible **in all languages**, still free. |
 | 2026-10-10 | Every part of the site must fit how **all** screen readers work (JAWS, NVDA, Narrator, VoiceOver, TalkBack, Orca), with **zero friction**. |

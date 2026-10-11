@@ -742,8 +742,10 @@
     }
 
     // EU AI Act: the greeting says it is an AI. The first time, also say where the voice goes.
-    var intro = context ? tk("greetingContinue") : tk("greeting");
+    // Full instructions only the first time; after that a short greeting.
+    var intro = context ? tk("greetingContinue") : get("introHeard") ? tk("greetingShort") : tk("greeting");
     if (!get("noticeHeard")) { intro = tt("notice") + " " + intro; set("noticeHeard", "1"); }
+    set("introHeard", "1");
     await say(intro);
     if (my !== session) return;
     goReady();
