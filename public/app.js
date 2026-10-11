@@ -48,6 +48,11 @@
     historyP.querySelector("a").href = "/history?lang=" + lang;
     $("privacyLink").href = "/privacy?lang=" + lang;
     $("accessibilityLink").href = "/accessibility?lang=" + lang;
+    var opts = langsBox.querySelectorAll("[data-set-lang]");
+    for (var i = 0; i < opts.length; i++) {
+      if (opts[i].getAttribute("data-set-lang") === lang) opts[i].setAttribute("aria-current", "true");
+      else opts[i].removeAttribute("aria-current");
+    }
   }
 
   function showHistoryControls() {
@@ -582,6 +587,50 @@
     return short && WHISPER_LANGS[String(detected || "").toLowerCase()] || null;
   }
 
+  // ---------- changing language by voice, during a conversation ----------
+  // "Speak Italian", "parla francese", "говори по-русски", "说英语": switch at once.
+  // "Change language" (no language named): ask the language question again.
+  var SWITCH_WORDS = ["speak", "talk", "switch", "change", "use", "reply", "answer", "respond",
+                      "parla", "parlami", "parliamo", "parlare", "passa", "passiamo", "usa", "cambia", "rispondi",
+                      "parle", "parlez", "parler", "parlons", "passe", "passez", "passons", "utilise", "changer", "réponds", "répondez",
+                      "говори", "говорете", "говорим", "премини", "преминем", "смени", "отговаряй", "отговори",
+                      "говорите", "говорить", "перейди", "перейдите", "переключи", "переключись", "давай", "отвечай", "ответь", "разговаривай"];
+  var CHANGE_LANG = ["change language", "change the language", "switch language", "another language", "different language",
+                     "other language", "cambia lingua", "cambiare lingua", "cambia la lingua", "altra lingua",
+                     "changer de langue", "change de langue", "changer la langue", "autre langue",
+                     "смени езика", "смяна на езика", "друг език", "смени язык", "сменить язык", "поменяй язык",
+                     "другой язык", "换语言", "换一种语言", "切换语言", "更改语言", "改变语言"];
+  var ZH_SWITCH = /(说|讲|切换到|切换成|换成|换到|改成|改用)\s*(中文|汉语|普通话|英语|英文|意大利语|法语|法文|俄语|俄文|保加利亚语)/;
+
+  // Returns a language code to switch to, "ask" to ask again, or null (not a language request).
+  function languageCommand(text) {
+    var clean = text.toLowerCase().replace(/[.,!?¡¿;:。，！？«»"“”]/g, " ").replace(/\s+/g, " ").trim();
+    if (/[一-鿿]/.test(clean)) {
+      if (clean.replace(/\s/g, "").length > 12) return null;
+      var m = clean.match(ZH_SWITCH);
+      if (m) return matchLanguage(m[2]);
+      return CHANGE_LANG.some(function (w) { return clean.indexOf(w) !== -1; }) ? "ask" : null;
+    }
+    // Only short requests, so questions like "how do you say hello in Italian?" go to the assistant.
+    if (clean.split(" ").length > 8) return null;
+    var padded = " " + clean + " ";
+    var hasSwitch = SWITCH_WORDS.some(function (w) { return padded.indexOf(" " + w + " ") !== -1; });
+    // The language must come at the end ("talk about Italian food" is not a request).
+    var words = clean.replace(/ (please|per favore|s'il vous plaît|s'il te plaît|моля|пожалуйста)$/, "").split(" ");
+    var code = hasSwitch ? matchLanguage(words[words.length - 1]) : null;
+    if (code) return code;
+    return CHANGE_LANG.some(function (w) { return padded.indexOf(" " + w + " ") !== -1; }) ? "ask" : null;
+  }
+
+  async function changeLanguage(code) {
+    var my = session;
+    if (code === "ask") await chooseLanguage(my);
+    else { lang = code; set("lang", lang); set("langChosen", "1"); renderTexts(); }
+    if (my !== session) return;
+    await say(tt("langChanged"));
+    if (my === session) goReady();
+  }
+
   function recordOnce() {
     return new Promise(function (resolve) { recResolve = resolve; startRecording(true); });
   }
@@ -639,6 +688,8 @@
       if (my !== session) return;
       var text = String(r1.text || "").trim();
       if (!text) { stopThinking(); return nothingHeard(); }
+      var langCmd = languageCommand(text);
+      if (langCmd) { stopThinking(); return changeLanguage(langCmd); }
       transcript.push({ role: "user", content: text });
 
       if (isGoodbye(text)) {
@@ -827,6 +878,16 @@
     var open = langsBox.hidden;
     langsBox.hidden = !open;
     langBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    // Move straight into the list, onto the current language.
+    if (open) { var cur = langsBox.querySelector('[data-set-lang="' + lang + '"]'); if (cur) cur.focus(); }
+  });
+
+  langsBox.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    e.stopPropagation();
+    langsBox.hidden = true;
+    langBtn.setAttribute("aria-expanded", "false");
+    langBtn.focus();
   });
 
   langsBox.addEventListener("click", function (e) {
