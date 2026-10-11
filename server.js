@@ -246,18 +246,15 @@ app.post(
 );
 
 // ---------- natural voice ----------
-async function fishSpeak(text, lang, speed = 1) {
+async function fishSpeak(text, lang) {
   const body = { text, format: "mp3" };
   if (fishVoice(lang)) body.reference_id = fishVoice(lang);
-  if (speed !== 1) body.prosody = { speed, volume: 0 };
   const r = await fetch(FISH_URL, {
     method: "POST",
     headers: { Authorization: "Bearer " + process.env.FISH_API_KEY, "Content-Type": "application/json", model: FISH_MODEL },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(15000),
   });
-  // If the speed setting is refused, the normal speed is better than no AI voice.
-  if (!r.ok && speed !== 1 && r.status === 400) return fishSpeak(text, lang, 1);
   if (!r.ok) throw providerError(r.status, (await r.text().catch(() => "")).slice(0, 200), "Fish TTS");
   return { type: "audio/mpeg", data: Buffer.from(await r.arrayBuffer()) };
 }
@@ -281,12 +278,10 @@ async function groqSpeak(text) {
 app.post("/api/speak", express.json({ limit: "4kb" }), limit({ requests: 1 }), async (req, res) => {
   const text = String(req.body?.text || "").trim().slice(0, 400);
   const lang = pickLang(req.body?.lang);
-  // "faster" / "slower" in the conversation: 0.8 to 2 times.
-  const speed = Math.min(2, Math.max(0.8, Number(req.body?.speed) || 1));
   if (!text || !aiVoiceLangs().includes(lang)) return res.status(404).json({ error: "no voice" });
   let audio = null;
   if (process.env.FISH_API_KEY) {
-    try { audio = await fishSpeak(text, lang, speed); } catch (err) { console.error("speak (Fish):", err.message); }
+    try { audio = await fishSpeak(text, lang); } catch (err) { console.error("speak (Fish):", err.message); }
   }
   if (!audio && lang === "en" && TTS_ENABLED) {
     try { audio = await groqSpeak(text); } catch (err) { console.error("speak (Groq):", err.message); }

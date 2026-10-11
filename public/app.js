@@ -213,9 +213,6 @@
     return final;
   }
 
-  // Speaking speed, changed by saying "faster" / "slower" (many screen-reader users listen fast).
-  var SPEEDS = [0.8, 1, 1.2, 1.4, 1.6, 1.8, 2];
-  var speed = SPEEDS.indexOf(Number(get("speed"))) !== -1 ? Number(get("speed")) : 1;
   var lastSaid = "";        // the assistant's last reply or greeting, for "repeat"
 
   var stopSpeaking = null;  // set while something is being said
@@ -234,11 +231,10 @@
         var u = new SpeechSynthesisUtterance(chunk);
         u.lang = I.META[code].speech;
         if (voice) u.voice = voice;
-        u.rate = speed;
         u.onend = next;
         u.onerror = next;
         // Some browsers never fire onend; never get stuck.
-        var perChar = (code === "zh" ? 300 : 110) / Math.min(speed, 1);
+        var perChar = code === "zh" ? 300 : 110;
         watchdog = setTimeout(next, 4000 + chunk.length * perChar);
         speechSynthesis.speak(u);
       }
@@ -252,7 +248,7 @@
     return fetch("/api/speak", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Anon-Id": anonId },
-      body: JSON.stringify({ lang: code, text: text, speed: speed }),
+      body: JSON.stringify({ lang: code, text: text }),
       signal: ctl.signal
     }).then(function (r) {
       if (!r.ok) throw new Error("voice " + r.status);
@@ -615,20 +611,13 @@
              "what did you say", "again", "ripeti", "ripetilo", "puoi ripetere", "ripeti per favore", "come hai detto", "cosa hai detto",
              "répète", "répétez", "tu peux répéter", "vous pouvez répéter", "pardon", "повтори", "повторете", "кажи пак", "кажете пак",
              "повторите", "ещё раз", "еще раз", "что ты сказал", "再说一遍", "再说一次", "重复", "重复一遍", "没听清"],
-    faster: ["faster", "speak faster", "talk faster", "speed up", "a bit faster", "più veloce", "parla più veloce", "più velocemente",
-             "plus vite", "parle plus vite", "parlez plus vite", "plus rapide", "по-бързо", "говори по-бързо", "говорете по-бързо",
-             "быстрее", "говори быстрее", "побыстрее", "говорите быстрее", "快一点", "说快一点", "快点", "说快点", "快一些"],
-    slower: ["slower", "speak slower", "talk slower", "slow down", "more slowly", "speak more slowly", "a bit slower", "più lento",
-             "più lentamente", "parla più lentamente", "parla più piano", "più piano", "plus lentement", "moins vite", "parle moins vite",
-             "parlez moins vite", "parle plus lentement", "parlez plus lentement", "по-бавно", "говори по-бавно", "говорете по-бавно",
-             "медленнее", "помедленнее", "говори медленнее", "говорите медленнее", "慢一点", "说慢一点", "慢点", "说慢点", "慢一些"],
     help: ["help", "what can i say", "instructions", "how does this work", "aiuto", "cosa posso dire", "istruzioni",
            "aide", "à l'aide", "que puis-je dire", "qu'est-ce que je peux dire", "помощ", "какво мога да кажа", "инструкции",
            "помощь", "помогите", "что я могу сказать", "инструкция", "帮助", "我能说什么", "我可以说什么", "说明", "怎么用"]
   };
   var POLITE = /^(ok|okay|please|per favore|s'il te plaît|s'il vous plaît|моля|пожалуйста|请) | (please|per favore|s'il te plaît|s'il vous plaît|моля|пожалуйста)$/g;
 
-  // Returns "repeat", "faster", "slower", "help", a language code, "ask" (ask the language again), or null.
+  // Returns "repeat", "help", a language code, "ask" (ask the language again), or null.
   function voiceCommand(text) {
     var clean = text.toLowerCase().replace(/[.,!?¡¿;:。，！？«»"“”]/g, " ").replace(/\s+/g, " ").trim();
     var bare = clean.replace(POLITE, "").replace(POLITE, "").replace(/^请|吧$/g, "").trim();
@@ -654,11 +643,7 @@
     var my = session, reply;
     if (cmd === "repeat") reply = lastSaid || tt("voiceHelp");
     else if (cmd === "help") reply = tt("voiceHelp");
-    else if (cmd === "faster" || cmd === "slower") {
-      var i = SPEEDS.indexOf(speed) + (cmd === "faster" ? 1 : -1);
-      if (i < 0 || i >= SPEEDS.length) reply = tt("speedLimit");
-      else { speed = SPEEDS[i]; set("speed", String(speed)); reply = tt(cmd); }
-    } else {
+    else {
       if (cmd === "ask") await chooseLanguage(my);
       else { lang = cmd; set("lang", lang); set("langChosen", "1"); renderTexts(); }
       if (my !== session) return;
