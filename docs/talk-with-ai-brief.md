@@ -416,6 +416,8 @@ Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public 
 
 ### Current state of the code (keep this up to date)
 
+- 2026-10-24 Render advisory follow-up: pin native Node runtime to 24.22.1 with `.node-version` and patched 24.x engines; upgrade locked body-parser 2.3.0 to 2.4.0 (compatible qs/iconv-lite patches). npm audit reports zero vulnerabilities after update. See Render eMudhra advisory and Node October 21 security release.
+
 - Julian feedback (2026-10-24): localized microphone-permission status and blocked-permission recovery; pending requests cancelled safely on end/restart. Dedicated Alt+Shift+T operates Talk from other page controls when delivered by browser/screen reader; ordinary link keyboard behavior stays native. Automated regression coverage; real NVDA/JAWS retest is still pending.
 
 As of 2026-10-10 the app is a full first version built with **Groq + Tavily** (Gemini Live is not used yet, see "Deviations" below).
@@ -475,6 +477,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Change | Files |
 |---|---|---|
+| 2026-10-24 | Act on the preserved Render security notice: select patched Node 24.22.1 and update body-parser to 2.4.0, qs to 6.16.1, iconv-lite to 0.7.3. npm audit now reports zero vulnerabilities. | `.node-version`, `package.json`, `package-lock.json`, this brief |
 | 2026-10-24 | Implement Julian’s microphone-permission guidance and dedicated Alt+Shift+T Talk shortcut in all six languages. Prevent cancelled microphone requests from affecting a new session. Update accessibility instructions and add regression tests. Real NVDA/JAWS retest remains pending. | `public/app.js`, `public/index.html`, `public/i18n.js`, `legal.js`, `test/accessibility-feedback.test.js`, this brief |
 | 2026-10-24 | Prevent repeated `model_not_found` errors from retired Groq Compound: no default research-model fallback, retired IDs ignored even if configured, inaccessible custom research models blocked until restart. Tavily remains the primary search; unavailable search is reported honestly. Focused offline regression checks added. | `server.js`, `test/search-fallback.test.js`, this brief |
 | 2026-10-24 | Conversation history removed: no summaries (`/api/summary` gone), no Continue button, no past-conversations page (`/history` redirects home), old saved history deleted from each device; page privacy sentence and privacy notice updated in 6 languages. | `public/index.html`, `public/app.js`, `public/i18n.js`, `legal.js`, `server.js`, `public/history.html` and `public/history.js` (deleted), this brief |
