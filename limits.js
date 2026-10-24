@@ -29,6 +29,9 @@ const LIMITS = {
   // the free AI quota that blind visitors depend on. 0 turns the agent API off.
   agentPerDay: num("AGENT_DAILY_MESSAGES", 40),
   agentPerIpPerDay: num("AGENT_DAILY_MESSAGES_PER_IP", 20),
+  // Statistics: at most this many different devices are counted per internet address per day,
+  // so nobody can inflate "unique users" by sending made-up IDs.
+  statsIdsPerIp: num("STATS_DEVICES_PER_IP", 10),
 };
 
 // ---------- stores ----------
@@ -191,4 +194,15 @@ function agentLimit() {
   };
 }
 
-module.exports = { LIMITS, limit, agentLimit, takeTavilySearch, clientIp, normalize };
+// True if this device ID may be counted in the statistics today: IDs already seen today
+// from this address always are; new ones only up to STATS_DEVICES_PER_IP per address per day.
+async function statsIdAllowed(req, id) {
+  const d = day(), ip = pseudonym(clientIp(req));
+  if ((await store.incr(`sid:${d}:${ip}:${pseudonym(id)}`, 1, DAY)) > 1) return true;
+  const n = await store.incr(`sidn:${d}:${ip}`, 1, DAY);
+  if (n <= LIMITS.statsIdsPerIp) return true;
+  await store.incr(`sid:${d}:${ip}:${pseudonym(id)}`, -1, DAY);
+  return false;
+}
+
+module.exports = { LIMITS, limit, agentLimit, takeTavilySearch, statsIdAllowed, clientId, clientIp, normalize };

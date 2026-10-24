@@ -150,9 +150,12 @@ function pickLang(value) {
 
 // Answers whether the visitor can start a conversation (costs nothing), and
 // which languages have the natural AI voice.
-app.get("/api/limit", limit({ seconds: 0, requests: 0, burst: false }), (req, res) =>
-  res.json({ ok: true, aiVoice: aiVoiceLangs() })
-);
+// It is called only when "Start conversation" or "Continue last conversation" is pressed,
+// so a successful answer is also counted as a conversation in the owner's statistics.
+app.get("/api/limit", limit({ seconds: 0, requests: 0, burst: false }), (req, res) => {
+  stats.recordDevice(req, "conversation");
+  res.json({ ok: true, aiVoice: aiVoiceLangs() });
+});
 
 // ---------- errors ----------
 // Groq's daily quota means "today's limit is used up"; per-minute limits and
@@ -522,7 +525,7 @@ app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), 
 });
 
 // Hidden text API for AI agents (no page links to it; see agent.js).
-require("./agent.js")(app, { runChat, limit, pickLang, errorCode, LANGS: I18N.LANGS });
+require("./agent.js")(app, { runChat, limit, pickLang, errorCode, LANGS: I18N.LANGS, stats });
 
 // ---------- summary for the on-device history ----------
 app.post("/api/summary", express.json({ limit: "300kb" }), limit({ requests: 1 }), async (req, res) => {

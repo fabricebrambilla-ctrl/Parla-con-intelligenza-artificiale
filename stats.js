@@ -1,19 +1,28 @@
 // Private usage statistics, shown at /stats behind STATS_PASSWORD.
 //
-// Stored in Postgres (DATABASE_URL), in two tables that hold only an anonymous
-// ID and a timestamp: stat_visits (the site was opened) and stat_presses (a
-// button was pressed). No IP addresses, audio, text or browser details.
-// Records older than 30 days (Europe/Zurich calendar days) are deleted.
+// Stored in Postgres (DATABASE_URL), in one table, stat_events, that holds only
+// a kind ("visit" or "conversation"), an anonymous ID and a timestamp. No IP
+// addresses, audio, text or browser details. Records older than 7 days
+// (Europe/Zurich calendar days) are deleted.
 //
-// Recording never blocks or slows the site: the browser sends a beacon, the
-// server answers at once and writes in the background in small batches. If
-// the database is missing or down, events are simply dropped.
+// What is counted (people and AI agents together, not told apart):
+//   - a unique user: one device that opened the site or started a conversation,
+//     or one AI agent (its agent_id) that had a chat answered;
+//   - a conversation: "Start conversation" / "Continue last conversation" let
+//     through by the server (counted on the server, not by a browser beacon),
+//     or an agent chat whose first message was answered.
+// Nothing can be generated or faked from the stats page, and a single internet
+// address can add at most STATS_DEVICES_PER_IP new devices a day.
+//
+// Recording never blocks or slows the site: events are saved in the background
+// in small batches. If the database is missing or down, events are dropped.
 
 const crypto = require("crypto");
 const express = require("express");
 
 const TZ = "Europe/Zurich";
-const KEEP_DAYS = 30;
+const KEEP_DAYS = 7;
+const { statsIdAllowed, clientId } = require("./limits.js");
 const ID_RE = /^[\w-]{8,64}$/;
 
 let pool = null;
@@ -46,39 +55,50 @@ async function ensureTables() {
   if (!p) throw new Error("DATABASE_URL is not set");
   if (!ready) {
     ready = p.query(`
-      CREATE TABLE IF NOT EXISTS stat_visits (anon_id text NOT NULL, ts timestamptz NOT NULL);
-      CREATE TABLE IF NOT EXISTS stat_presses (anon_id text NOT NULL, ts timestamptz NOT NULL);
-      CREATE INDEX IF NOT EXISTS stat_visits_ts ON stat_visits (ts);
-      CREATE INDEX IF NOT EXISTS stat_presses_ts ON stat_presses (ts);
+      DROP TABLE IF EXISTS stat_visits;
+      DROP TABLE IF EXISTS stat_presses;
+      CREATE TABLE IF NOT EXISTS stat_events (kind text NOT NULL, anon_id text NOT NULL, ts timestamptz NOT NULL);
+      CREATE INDEX IF NOT EXISTS stat_events_ts ON stat_events (ts);
     `).catch((err) => { ready = null; throw err; });
   }
   return ready;
 }
 
 // ---------- recording ----------
-const queue = { visit: [], press: [] };
+const KINDS = ["visit", "conversation"];
+const queue = [];
 const MAX_QUEUE = 2000;
 let flushing = false;
 
 function record(kind, id) {
-  if (!db() || !ID_RE.test(id) || queue[kind].length >= MAX_QUEUE) return;
-  queue[kind].push([id, new Date()]);
+  if (!db() || !KINDS.includes(kind) || !ID_RE.test(id) || queue.length >= MAX_QUEUE) return;
+  queue.push([kind, id, new Date()]);
+}
+
+// A device of a person, from the anonymous ID its browser sends (X-Anon-Id or the beacon).
+// Never throws and never delays the caller.
+function recordDevice(req, kind, id = clientId(req)) {
+  if (!db() || !ID_RE.test(id)) return;
+  statsIdAllowed(req, id).then((ok) => { if (ok) record(kind, id); }, (err) => quietLog("stats:", err.message));
+}
+
+// An AI agent of the agent API (already limited by the agents' daily budget).
+function recordAgentChat(agentId) {
+  record("conversation", "agent-" + agentId);
 }
 
 async function flush() {
   if (flushing || !db()) return;
   flushing = true;
   try {
-    for (const [kind, table] of [["visit", "stat_visits"], ["press", "stat_presses"]]) {
-      const rows = queue[kind].splice(0, 500);
-      if (!rows.length) continue;
-      try {
-        await ensureTables();
-        const values = rows.map((_, i) => `($${i * 2 + 1}, $${i * 2 + 2})`).join(",");
-        await db().query(`INSERT INTO ${table} (anon_id, ts) VALUES ${values}`, rows.flat());
-      } catch (err) {
-        quietLog("stats: could not save " + rows.length + " events:", err.message);
-      }
+    const rows = queue.splice(0, 500);
+    if (!rows.length) return;
+    try {
+      await ensureTables();
+      const values = rows.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(",");
+      await db().query(`INSERT INTO stat_events (kind, anon_id, ts) VALUES ${values}`, rows.flat());
+    } catch (err) {
+      quietLog("stats: could not save " + rows.length + " events:", err.message);
     }
   } finally {
     flushing = false;
@@ -90,8 +110,7 @@ async function cleanup() {
   try {
     await ensureTables();
     const cutoff = `((now() AT TIME ZONE '${TZ}')::date - ${KEEP_DAYS - 1})`;
-    await db().query(`DELETE FROM stat_visits WHERE (ts AT TIME ZONE '${TZ}')::date < ${cutoff}`);
-    await db().query(`DELETE FROM stat_presses WHERE (ts AT TIME ZONE '${TZ}')::date < ${cutoff}`);
+    await db().query(`DELETE FROM stat_events WHERE (ts AT TIME ZONE '${TZ}')::date < ${cutoff}`);
   } catch (err) {
     quietLog("stats cleanup:", err.message);
   }
@@ -134,112 +153,21 @@ async function readStats() {
   const days = lastDays(KEEP_DAYS);
   const since = days[days.length - 1];
   const day = `(ts AT TIME ZONE '${TZ}')::date`;
-  const all = `SELECT anon_id, ts FROM stat_visits UNION ALL SELECT anon_id, ts FROM stat_presses`;
-
-  const totals = (from) =>
-    p.query(`SELECT (SELECT COUNT(DISTINCT anon_id)::int FROM (${all}) e WHERE ${day} >= $1::date) AS users,
-                    (SELECT COUNT(*)::int FROM stat_presses WHERE ${day} >= $1::date) AS presses`, [from]);
-  const [perDay, presses, week, month] = await Promise.all([
-    p.query(`SELECT to_char(${day}, 'YYYY-MM-DD') AS d, COUNT(DISTINCT anon_id)::int AS users
-             FROM (${all}) e WHERE ${day} >= $1::date GROUP BY 1`, [since]),
-    p.query(`SELECT to_char(${day}, 'YYYY-MM-DD') AS d, COUNT(*)::int AS n
-             FROM stat_presses WHERE ${day} >= $1::date GROUP BY 1`, [since]),
-    totals(days[6]),
-    totals(since),
+  const [perDay, week] = await Promise.all([
+    p.query(`SELECT to_char(${day}, 'YYYY-MM-DD') AS d, COUNT(DISTINCT anon_id)::int AS users,
+                    COUNT(*) FILTER (WHERE kind = 'conversation')::int AS conversations
+             FROM stat_events WHERE ${day} >= $1::date GROUP BY 1`, [since]),
+    p.query(`SELECT COUNT(DISTINCT anon_id)::int AS users, COUNT(*) FILTER (WHERE kind = 'conversation')::int AS conversations
+             FROM stat_events WHERE ${day} >= $1::date`, [since]),
   ]);
-
-  const users = Object.fromEntries(perDay.rows.map((r) => [r.d, r.users]));
-  const conv = Object.fromEntries(presses.rows.map((r) => [r.d, r.n]));
-  const rows = days.map((d) => ({ date: d, users: users[d] || 0, conversations: conv[d] || 0 }));
-  return {
-    rows,
-    today: rows[0],
-    week: { users: week.rows[0].users, conversations: week.rows[0].presses },
-    month: { users: month.rows[0].users, conversations: month.rows[0].presses },
-  };
-}
-
-// ---------- generated visitors (for testing before launch) ----------
-// The owner asked for these to look exactly like real visitors: they are not
-// marked, and are removed only by the normal 30-day deletion.
-
-async function insertRows(table, rows) {
-  for (let i = 0; i < rows.length; i += 1000) {
-    const part = rows.slice(i, i + 1000);
-    const values = part.map((_, j) => `($${j * 2 + 1}, $${j * 2 + 2})`).join(",");
-    await db().query(`INSERT INTO ${table} (anon_id, ts) VALUES ${values}`, part.flat());
-  }
-}
-
-// Normally distributed random number (Box–Muller).
-function gaussian() {
-  return Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
-}
-
-// A random moment on the Zurich day that is `daysAgo` days back, between 7:00
-// and 23:00 local time, never in the future.
-function momentOn(daysAgo) {
-  const now = Date.now();
-  for (let tries = 0; tries < 20; tries++) {
-    const t = now - daysAgo * 86400000 - Math.random() * 86400000;
-    const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "numeric", hourCycle: "h23" }).format(new Date(t)));
-    if (hour >= 7 && hour <= 22 && zurichDate(new Date(t)) === zurichDate(new Date(now - daysAgo * 86400000))) return new Date(t);
-  }
-  return new Date(now - daysAgo * 86400000);
-}
-
-// Adds `count` made-up visitors spread over the last 30 days, so the total for
-// the 30 days is exactly `count`. Daily numbers grow over the month (the newest
-// days are about four to five times busier than the oldest), are quieter at
-// weekends and go up and down from day to day. Like real people, most visitors
-// try it once or twice and a few use it a lot: conversations per visitor follow
-// a skewed (log-normal) curve, median about 3; busier visitors come back on
-// more days, after their first visit.
-async function seedDemo(count = 317) {
-  await ensureTables();
-  const days = lastDays(KEEP_DAYS); // index = days ago
-  const weight = days.map((d, k) => {
-    const weekday = new Date(d + "T12:00:00Z").getUTCDay();
-    const growth = 1 + (KEEP_DAYS - 1 - k) * 0.13;
-    return growth * (weekday === 0 || weekday === 6 ? 0.65 : 1) * (0.7 + Math.random() * 0.6);
-  });
-  const pick = (maxDaysAgo) => {
-    let total = 0;
-    for (let k = 0; k <= maxDaysAgo; k++) total += weight[k];
-    let r = Math.random() * total;
-    for (let k = 0; k <= maxDaysAgo; k++) { r -= weight[k]; if (r <= 0) return k; }
-    return 0;
-  };
-
-  const visits = [], presses = [];
-  for (let v = 0; v < count; v++) {
-    const id = crypto.randomUUID();
-    const total = Math.min(60, Math.max(1, Math.round(Math.exp(1.1 + 0.85 * gaussian()))));
-    const first = pick(KEEP_DAYS - 1);
-    const dayCount = Math.min(total, first + 1, 1 + Math.floor(Math.random() * Math.sqrt(total) * 1.6));
-    const active = new Set([first]);
-    for (let tries = 0; active.size < dayCount && tries < 200; tries++) active.add(pick(first));
-    const list = [...active];
-    const perDay = new Map(list.map((k) => [k, 1]));
-    for (let i = list.length; i < total; i++) {
-      const k = list[Math.floor(Math.random() * list.length)];
-      perDay.set(k, perDay.get(k) + 1);
-    }
-    for (const [k, n] of perDay) {
-      visits.push([id, momentOn(k)]);
-      if (Math.random() < 0.3) visits.push([id, momentOn(k)]);
-      for (let i = 0; i < n; i++) presses.push([id, momentOn(k)]);
-    }
-  }
-  await insertRows("stat_visits", visits);
-  await insertRows("stat_presses", presses);
-  return { visitors: count, conversations: presses.length };
+  const byDay = Object.fromEntries(perDay.rows.map((r) => [r.d, r]));
+  const rows = days.map((d) => ({ date: d, users: byDay[d]?.users || 0, conversations: byDay[d]?.conversations || 0 }));
+  return { rows, today: rows[0], week: week.rows[0] };
 }
 
 async function clearAll() {
   await ensureTables();
-  await db().query("DELETE FROM stat_visits");
-  await db().query("DELETE FROM stat_presses");
+  await db().query("DELETE FROM stat_events");
 }
 
 // ---------- access ----------
@@ -275,13 +203,15 @@ ${body}
 
 const router = express.Router();
 
-// Browser beacons: answer immediately, save later.
-router.post("/api/stats/:kind", express.json({ type: ["application/json", "text/plain"], limit: "1kb" }), (req, res) => {
+// Browser beacon when the site is opened: answer immediately, save later.
+// Only from this site's own pages (browsers mark those requests "same-origin").
+router.post("/api/stats/visit", express.json({ type: ["application/json", "text/plain"], limit: "1kb" }), (req, res) => {
   res.status(204).end();
-  const kind = req.params.kind;
+  const site = req.get("sec-fetch-site");
+  if (site && site !== "same-origin") return;
   const id = String(req.body?.id || "");
-  if ((kind !== "visit" && kind !== "press") || tooMany(id, 120)) return;
-  record(kind, id);
+  if (tooMany(id, 30)) return;
+  recordDevice(req, "visit", id);
 });
 
 // Every /stats request needs the password; nothing is shown without it.
@@ -313,20 +243,13 @@ function sameSite(req, res, next) {
   next();
 }
 
-router.post("/stats/demo", express.urlencoded({ extended: false, limit: "1kb" }), guard, sameSite, async (req, res) => {
-  const n = Math.round(Number(req.body?.visitors));
-  const count = Number.isFinite(n) && n >= 1 && n <= 5000 ? n : 317;
-  try { await seedDemo(count); } catch (err) { console.error("stats demo:", err.message); }
-  res.redirect(303, "/stats");
-});
-
 router.post("/stats/clear", guard, sameSite, async (req, res) => {
   try { await clearAll(); } catch (err) { console.error("stats clear:", err.message); }
   res.redirect(303, "/stats");
 });
 
 router.get("/stats", guard, async (req, res) => {
-  // This page has two small forms, so allow form posts back to this site.
+  // This page has a small form, so allow form posts back to this site.
   res.set("Referrer-Policy", "same-origin");
   res.set("Content-Security-Policy",
     "default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
@@ -341,21 +264,13 @@ router.get("/stats", guard, async (req, res) => {
     <p>Unique users: <strong>${s.today.users}</strong>. Conversations: <strong>${s.today.conversations}</strong>.</p>
     <h2>Last 7 days</h2>
     <p>Unique users: <strong>${s.week.users}</strong>. Conversations: <strong>${s.week.conversations}</strong>.</p>
-    <h2>Last 30 days</h2>
-    <p>Unique users: <strong>${s.month.users}</strong>. Conversations: <strong>${s.month.conversations}</strong>.</p>
     <table>
-      <caption>Days in Europe/Zurich time, newest first. A unique user is a device that opened the site; a conversation is a button press.</caption>
+      <caption>Days in Europe/Zurich time, newest first. A unique user is a device that used the site or an AI agent that used the agent API; a conversation is one started conversation or agent chat.</caption>
       <thead><tr><th scope="col">Date</th><th scope="col">Unique users</th><th scope="col">Conversations</th></tr></thead>
       <tbody>
 ${tr}
       </tbody>
     </table>
-    <h2>Generate visitors (for testing)</h2>
-    <form method="post" action="/stats/demo">
-      <p><label for="visitors">Number of visitors</label>
-      <input id="visitors" name="visitors" type="number" min="1" max="5000" value="317"></p>
-      <p><button type="submit">Generate visitors</button></p>
-    </form>
     <h2>Start again</h2>
     <form method="post" action="/stats/clear"><p><button type="submit">Delete all statistics</button></p></form>`));
   } catch (err) {
@@ -366,4 +281,4 @@ ${tr}
   }
 });
 
-module.exports = { router, flush, cleanup, readStats, seedDemo, clearAll };
+module.exports = { router, flush, cleanup, readStats, clearAll, recordDevice, recordAgentChat };

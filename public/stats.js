@@ -1,5 +1,6 @@
-// Anonymous usage counting for the owner's /stats page. Sends only the
-// anonymous device ID; it never changes the page and never waits for an answer.
+// Anonymous usage counting for the owner's /stats page: says "this device opened
+// the site", with only the anonymous device ID. Conversations are counted on the
+// server. It never changes the page and never waits for an answer.
 (function () {
   "use strict";
   function anonId() {
@@ -14,16 +15,10 @@
     } catch (e) { return null; }
   }
 
-  function send(kind) {
-    try {
-      var id = anonId();
-      if (!id || !navigator.sendBeacon) return;
-      navigator.sendBeacon("/api/stats/" + kind, new Blob([JSON.stringify({ id: id })], { type: "text/plain" }));
-    } catch (e) { /* statistics must never affect the site */ }
-  }
-
-  send("visit");
-  document.addEventListener("click", function (e) {
-    if (e.target && e.target.closest && e.target.closest("button")) send("press");
-  }, { capture: true, passive: true });
+  try {
+    var id = anonId();
+    if (id && navigator.sendBeacon) {
+      navigator.sendBeacon("/api/stats/visit", new Blob([JSON.stringify({ id: id })], { type: "text/plain" }));
+    }
+  } catch (e) { /* statistics must never affect the site */ }
 })();

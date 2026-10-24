@@ -14,6 +14,11 @@
 // 24 hours without activity. The chat ID is long and random; anyone who has it
 // can read or continue that conversation, so it works like a password.
 //
+// Each agent has an agent_id: the server gives one with the first chat, and the
+// agent sends it back when it creates more chats (body "agent_id" or header
+// X-Agent-Id). In the owner's statistics one agent_id is one unique user and each
+// answered chat one conversation, exactly like a person's device.
+//
 //   GET    /api/agent                      how to use the API (JSON)
 //   POST   /api/agent/chats                new chat; optional first message
 //   GET    /api/agent/chats/:id            the chat and its messages
@@ -30,7 +35,7 @@ const MAX_MESSAGES = 60; // per chat (user + assistant); the model sees the last
 const MAX_LENGTH = 4000; // characters per message
 const IDLE_MS = 24 * 3600 * 1000;
 
-module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCode, LANGS }) {
+module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCode, LANGS, stats }) {
   const chats = new Map();
 
   function sweep() {
@@ -45,6 +50,7 @@ module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCo
 
   const view = (c) => ({
     chat_id: c.id,
+    agent_id: c.agentId,
     lang: c.lang,
     created: new Date(c.created).toISOString(),
     updated: new Date(c.updated).toISOString(),
@@ -95,7 +101,9 @@ module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCo
       });
       c.messages.push({ role: "assistant", content: text, at: new Date().toISOString() });
       c.ended = end;
-      res.status(status).json({ chat_id: c.id, reply: text, ended: end, searched_web: searched });
+      // First answered message of this chat: one conversation for this agent in the statistics.
+      if (!c.counted) { c.counted = true; stats?.recordAgentChat(c.agentId); }
+      res.status(status).json({ chat_id: c.id, agent_id: c.agentId, reply: text, ended: end, searched_web: searched });
     } catch (err) {
       c.messages.pop();
       if (controller.signal.aborted) {
@@ -121,12 +129,12 @@ module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCo
       about:
         "A free AI assistant that searches the web for current information and names its sources. " +
         "Built for blind and visually impaired people; this text API lets AI agents and developers use the same assistant.",
-      auth: "None.",
+      auth: "None. Identify yourself with the agent_id the API gives you (see POST /api/agent/chats).",
       languages: LANGS,
       limits: "A small number of messages per day for all agents together and per address; HTTP 429 when used up (resets at midnight UTC).",
       storage: "Chats are kept in server memory only, for up to 24 hours of inactivity; they may disappear earlier if the server restarts.",
       endpoints: {
-        "POST /api/agent/chats": 'Create a chat. Body (all optional): {"message": "first question", "lang": "en"}. Returns {chat_id, ...}; with a message also {reply, ended, searched_web}.',
+        "POST /api/agent/chats": 'Create a chat. Body (all optional): {"message": "first question", "lang": "en", "agent_id": "..."}. Returns {chat_id, agent_id, ...}; with a message also {reply, ended, searched_web}. Keep the agent_id you get the first time and send it with every new chat you create, so all your chats belong to you.',
         "POST /api/agent/chats/{chat_id}/messages": 'Send a message: {"message": "..."}. Returns {reply, ended, searched_web}. Replies can take up to a minute when the assistant searches the web.',
         "POST /api/agent/chats/{chat_id}/stop": "Stop the reply being written. The waiting request returns {stopped: true} and the unanswered message is removed.",
         "GET /api/agent/chats/{chat_id}": "Read the chat and all its messages.",
@@ -143,8 +151,12 @@ module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCo
     readMessage(req, res, () => paid[0](req, res, () => paid[1](req, res, next)));
   }, async (req, res) => {
     sweep();
+    // The agent's own ID from an earlier chat, or a new one for a new agent.
+    const given = String(req.body?.agent_id || req.get("x-agent-id") || "");
     const c = {
       id: crypto.randomUUID(),
+      agentId: /^[\w-]{8,64}$/.test(given) ? given : crypto.randomUUID(),
+      counted: false,
       lang: pickLang(req.body?.lang),
       context: typeof req.body?.context === "string" ? req.body.context.slice(0, 2000) : "",
       created: Date.now(),
