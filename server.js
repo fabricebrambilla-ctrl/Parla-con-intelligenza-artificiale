@@ -16,6 +16,9 @@ const TAVILY_URL = process.env.TAVILY_BASE_URL || "https://api.tavily.com/search
 
 const CHAT_MODEL = process.env.GROQ_CHAT_MODEL || "openai/gpt-oss-120b";
 const SUMMARY_MODEL = process.env.GROQ_SUMMARY_MODEL || "openai/gpt-oss-20b";
+// Used for an answer when Groq refuses the main model because of its rate limits
+// (per minute or per day); each model has its own limits on Groq.
+const FALLBACK_MODEL = process.env.GROQ_FALLBACK_MODEL || "openai/gpt-oss-20b";
 const STT_MODEL = process.env.GROQ_STT_MODEL || "whisper-large-v3-turbo";
 const SEARCH_FALLBACK_MODEL = process.env.GROQ_SEARCH_MODEL || "groq/compound";
 // Natural AI voice, tried in this order:
@@ -192,6 +195,17 @@ async function groqChat(body, timeoutMs = 30000, stop = null) {
   const data = await res.json().catch(() => null);
   if (!res.ok) throw providerError(res.status, data?.error?.message, "Groq");
   return data;
+}
+
+// The main chat model, or the fallback model when Groq says the main one is over a rate limit.
+async function groqAnswer(body, stop) {
+  try {
+    return await groqChat(body, 30000, stop);
+  } catch (err) {
+    if (err.status !== 429 || !FALLBACK_MODEL || body.model === FALLBACK_MODEL || stop?.aborted) throw err;
+    console.warn(`chat: ${body.model} is over a Groq rate limit, answering with ${FALLBACK_MODEL}`);
+    return await groqChat({ ...body, model: FALLBACK_MODEL }, 30000, stop);
+  }
 }
 
 // Whisper often "hears" these in silence or noise.
@@ -465,11 +479,11 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
     const base = { model: CHAT_MODEL, messages, temperature: 0.6, reasoning_effort: "low", max_completion_tokens: 1200 };
     let data;
     try {
-      data = await groqChat({ ...base, tools: TOOLS, tool_choice: round === 3 ? "none" : "auto" }, 30000, stop);
+      data = await groqAnswer({ ...base, tools: TOOLS, tool_choice: round === 3 ? "none" : "auto" }, stop);
     } catch (err) {
       // A malformed tool call: try once more without tools.
       if (err.status !== 400) throw err;
-      data = await groqChat(base, 30000, stop);
+      data = await groqAnswer(base, stop);
     }
     const msg = data?.choices?.[0]?.message || {};
     const calls = Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
@@ -581,7 +595,7 @@ async function selfCheck() {
     });
     if (!r.ok) return console.error("check: Groq refused the key (HTTP " + r.status + "). Check GROQ_API_KEY.");
     const ids = ((await r.json())?.data || []).map((m) => m.id);
-    for (const m of [CHAT_MODEL, SUMMARY_MODEL, STT_MODEL, ...(TTS_ENABLED ? [TTS_MODEL] : [])]) {
+    for (const m of [...new Set([CHAT_MODEL, FALLBACK_MODEL, SUMMARY_MODEL, STT_MODEL, ...(TTS_ENABLED ? [TTS_MODEL] : [])])]) {
       console.log(`check: Groq model ${m} ${ids.includes(m) ? "is available" : "is NOT available to this key"}`);
     }
   } catch (err) {

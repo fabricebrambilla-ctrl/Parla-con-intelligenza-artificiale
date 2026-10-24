@@ -30,6 +30,11 @@ before(async () => {
       if (last.includes("bye") && body.tools) {
         return answer("", { tool_calls: [{ id: "c2", type: "function", function: { name: "end_conversation", arguments: '{"farewell":"Goodbye!"}' } }] });
       }
+      if (last.includes("ratelimited") && body.model === "openai/gpt-oss-120b") {
+        res.statusCode = 429;
+        return res.end(JSON.stringify({ error: { message: "Rate limit reached for model `openai/gpt-oss-120b` on tokens per minute (TPM): Limit 8000" } }));
+      }
+      if (last.includes("ratelimited")) return answer("answered by " + body.model);
       const delay = last.includes("slow") ? 3000 : 0;
       setTimeout(() => answer("**echo**: " + last), delay);
     });
@@ -131,4 +136,11 @@ test("voice site: a reply in another language says which language to speak it in
   const line = JSON.parse((await r.text()).trim().split("\n").pop());
   assert.equal(line.type, "reply");
   assert.equal(line.lang, "en");
+});
+
+test("when the main model is rate-limited, the answer comes from gpt-oss-20b", async () => {
+  const r = await post("/api/chat", { lang: "en", messages: [{ role: "user", content: "ratelimited question" }] });
+  const line = JSON.parse((await r.text()).trim().split("\n").pop());
+  assert.equal(line.type, "reply");
+  assert.equal(line.text, "answered by openai/gpt-oss-20b");
 });
