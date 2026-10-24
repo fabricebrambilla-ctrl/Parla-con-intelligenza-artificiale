@@ -101,3 +101,18 @@ test("with Redis, limits survive a restart and the server fails closed", { skip:
   await new Promise((r) => setTimeout(r, 300));
   assert.equal((await fetch("http://127.0.0.1:4106/api/limit")).status, 503, "must refuse when the store is down");
 });
+
+test("with no limit variables set, none of the site's own limits apply", async () => {
+  const port = 4115;
+  await startServer(port, {});
+  const codes = new Set();
+  for (let i = 0; i < 80; i++) {
+    const r = await fetch(`http://127.0.0.1:${port}/api/chat`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lang: "en", messages: [{ role: "user", content: "hi" }] }),
+    });
+    codes.add(r.status);
+    await r.text();
+  }
+  assert.deepEqual([...codes], [200]); // never 429 from our own limits (more than the old 60 per minute)
+});

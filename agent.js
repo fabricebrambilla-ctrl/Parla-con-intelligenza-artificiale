@@ -5,9 +5,9 @@
 // system prompt, plus a note that the caller is using text), so it can be
 // used to test the assistant without a microphone.
 //
-// No key is needed. Agents have their own small daily message budget
-// (AGENT_DAILY_MESSAGES, AGENT_DAILY_MESSAGES_PER_IP in limits.js), so they can
-// never use up the free AI quota the voice site depends on.
+// No key is needed. By default only the AI provider's limits apply; an agent
+// message budget can be switched on with AGENT_DAILY_MESSAGES and
+// AGENT_DAILY_MESSAGES_PER_IP (see limits.js).
 //
 // Conversations are kept in server memory only: they disappear when the server
 // restarts (on Render's free plan, after 15 minutes without visitors) or after
@@ -131,7 +131,7 @@ module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCo
         "Built for blind and visually impaired people; this text API lets AI agents and developers use the same assistant.",
       auth: "None. Identify yourself with the agent_id the API gives you (see POST /api/agent/chats).",
       languages: LANGS,
-      limits: "A small number of messages per day for all agents together and per address; HTTP 429 when used up (resets at midnight UTC).",
+      limits: "Only the AI provider's own rate limits; HTTP 429 or 503 when the AI is over them (try again later; daily limits reset at midnight UTC).",
       storage: "Chats are kept in server memory only, for up to 24 hours of inactivity; they may disappear earlier if the server restarts.",
       endpoints: {
         "POST /api/agent/chats": 'Create a chat. Body (all optional): {"message": "first question", "lang": "en", "agent_id": "..."}. Returns {chat_id, agent_id, ...}; with a message also {reply, ended, searched_web}. Keep the agent_id you get the first time and send it with every new chat you create, so all your chats belong to you.',

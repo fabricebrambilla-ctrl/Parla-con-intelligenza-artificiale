@@ -9,30 +9,34 @@
 const net = require("net");
 const crypto = require("crypto");
 
-function num(name, fallback) {
-  const v = Number(process.env[name]);
-  return Number.isFinite(v) && v >= 0 ? v : fallback;
+// The owner's own limits are OFF by default (2026-10-24): only the AI providers' limits
+// (Groq, Tavily) apply. Each one can be switched back on by setting its environment
+// variable on Render; an unset variable means "no limit".
+function num(name) {
+  const raw = process.env[name];
+  const v = Number(raw);
+  return raw !== undefined && raw !== "" && Number.isFinite(v) && v >= 0 ? v : Infinity;
 }
+const on = (v) => Number.isFinite(v);
 
 const LIMITS = {
-  userSeconds: num("DAILY_MINUTES_PER_USER", 60) * 60,
-  ipSeconds: num("DAILY_MINUTES_PER_IP", 60) * 60,
-  globalSeconds: num("DAILY_MINUTES_GLOBAL", 600) * 60,
-  // Each turn uses about 2 requests plus one per spoken sentence in English.
-  userRequests: num("DAILY_REQUESTS_PER_USER", 1500),
-  ipRequests: num("DAILY_REQUESTS_PER_IP", 1500),
-  globalRequests: num("DAILY_REQUESTS_GLOBAL", 15000),
-  burstPerMinute: num("REQUESTS_PER_MINUTE_PER_IP", 60),
-  tavilyPerDay: num("DAILY_TAVILY_SEARCHES", 30),
-  tavilyPerMonth: num("MONTHLY_TAVILY_SEARCHES", 950),
-  // The hidden agent API has its own small daily budget, so agents can never use up
-  // the free AI quota that blind visitors depend on. 0 turns the agent API off.
-  agentPerDay: num("AGENT_DAILY_MESSAGES", 40),
-  agentPerIpPerDay: num("AGENT_DAILY_MESSAGES_PER_IP", 20),
-  // Statistics: at most this many different devices are counted per internet address per day,
-  // so nobody can inflate "unique users" by sending made-up IDs.
-  statsIdsPerIp: num("STATS_DEVICES_PER_IP", 10),
+  userSeconds: num("DAILY_MINUTES_PER_USER") * 60,
+  ipSeconds: num("DAILY_MINUTES_PER_IP") * 60,
+  globalSeconds: num("DAILY_MINUTES_GLOBAL") * 60,
+  userRequests: num("DAILY_REQUESTS_PER_USER"),
+  ipRequests: num("DAILY_REQUESTS_PER_IP"),
+  globalRequests: num("DAILY_REQUESTS_GLOBAL"),
+  burstPerMinute: num("REQUESTS_PER_MINUTE_PER_IP"),
+  tavilyPerDay: num("DAILY_TAVILY_SEARCHES"),
+  tavilyPerMonth: num("MONTHLY_TAVILY_SEARCHES"),
+  // Agent API messages (AGENT_DAILY_MESSAGES=0 turns the agent API off).
+  agentPerDay: num("AGENT_DAILY_MESSAGES"),
+  agentPerIpPerDay: num("AGENT_DAILY_MESSAGES_PER_IP"),
+  // New devices counted in the statistics per internet address per day.
+  statsIdsPerIp: num("STATS_DEVICES_PER_IP"),
 };
+const USAGE_LIMITS_ON = [LIMITS.userSeconds, LIMITS.ipSeconds, LIMITS.globalSeconds, LIMITS.userRequests,
+  LIMITS.ipRequests, LIMITS.globalRequests, LIMITS.burstPerMinute].some(on);
 
 // ---------- stores ----------
 class MemoryStore {
@@ -67,7 +71,7 @@ class RedisStore {
 }
 
 const store = process.env.REDIS_URL ? new RedisStore(process.env.REDIS_URL) : new MemoryStore();
-if (!process.env.REDIS_URL) {
+if (!process.env.REDIS_URL && (USAGE_LIMITS_ON || on(LIMITS.agentPerDay) || on(LIMITS.statsIdsPerIp) || on(LIMITS.tavilyPerDay))) {
   console.warn("limits: REDIS_URL is not set, so usage counters reset when the server restarts.");
 }
 
@@ -122,8 +126,9 @@ const month = () => new Date().toISOString().slice(0, 7);
 // Adds this request's cost and returns false if any limit is now exceeded.
 // The request that crosses a limit is refused too, so limits are never exceeded.
 async function charge(req, { seconds = 0, requests = 1, burst = true } = {}) {
+  if (!USAGE_LIMITS_ON) return true; // no limits of our own: nothing to count
   const d = day(), ip = pseudonym(clientIp(req)), id = clientId(req);
-  if (burst) {
+  if (burst && on(LIMITS.burstPerMinute)) {
     const minute = Math.floor(Date.now() / 60000);
     if ((await store.incr(`b:${minute}:${ip}`, 1, 120)) > LIMITS.burstPerMinute) return false;
   }
@@ -167,6 +172,7 @@ function limit(cost) {
 
 // True if one more Tavily search is allowed (counted globally, per day and per month).
 async function takeTavilySearch() {
+  if (!on(LIMITS.tavilyPerDay) && !on(LIMITS.tavilyPerMonth)) return true;
   const [perDay, perMonth] = await Promise.all([
     store.incr(`t:${day()}`, 1, DAY),
     store.incr(`t:${month()}`, 1, 32 * 24 * 3600),
@@ -179,7 +185,8 @@ async function takeTavilySearch() {
 function agentLimit() {
   return async (req, res, next) => {
     try {
-      if (!LIMITS.agentPerDay) return res.status(404).json({ error: "not found" });
+      if (LIMITS.agentPerDay === 0) return res.status(404).json({ error: "not found" });
+      if (!on(LIMITS.agentPerDay) && !on(LIMITS.agentPerIpPerDay)) return next();
       const d = day(), ip = pseudonym(clientIp(req));
       const [all, mine] = await Promise.all([store.incr(`a:${d}:g`, 1, DAY), store.incr(`a:${d}:i:${ip}`, 1, DAY)]);
       if (all > LIMITS.agentPerDay || mine > LIMITS.agentPerIpPerDay) {
@@ -197,6 +204,7 @@ function agentLimit() {
 // True if this device ID may be counted in the statistics today: IDs already seen today
 // from this address always are; new ones only up to STATS_DEVICES_PER_IP per address per day.
 async function statsIdAllowed(req, id) {
+  if (!on(LIMITS.statsIdsPerIp)) return true;
   const d = day(), ip = pseudonym(clientIp(req));
   if ((await store.incr(`sid:${d}:${ip}:${pseudonym(id)}`, 1, DAY)) > 1) return true;
   const n = await store.incr(`sidn:${d}:${ip}`, 1, DAY);
