@@ -471,6 +471,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Change | Files |
 |---|---|---|
+| 2026-10-24 | Spoken error messages (6 languages): limit reached now says the AI has reached its free limit for today; lost connection / 3 failures in a row now asks to reload the page and try again. | `public/i18n.js`, this brief |
 | 2026-10-24 | Answers fall back to `openai/gpt-oss-20b` when `gpt-oss-120b` hits a Groq rate limit (per minute or per day), instead of failing. Test added. Also: a live inflation test (3 agents x 5 chats) showed forged address headers are blocked (Cloudflare) or ignored, and agent users are capped only by the agents' message budget. | `server.js`, `test/agent.test.js`, this brief |
 | 2026-10-24 | Statistics rebuilt: all old data (including generated visitors) wiped, 7-day retention, generator removed, one `stat_events` table, conversations counted on the server at conversation start (not per button press), AI agents counted as users by `agent_id` (one agent, many chats = 1 user; new agent = new user), visit beacons only from the site itself, at most `STATS_DEVICES_PER_IP` new devices per address per day. Tested against a real Postgres. UI unchanged. | `stats.js`, `public/stats.js`, `limits.js`, `server.js`, `agent.js`, `test/stats.test.js`, this brief |
 | 2026-10-24 | Groq Orpheus English voice off by default (`GROQ_TTS=on` to enable) and switched off automatically if Groq refuses it, ending the `model_terms_required` errors in the Groq logs. Live agent API checked with a real call. | `server.js`, this brief |
@@ -498,6 +499,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Preference |
 |---|---|
+| 2026-10-24 | Error messages must say plainly what happened and what to do: **the AI's limit is reached** (try tomorrow), or **reload the page** when the connection is lost. |
 | 2026-10-24 | When the main model is over Groq's rate limit, **fall back to `gpt-oss-20b`** rather than showing an error. No extra Groq accounts or keys to get around limits. |
 | 2026-10-24 | **Statistics must be real:** delete all existing data, keep only the **last 7 days**, remove the visitor generator and **anything that can fake numbers**. **Do not separate AI agents from people.** One AI agent making several chats = **1 unique user**; a new agent (even the same kind, e.g. another Claude) = **another unique user**. Replaces the 2026-10-10 statistics preference (30 days, unmarked generated visitors, conversation = any button press). |
 | 2026-10-24 | When a reply is in another language, it must be spoken by **a native voice of that language**, never the conversation language's voice with the wrong accent. **Do not ask the owner to accept model terms on Groq** (Orpheus `model_terms_required` errors are to be ignored). |
