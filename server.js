@@ -24,13 +24,18 @@ const SEARCH_FALLBACK_MODEL = process.env.GROQ_SEARCH_MODEL || "groq/compound";
 // 3. Otherwise the browser uses the best voice on the device.
 const TTS_MODEL = process.env.GROQ_TTS_MODEL || "canopylabs/orpheus-v1-english";
 const TTS_VOICE = process.env.GROQ_TTS_VOICE || "hannah";
-const TTS_ENABLED = process.env.GROQ_TTS !== "off";
+// Off unless GROQ_TTS=on: Orpheus needs its terms accepted on the Groq account, which the owner does not do.
+const TTS_ENABLED = process.env.GROQ_TTS === "on";
 const FISH_URL = process.env.FISH_BASE_URL || "https://api.fish.audio/v1/tts";
 const FISH_MODEL = process.env.FISH_MODEL || "s2.1-pro-free";
 // A voice from the Fish Audio voice library for each language (FISH_VOICE_IT, ...), or one for all (FISH_VOICE).
 const fishVoice = (lang) => process.env["FISH_VOICE_" + lang.toUpperCase()] || process.env.FISH_VOICE || "";
+// Set when Groq refuses Orpheus for this key (e.g. its terms were not accepted); then it is
+// never called again until the server restarts, so it causes no more errors in the Groq logs.
+let orpheusBlocked = false;
+const orpheusUsable = () => TTS_ENABLED && !!process.env.GROQ_API_KEY && !orpheusBlocked;
 const aiVoiceLangs = () =>
-  process.env.FISH_API_KEY ? I18N.LANGS : TTS_ENABLED && process.env.GROQ_API_KEY ? ["en"] : [];
+  process.env.FISH_API_KEY ? I18N.LANGS : orpheusUsable() ? ["en"] : [];
 
 const app = express();
 app.disable("x-powered-by");
@@ -271,6 +276,11 @@ async function groqSpeak(text) {
   });
   if (!r.ok) {
     const data = await r.json().catch(() => null);
+    // Refused for this key, not a passing problem: stop using it.
+    if ([400, 401, 403, 404].includes(r.status) && /terms|permission|not (found|available)|does not exist|access/i.test(`${data?.error?.code} ${data?.error?.message}`)) {
+      orpheusBlocked = true;
+      console.warn("speak: Groq Orpheus is not available to this key; using other voices from now on.");
+    }
     throw providerError(r.status, data?.error?.message, "Groq TTS");
   }
   return { type: "audio/wav", data: Buffer.from(await r.arrayBuffer()) };
@@ -284,7 +294,7 @@ app.post("/api/speak", express.json({ limit: "4kb" }), limit({ requests: 1 }), a
   if (process.env.FISH_API_KEY) {
     try { audio = await fishSpeak(text, lang); } catch (err) { console.error("speak (Fish):", err.message); }
   }
-  if (!audio && lang === "en" && TTS_ENABLED) {
+  if (!audio && lang === "en" && orpheusUsable()) {
     try { audio = await groqSpeak(text); } catch (err) { console.error("speak (Groq):", err.message); }
   }
   // The browser falls back to the device voice; this is never shown to the user.
@@ -568,7 +578,7 @@ async function selfCheck() {
     });
     if (!r.ok) return console.error("check: Groq refused the key (HTTP " + r.status + "). Check GROQ_API_KEY.");
     const ids = ((await r.json())?.data || []).map((m) => m.id);
-    for (const m of [CHAT_MODEL, SUMMARY_MODEL, STT_MODEL, TTS_MODEL]) {
+    for (const m of [CHAT_MODEL, SUMMARY_MODEL, STT_MODEL, ...(TTS_ENABLED ? [TTS_MODEL] : [])]) {
       console.log(`check: Groq model ${m} ${ids.includes(m) ? "is available" : "is NOT available to this key"}`);
     }
   } catch (err) {
@@ -577,7 +587,7 @@ async function selfCheck() {
   console.log("check: Tavily key " + (process.env.TAVILY_API_KEY ? "is set" : "is missing (searches will use Groq)"));
   console.log("check: Fish Audio key " + (process.env.FISH_API_KEY
     ? "is set: natural AI voice in all six languages" + (fishVoice("en") || process.env.FISH_VOICE_IT ? "" : " (no FISH_VOICE chosen, using Fish Audio's default)")
-    : "is missing: natural AI voice in English only, device voice for the other languages"));
+    : (TTS_ENABLED ? "is missing: natural AI voice in English only (Groq Orpheus), device voice for the other languages" : "is missing: device voice for all languages")));
   if (!process.env.OWNER_NAME || !process.env.OWNER_EMAIL) {
     console.warn("check: OWNER_NAME / OWNER_EMAIL are not set; the privacy notice needs them.");
   }
