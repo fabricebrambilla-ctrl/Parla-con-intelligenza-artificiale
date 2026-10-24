@@ -30,12 +30,14 @@
   var tk = function (key) { return IS_TOUCH && I.S[lang][key + "Touch"] ? tt(key + "Touch") : tt(key); };
 
   var talkBtn = $("talk"), endBtn = $("endConv"), langBtn = $("lang"),
-      langsBox = $("langs"), alertBox = $("alert");
+      langsBox = $("langs"), alertBox = $("alert"), micPermission = $("micPermission");
 
   if (IS_TOUCH) $("helpText").setAttribute("data-i18n", "helpTouch");
 
   function renderTexts() {
     I.applyPage(lang);
+    $("helpText").textContent = tk("help") + (IS_TOUCH ? "" : " " + tt("shortcutHelp"));
+    if (micPermission.textContent) micPermission.textContent = tt("micPending");
     talkBtn.textContent = talkLabel ? tt("talk") : tt("start");
     endBtn.textContent = tt("end");
     // Keep the chosen language on the other pages too.
@@ -75,12 +77,19 @@
   function isOtherControl(el) {
     return !!(el && el.closest && el !== talkBtn && el.closest("button, a, input, select, textarea, [contenteditable]"));
   }
+  function isTalkShortcut(e) {
+    return e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey &&
+      (e.code === "KeyT" || String(e.key).toLowerCase() === "t");
+  }
+  function micErrorKey(e) {
+    return e && (e.name === "NotAllowedError" || e.name === "PermissionDeniedError") ? "errMicDenied" : "errMic";
+  }
   function isSpace(e) { return e.key === " " || e.key === "Spacebar"; }
   ["keydown", "focusin", "click", "pointerdown", "touchstart"].forEach(function (ev) {
     document.addEventListener(ev, function (e) {
       // The screen reader says little when the talk button or the space bar is pressed,
       // so only pause the mic briefly then.
-      var talk = e.target === talkBtn || (e.type === "keydown" && isSpace(e) && !isOtherControl(e.target));
+      var talk = e.target === talkBtn || (e.type === "keydown" && (isTalkShortcut(e) || (isSpace(e) && !isOtherControl(e.target))));
       muteFor(talk ? 300 : 1500);
     }, { capture: true, passive: true });
   });
@@ -312,39 +321,60 @@
   var rec = null;
   var noise = 0.004;   // background noise level, learned while recording
 
+  var micRequest = 0;
   async function openMic() {
-    stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        voiceIsolation: { ideal: true },
-        channelCount: 1
-      }
-    });
+    var my = session, request = ++micRequest, acquired = null, audioSource = null;
+    function current() { return active && my === session && request === micRequest; }
+    function cancelled() { var e = new Error("Microphone request cancelled"); e.name = "AbortError"; return e; }
     try {
-      source = ctx.createMediaStreamSource(stream);
+      var granted = false;
+      if (navigator.permissions && navigator.permissions.query) {
+        try { granted = (await navigator.permissions.query({ name: "microphone" })).state === "granted"; } catch (e) {}
+      }
+      if (!current()) throw cancelled();
+      if (!granted) micPermission.textContent = tt("micPending");
+      acquired = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true,
+          voiceIsolation: { ideal: true }, channelCount: 1 }
+      });
+      if (!current()) throw cancelled();
+      micPermission.textContent = "";
+      try {
+        audioSource = ctx.createMediaStreamSource(acquired);
+      } catch (e) {
+        // Firefox requires the context and microphone sample rates to match.
+        var rate = acquired.getAudioTracks()[0].getSettings().sampleRate;
+        if (!rate) throw e;
+        try { ctx.close(); } catch (e2) {}
+        ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: rate });
+        audioSource = ctx.createMediaStreamSource(acquired);
+      }
+      var micCtx = ctx;
+      if (workletCtx !== micCtx) {
+        await micCtx.audioWorklet.addModule("/capture-worklet.js");
+        if (!current()) throw cancelled();
+        workletCtx = micCtx;
+      }
+      stream = acquired;
+      source = audioSource;
+      node = new AudioWorkletNode(micCtx, "capture");
+      node.port.onmessage = function (e) { onFrame(e.data); };
+      sink = micCtx.createGain();
+      sink.gain.value = 0;
+      source.connect(node);
+      node.connect(sink).connect(micCtx.destination);
     } catch (e) {
-      // Firefox refuses a microphone whose sample rate differs from the context.
-      var rate = stream.getAudioTracks()[0].getSettings().sampleRate;
-      if (!rate) throw e;
-      try { ctx.close(); } catch (e2) {}
-      ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: rate });
-      source = ctx.createMediaStreamSource(stream);
+      if (audioSource) { try { audioSource.disconnect(); } catch (ignore) {} }
+      if (acquired) acquired.getTracks().forEach(function (t) { t.stop(); });
+      throw e;
+    } finally {
+      if (request === micRequest) micPermission.textContent = "";
     }
-    if (workletCtx !== ctx) {
-      await ctx.audioWorklet.addModule("/capture-worklet.js");
-      workletCtx = ctx;
-    }
-    node = new AudioWorkletNode(ctx, "capture");
-    node.port.onmessage = function (e) { onFrame(e.data); };
-    sink = ctx.createGain();
-    sink.gain.value = 0;
-    source.connect(node);
-    node.connect(sink).connect(ctx.destination);
   }
 
   function closeMic() {
+    micRequest++;
+    micPermission.textContent = "";
     try { if (source) source.disconnect(); } catch (e) {}
     try { if (node) { node.port.onmessage = null; node.disconnect(); } } catch (e) {}
     try { if (sink) sink.disconnect(); } catch (e) {}
@@ -520,8 +550,9 @@
   async function startRecording(auto) {
     var my = session;
     if (!stream) {
-      try { await openMic(); } catch (e) { if (my === session) fail("errMic"); return; }
-      if (!active || my !== session) return closeMic();
+      setState("processing");
+      try { await openMic(); } catch (e) { if (my === session) fail(micErrorKey(e)); return; }
+      if (!active || my !== session) return;
     }
     rec = { auto: auto, frames: [], elapsed: 0, voiced: 0, silence: 0, speechFrames: 0, speechStarted: false };
     setState("listening");
@@ -789,10 +820,10 @@
     try {
       await openMic();
     } catch (e) {
-      if (my === session) giveUp("errMic");
+      if (my === session) giveUp(micErrorKey(e));
       return;
     }
-    if (my !== session) return closeMic();
+    if (my !== session) return;
 
     sounds.start();
     await new Promise(function (r) { setTimeout(r, 500); });
@@ -858,6 +889,11 @@
   endBtn.addEventListener("click", function () { endConversation(); });
 
   document.addEventListener("keydown", function (e) {
+    if (isTalkShortcut(e)) {
+      e.preventDefault();
+      if (!e.repeat) { talkBtn.focus(); onTalkPress(); }
+      return;
+    }
     // Escape ends the conversation (when the screen reader lets the key through).
     if (active && e.key === "Escape" && !e.repeat) { endConversation(); return; }
     if (!active || !isSpace(e) || e.repeat || e.target === talkBtn || isOtherControl(e.target)) return;
@@ -898,3 +934,4 @@
   // Wake a sleeping free server early so the first answer is not slow.
   fetch("/health").catch(function () {});
 })();
+

@@ -12,7 +12,7 @@
     <h1 data-i18n="h1">{{h1}}</h1>
     <!-- Focused on load: screen readers announce it with its description, and Space works at once.
          Space/Enter in browse mode (NVDA) / virtual cursor (JAWS) arrive as a click on this button. -->
-    <button id="talk" type="button" class="talk" autofocus aria-describedby="helpText">{{start}}</button>
+    <button id="talk" type="button" class="talk" autofocus aria-keyshortcuts="Alt+Shift+T" aria-describedby="helpText">{{start}}</button>
     <button id="endConv" type="button" data-i18n="end" hidden>{{end}}</button>
     <button id="lang" type="button" aria-expanded="false" data-i18n="langButton">{{langButton}}</button>
     <div id="langs" role="group" aria-labelledby="lang" hidden>
@@ -26,6 +26,7 @@
     <!-- The help is read as the Talk button's description; hidden here so screen readers don't read it twice.
          No space between the spans: a lone space becomes an empty stop for VoiceOver swipes. -->
     <p class="help"><span id="helpText" data-i18n="help" aria-hidden="true">{{help}}</span><span class="privacy" data-i18n="privacy">{{privacy}}</span></p>
+    <div id="micPermission" role="status" aria-atomic="true"></div>
     <div id="alert" role="alert"></div>
   </main>
   <footer>
@@ -37,3 +38,4 @@
   <script src="/stats.js"></script>
 </body>
 </html>
+

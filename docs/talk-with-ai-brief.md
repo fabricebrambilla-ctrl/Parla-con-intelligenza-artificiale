@@ -416,6 +416,8 @@ Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public 
 
 ### Current state of the code (keep this up to date)
 
+- Julian feedback (2026-10-24): localized microphone-permission status and blocked-permission recovery; pending requests cancelled safely on end/restart. Dedicated Alt+Shift+T operates Talk from other page controls when delivered by browser/screen reader; ordinary link keyboard behavior stays native. Automated regression coverage; real NVDA/JAWS retest is still pending.
+
 As of 2026-10-10 the app is a full first version built with **Groq + Tavily** (Gemini Live is not used yet, see "Deviations" below).
 
 How a conversation works:
@@ -473,6 +475,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Change | Files |
 |---|---|---|
+| 2026-10-24 | Implement Julian’s microphone-permission guidance and dedicated Alt+Shift+T Talk shortcut in all six languages. Prevent cancelled microphone requests from affecting a new session. Update accessibility instructions and add regression tests. Real NVDA/JAWS retest remains pending. | `public/app.js`, `public/index.html`, `public/i18n.js`, `legal.js`, `test/accessibility-feedback.test.js`, this brief |
 | 2026-10-24 | Prevent repeated `model_not_found` errors from retired Groq Compound: no default research-model fallback, retired IDs ignored even if configured, inaccessible custom research models blocked until restart. Tavily remains the primary search; unavailable search is reported honestly. Focused offline regression checks added. | `server.js`, `test/search-fallback.test.js`, this brief |
 | 2026-10-24 | Conversation history removed: no summaries (`/api/summary` gone), no Continue button, no past-conversations page (`/history` redirects home), old saved history deleted from each device; page privacy sentence and privacy notice updated in 6 languages. | `public/index.html`, `public/app.js`, `public/i18n.js`, `legal.js`, `server.js`, `public/history.html` and `public/history.js` (deleted), this brief |
 | 2026-10-24 | All of the site's own limits switched off by default (only Groq/Tavily/Fish limits apply); each can be switched back on with its Render variable. Server-protection caps kept. Agent API description updated. Test added. | `limits.js`, `agent.js`, `test/limits.test.js`, this brief |
@@ -504,6 +507,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Preference |
 |---|---|
+| 2026-10-24 | Act on private tester feedback, verify changes before reporting them as implemented, and keep NVDA product-testing correspondence off the locked group topic. Explain microphone permissions and add a dedicated Talk shortcut. |
 | 2026-10-24 | Voice-session testing: one agent keeps one anonymous identity across three separate conversations, with 3–5 contextual exchanges per conversation and actual 5–25-second spoken inputs. Avoid retired-model errors; preserve measured timing/token information rather than inventing it. |
 | 2026-10-24 | **Never save conversation history.** No summaries, no "Continue last conversation", no past-conversations page. |
 | 2026-10-24 | **Remove all of the site's own limits; only Groq's (and other providers') limits apply.** The owner accepted the risk that one heavy user or bot can use up the day's quota for everyone. Replaces the 2026-10-10 "limits must always be enforced" preference and the agent daily budget. |
@@ -527,3 +531,4 @@ Deviations from this brief (decided with the owner, see §13):
 | 2026-10-10 | Build with what is available for free now: **Groq key + Tavily key**. Gemini is not used because the owner's Google AI Studio project says "API access is restricted, set up billing"; the owner does not want to pay. Gemini Live can be added later as the main voice mode if a working free key is obtained. |
 | 2026-10-10 | All changes are pushed to `main` (the owner asked for this). |
 | 2026-10-10 | The brief must live in the repo, be readable by any AI agent, and be updated after every push to `main` with code changes and any changes in user preference. |
+

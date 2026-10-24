@@ -3,7 +3,7 @@
 // filled in from the OWNER_NAME and OWNER_EMAIL environment variables.
 // Have a person who knows EU law check these texts before a public launch.
 
-const UPDATED = "2026-10-11";
+const UPDATED = "2026-10-24";
 
 const PRIVACY = {
   en: {
@@ -115,6 +115,7 @@ const ACCESSIBILITY = {
     title: "Accessibility statement – Talk with Artificial Intelligence",
     h1: "Accessibility statement",
     sections: [
+      ["Microphone permission and keyboard shortcut", "Waiting for microphone access. If your browser asks, choose Allow in its microphone permission prompt. These controls are outside this page. Alt+Shift+T also controls Talk from anywhere on this page, if your browser and screen reader pass the shortcut through."],
       ["Our goal", "This website is made to be used entirely by voice and with screen readers. We aim to meet the Web Content Accessibility Guidelines (WCAG) 2.2 at level AA and the European standard EN 301 549."],
       ["How to use it", "The page has one heading and one large button. Press it to start. The first time, the assistant asks which language you want to use: just say it. Then press the space bar (or the button) to start talking, and press it again when you have finished to get the answer. If you stop talking for seven seconds, the assistant answers anyway. Pressing the space bar while the assistant is talking interrupts it. To end the conversation, say goodbye. To change language, say so at any time, for example \"speak Italian\", or use the Language button. On a phone or tablet, use the Talk button instead of the space bar. You can end at any time with the End conversation button, which appears right after the Talk button."],
       ["Things you can say", ["“Repeat”: hear the last answer again.", "“Change language”, or for example “speak Italian”: switch language.", "“Help”: hear what you can say.", "“Goodbye”: end the conversation."]],
@@ -130,6 +131,7 @@ const ACCESSIBILITY = {
     title: "Dichiarazione di accessibilità – Parla con l'Intelligenza Artificiale",
     h1: "Dichiarazione di accessibilità",
     sections: [
+      ["Microfono e scorciatoia da tastiera", "In attesa dell'accesso al microfono. Se il browser lo chiede, scegli Consenti nella richiesta di autorizzazione. Questi controlli sono fuori dalla pagina. Alt+Maiusc+T aziona anche Parla da qualsiasi punto della pagina, se il browser e il lettore di schermo lasciano passare la combinazione."],
       ["Il nostro obiettivo", "Questo sito è fatto per essere usato interamente con la voce e con i lettori di schermo. Puntiamo a rispettare le Linee guida per l'accessibilità dei contenuti web (WCAG) 2.2 al livello AA e la norma europea EN 301 549."],
       ["Come si usa", "La pagina ha un titolo e un grande pulsante. Premilo per iniziare. La prima volta l'assistente ti chiede quale lingua vuoi usare: basta dirla. Poi premi la barra spaziatrice (o il pulsante) per iniziare a parlare, e premila di nuovo quando hai finito per avere la risposta. Se smetti di parlare per sette secondi, l'assistente risponde comunque. Se premi la barra spaziatrice mentre l'assistente parla, lo interrompi. Per terminare la conversazione, di' arrivederci. Per cambiare lingua, dillo in qualsiasi momento, per esempio «parla inglese», oppure usa il pulsante Lingua. Su telefono o tablet usa il pulsante Parla al posto della barra spaziatrice. Puoi terminare in qualsiasi momento con il pulsante Termina conversazione, che compare subito dopo il pulsante Parla."],
       ["Cosa puoi dire", ["«Ripeti»: riascolti l'ultima risposta.", "«Cambia lingua», oppure per esempio «parla inglese»: cambi lingua.", "«Aiuto»: senti cosa puoi dire.", "«Arrivederci»: termini la conversazione."]],
@@ -145,6 +147,7 @@ const ACCESSIBILITY = {
     title: "Déclaration d'accessibilité – Parler avec l'intelligence artificielle",
     h1: "Déclaration d'accessibilité",
     sections: [
+      ["Microphone et raccourci clavier", "En attente de l'accès au microphone. Si le navigateur le demande, choisissez Autoriser dans sa demande d'accès. Ces commandes sont en dehors de cette page. Alt+Maj+T commande aussi Parler depuis n'importe où sur cette page, si le navigateur et le lecteur d'écran transmettent le raccourci."],
       ["Notre objectif", "Ce site est conçu pour être utilisé entièrement à la voix et avec les lecteurs d'écran. Nous visons le respect des Règles pour l'accessibilité des contenus web (WCAG) 2.2 au niveau AA et de la norme européenne EN 301 549."],
       ["Comment l'utiliser", "La page contient un titre et un grand bouton. Appuyez dessus pour commencer. La première fois, l'assistant vous demande quelle langue vous voulez utiliser : il suffit de la dire. Ensuite, appuyez sur la barre d'espace (ou sur le bouton) pour commencer à parler, puis appuyez de nouveau quand vous avez fini pour obtenir la réponse. Si vous arrêtez de parler pendant sept secondes, l'assistant répond quand même. Appuyer sur la barre d'espace pendant que l'assistant parle l'interrompt. Pour terminer la conversation, dites au revoir. Pour changer de langue, dites-le à tout moment, par exemple « parle italien », ou utilisez le bouton Langue. Sur un téléphone ou une tablette, utilisez le bouton Parler à la place de la barre d'espace. Vous pouvez terminer à tout moment avec le bouton Terminer la conversation, qui apparaît juste après le bouton Parler."],
       ["Ce que vous pouvez dire", ["« Répète » : réécouter la dernière réponse.", "« Changer de langue », ou par exemple « parle anglais » : changer de langue.", "« Aide » : entendre ce que vous pouvez dire.", "« Au revoir » : terminer la conversation."]],
@@ -160,6 +163,7 @@ const ACCESSIBILITY = {
     title: "Декларация за достъпност – Говорете с изкуствен интелект",
     h1: "Декларация за достъпност",
     sections: [
+      ["Микрофон и клавишна комбинация", "Изчаква се достъп до микрофона. Ако браузърът попита, изберете Разрешаване в неговия прозорец за разрешения. Тези контроли са извън страницата. Alt+Shift+T управлява бутона за говорене от всяко място на страницата, ако браузърът и екранният четец пропускат комбинацията."],
       ["Нашата цел", "Този сайт е създаден да се използва изцяло с глас и с екранни четци. Стремим се да отговаряме на Указанията за достъпност на уеб съдържанието (WCAG) 2.2 на ниво AA и на европейския стандарт EN 301 549."],
       ["Как се използва", "Страницата има едно заглавие и един голям бутон. Натиснете го, за да започнете. Първия път асистентът ви пита кой език искате да използвате: просто го кажете. След това натиснете интервала (или бутона), за да започнете да говорите, и го натиснете отново, когато приключите, за да чуете отговора. Ако спрете да говорите за седем секунди, асистентът отговаря и така. Натискането на интервала, докато асистентът говори, го прекъсва. За да приключите разговора, кажете довиждане. За да смените езика, кажете го по всяко време, например „говори на английски“, или използвайте бутона Език. На телефон или таблет използвайте бутона Говорете вместо интервала. Можете да приключите по всяко време с бутона Край на разговора, който се появява веднага след бутона Говорете."],
       ["Какво можете да кажете", ["„Повтори“: чувате отново последния отговор.", "„Смени езика“ или например „говори на английски“: сменяте езика.", "„Помощ“: чувате какво можете да кажете.", "„Довиждане“: приключвате разговора."]],
@@ -175,6 +179,7 @@ const ACCESSIBILITY = {
     title: "Заявление о доступности – Поговорите с искусственным интеллектом",
     h1: "Заявление о доступности",
     sections: [
+      ["Микрофон и сочетание клавиш", "Ожидание доступа к микрофону. Если браузер запросит разрешение, выберите Разрешить. Эти элементы управления находятся за пределами страницы. Alt+Shift+T также управляет кнопкой разговора из любого места страницы, если браузер и программа экранного доступа передают это сочетание."],
       ["Наша цель", "Этот сайт сделан так, чтобы им можно было пользоваться полностью голосом и с программами экранного доступа. Мы стремимся соответствовать Руководству по доступности веб-контента (WCAG) 2.2 на уровне AA и европейскому стандарту EN 301 549."],
       ["Как пользоваться", "На странице один заголовок и одна большая кнопка. Нажмите её, чтобы начать. В первый раз ассистент спросит, какой язык вы хотите использовать: просто назовите его. Затем нажмите пробел (или кнопку), чтобы начать говорить, и нажмите ещё раз, когда закончите, чтобы получить ответ. Если вы замолчите на семь секунд, ассистент всё равно ответит. Нажатие пробела, пока ассистент говорит, прерывает его. Чтобы завершить разговор, скажите «до свидания». Чтобы сменить язык, скажите об этом в любой момент, например «говори по-английски», или воспользуйтесь кнопкой «Язык». На телефоне или планшете используйте кнопку «Говорить» вместо пробела. Закончить можно в любой момент кнопкой «Завершить разговор», которая появляется сразу после кнопки «Говорить»."],
       ["Что можно сказать", ["«Повтори»: услышать последний ответ ещё раз.", "«Смени язык» или, например, «говори по-английски»: сменить язык.", "«Помощь»: услышать, что можно сказать.", "«До свидания»: завершить разговор."]],
@@ -190,6 +195,7 @@ const ACCESSIBILITY = {
     title: "无障碍声明 – 与人工智能对话",
     h1: "无障碍声明",
     sections: [
+      ["麦克风权限和键盘快捷键", "正在等待麦克风权限。如果浏览器询问，请在麦克风权限提示中选择允许。这些控件位于网页之外。 如果浏览器和屏幕阅读器允许传递此快捷键，在本页任何位置都可按 Alt+Shift+T 操作说话按钮。"],
       ["我们的目标", "本网站可以完全通过语音和读屏软件使用。我们的目标是符合《网页内容无障碍指南》（WCAG）2.2 AA 级和欧洲标准 EN 301 549。"],
       ["如何使用", "页面上有一个标题和一个大按钮。按下它即可开始。第一次使用时，助手会问您想使用哪种语言，您直接说出来即可。然后按空格键（或按钮）开始说话，说完后再按一次即可听到回答。如果您停下来七秒钟不说话，助手也会回答。助手说话时按空格键可以打断它。要结束对话，请说“再见”。要换语言，可以随时说出来，例如“说英语”，也可以使用“语言”按钮。在手机或平板电脑上，请用“说话”按钮代替空格键。您可以随时按“结束对话”按钮结束，它就在“说话”按钮后面。"],
       ["您可以说的话", ["“再说一遍”：重新听上一个回答。", "“换语言”，或者例如“说英语”：切换语言。", "“帮助”：听听您可以说什么。", "“再见”：结束对话。"]],
@@ -211,3 +217,4 @@ const POLICY_LINKS = [
 ];
 
 module.exports = { PRIVACY, ACCESSIBILITY, POLICY_LINKS, UPDATED };
+
