@@ -488,18 +488,21 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
 
 // The answer is streamed as lines of JSON so the browser can say
 // "let me look that up" as soon as a search starts:
-//   {"type":"searching"}  then  {"type":"reply","text":"...","end":false}  or  {"type":"error","error":"busy"|"limit"}
+//   {"type":"searching"}  then  {"type":"reply","text":"...","end":false,"lang":"en"}  or  {"type":"error","error":"busy"|"limit"}
 app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), async (req, res) => {
   res.set({ "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store", "X-Accel-Buffering": "no" });
   const send = (obj) => res.write(JSON.stringify(obj) + "\n");
   try {
+    const lang = pickLang(req.body?.lang);
     const { text, end } = await runChat({
-      lang: pickLang(req.body?.lang),
+      lang,
       context: String(req.body?.context || "").slice(0, 2000),
       messages: req.body?.messages,
       onSearching: () => send({ type: "searching" }),
     });
-    send({ type: "reply", text, end });
+    // The language the reply is actually written in, so the browser speaks it with a voice of
+    // that language (the user may have asked for an answer in another language).
+    send({ type: "reply", text, end, lang: I18N.detectLang(text, lang) });
     res.end();
   } catch (err) {
     console.error("chat:", err.message);

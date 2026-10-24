@@ -125,3 +125,10 @@ test("the agents' daily budget is enforced", async () => {
   assert.ok(codes.includes(429), "expected a 429, got " + codes);
   assert.equal(codes.filter((x) => x === 200).length + 5, 8);
 });
+
+test("voice site: a reply in another language says which language to speak it in", async () => {
+  const r = await post("/api/chat", { lang: "fr", messages: [{ role: "user", content: "answer in English: the newest smart canes and apps for blind people" }] });
+  const line = JSON.parse((await r.text()).trim().split("\n").pop());
+  assert.equal(line.type, "reply");
+  assert.equal(line.lang, "en");
+});

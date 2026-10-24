@@ -15,6 +15,49 @@
     zh: { html: "zh-Hans", speech: "zh-CN", native: "中文", english: "Simplified Chinese" }
   };
 
+  // Which of the six languages a piece of text is written in, so each reply is spoken
+  // by a voice of that language. `fallback` (the conversation's language) wins whenever
+  // the text is short or not clearly in another language, so a French reply that
+  // quotes an English title stays French.
+  var WORDS = {
+    en: "the and is are was of to in it you that this for with what have be not on can it's i'm there they about would",
+    it: "il lo la gli le di che è e un una per non sono del della con mi ti si ci questo questa anche come più ho hai ma",
+    fr: "le la les des est et un une pour pas que qui dans du je vous il elle ce cette sur au avec sont mais c'est j'ai",
+    bg: "и на е да се за не с от че по това как са ще ли ми те си беше може като ни",
+    ru: "и в не на что я с он как это по но из у за от так же вы мы есть был все она"
+  };
+  var WORD_SETS = {};
+  for (var w in WORDS) WORD_SETS[w] = WORDS[w].split(" ");
+
+  function detectLang(text, fallback) {
+    fallback = META[fallback] ? fallback : "en";
+    text = String(text || "").toLowerCase();
+    var han = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+    var cyr = (text.match(/[\u0400-\u04ff]/g) || []).length;
+    var lat = (text.match(/[a-zàâäçéèêëîïôöùûüœæ]/g) || []).length;
+    if (han > (cyr + lat) / 3 && han >= 2) return "zh";
+    var words = text.split(/[^a-zàâäçéèêëîïôöùûüœæ'\u0400-\u04ff]+/).filter(Boolean);
+    var count = function (code) {
+      var n = 0;
+      for (var i = 0; i < words.length; i++) if (WORD_SETS[code].indexOf(words[i]) !== -1) n++;
+      return n;
+    };
+    var pickBest = function (codes) {
+      var best = null, bestN = 0, total = 0, keep = codes.indexOf(fallback) !== -1 ? count(fallback) : 0;
+      codes.forEach(function (c) { var n = count(c); total += n; if (n > bestN) { best = c; bestN = n; } });
+      if (codes.indexOf(fallback) !== -1 && (bestN < 3 || bestN < keep * 2 || best === fallback)) return fallback;
+      return bestN >= 3 && bestN > total / 2 ? best : codes.indexOf(fallback) !== -1 ? fallback : best || codes[0];
+    };
+    if (cyr > lat) {
+      // Letters only one of the two languages uses.
+      if (/[ыэё]/.test(text)) return "ru";
+      if (/ѝ|\bъ|[бвгджзклмнпрстфхцчшщ]ъ[бвгджзклмнпрстфхцчшщ]/.test(text) && !/[ыэё]/.test(text)) return "bg";
+      return pickBest(["bg", "ru"]);
+    }
+    if (lat === 0) return fallback;
+    return pickBest(["en", "it", "fr"]);
+  }
+
   var S = {
     en: {
       title: "Talk with Artificial Intelligence – press the button to start",
@@ -290,7 +333,7 @@
     for (var i = 0; i < els.length; i++) els[i].textContent = t(lang, els[i].getAttribute("data-i18n"));
   }
 
-  var api = { LANGS: LANGS, META: META, S: S, pick: pick, t: t, applyPage: applyPage };
+  var api = { LANGS: LANGS, META: META, S: S, pick: pick, t: t, applyPage: applyPage, detectLang: detectLang };
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.I18N = api;
 })(this);

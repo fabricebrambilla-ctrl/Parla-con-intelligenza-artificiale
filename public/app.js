@@ -214,6 +214,7 @@
   }
 
   var lastSaid = "";        // the assistant's last reply or greeting, for "repeat"
+  var lastSaidLang = null; // the language it was said in
 
   var stopSpeaking = null;  // set while something is being said
   var aiVoiceFailures = 0;
@@ -641,7 +642,7 @@
 
   async function runCommand(cmd) {
     var my = session, reply;
-    if (cmd === "repeat") reply = lastSaid || tt("voiceHelp");
+    if (cmd === "repeat") { if (lastSaid) { await say(lastSaid, lastSaidLang); if (my === session) goReady(); return; } reply = tt("voiceHelp"); }
     else if (cmd === "help") reply = tt("voiceHelp");
     else {
       if (cmd === "ask") await chooseLanguage(my);
@@ -736,8 +737,10 @@
       if (my !== session) return;
       failures = 0;
       var reply = String(r2.text || "");
-      if (reply) { transcript.push({ role: "assistant", content: reply }); lastSaid = reply; }
-      await say(reply || (r2.end ? tt("farewell") : ""));
+      // Spoken by a voice of the language the reply is written in, not always the page's language.
+      var replyLang = I.LANGS.indexOf(r2.lang) !== -1 ? r2.lang : lang;
+      if (reply) { transcript.push({ role: "assistant", content: reply }); lastSaid = reply; lastSaidLang = replyLang; }
+      await say(reply || (r2.end ? tt("farewell") : ""), reply ? replyLang : lang);
       if (my !== session) return;
       if (r2.end) return endConversation();
       goReady();

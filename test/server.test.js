@@ -80,3 +80,16 @@ test("security headers are set", async () => {
   assert.match(r.headers.get("content-security-policy"), /frame-ancestors 'none'/);
   assert.equal(r.headers.get("x-content-type-options"), "nosniff");
 });
+
+test("reply language detection picks the language the text is written in", () => {
+  const cases = [
+    ["Here is what I found: the newest navigation aids for blind people are smart canes and apps you can use with your phone.", "fr", "en"],
+    ["Selon le site de la RNIB, le livre Harry Potter and the Philosopher Stone est disponible en braille pour les lecteurs.", "fr", "fr"],
+    ["Ecco cosa ho trovato: il nuovo bastone intelligente è disponibile anche in Italia e si può usare con il telefono.", "en", "it"],
+    ["Ето какво намерих: новият умен бастун е достъпен и в България и може да се използва с телефона.", "ru", "bg"],
+    ["Вот что я нашёл: новая умная трость уже есть в России, и её можно использовать с телефоном.", "bg", "ru"],
+    ["这是我找到的：新的智能手杖已经上市，可以和手机一起使用。", "en", "zh"],
+    ["OK.", "fr", "fr"],
+  ];
+  for (const [text, fallback, want] of cases) assert.equal(I18N.detectLang(text, fallback), want, text);
+});
