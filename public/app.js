@@ -20,14 +20,8 @@
   var anonId = get("anonId");
   if (!anonId) { anonId = randomId(); set("anonId", anonId); }
 
-  function loadHistory() {
-    try { var h = JSON.parse(get("history") || "[]"); return Array.isArray(h) ? h : []; } catch (e) { return []; }
-  }
-  function saveHistory(entry) {
-    var h = loadHistory();
-    h.unshift(entry);
-    set("history", JSON.stringify(h.slice(0, 10)));
-  }
+  // Conversations are never saved (owner's choice, 2026-10-24); delete what older versions saved.
+  try { localStorage.removeItem("history"); } catch (e) {}
 
   // ---------- language ----------
   var lang = I.pick(get("lang") ? [get("lang")] : navigator.languages || [navigator.language]);
@@ -35,8 +29,8 @@
   // Same, but with the touch wording on phones and tablets.
   var tk = function (key) { return IS_TOUCH && I.S[lang][key + "Touch"] ? tt(key + "Touch") : tt(key); };
 
-  var talkBtn = $("talk"), endBtn = $("endConv"), continueBtn = $("continue"), langBtn = $("lang"),
-      langsBox = $("langs"), historyP = $("history"), alertBox = $("alert");
+  var talkBtn = $("talk"), endBtn = $("endConv"), langBtn = $("lang"),
+      langsBox = $("langs"), alertBox = $("alert");
 
   if (IS_TOUCH) $("helpText").setAttribute("data-i18n", "helpTouch");
 
@@ -45,7 +39,6 @@
     talkBtn.textContent = talkLabel ? tt("talk") : tt("start");
     endBtn.textContent = tt("end");
     // Keep the chosen language on the other pages too.
-    historyP.querySelector("a").href = "/history?lang=" + lang;
     $("privacyLink").href = "/privacy?lang=" + lang;
     $("accessibilityLink").href = "/accessibility?lang=" + lang;
     var opts = langsBox.querySelectorAll("[data-set-lang]");
@@ -55,18 +48,12 @@
     }
   }
 
-  function showHistoryControls() {
-    var has = loadHistory().length > 0;
-    continueBtn.hidden = !has;
-    historyP.hidden = !has;
-  }
-
   // ---------- state ----------
   var active = false;      // a conversation is running
   var session = 0;         // increases on every start/end, to drop stale async work
   var state = "idle";      // idle | ready (waiting for the space bar) | listening | processing | speaking
   var transcript = [];     // [{role, content}] kept in memory only
-  var context = "";        // summary of the previous conversation, when continuing
+  var context = "";        // always empty: conversations are not saved
   var failures = 0;        // failed turns in a row
   var choosing = false;    // the assistant is asking which language to use
   var talkLabel = false;   // the button reads "Talk" (from the first time the assistant waits for the user)
@@ -768,8 +755,7 @@
     choosing = false;
     var my = ++session;
     transcript = [];
-    var last = loadHistory()[0];
-    context = withContext && last ? last.summary || "" : "";
+    context = "";
 
     // Must happen inside the click: unlock audio and speech (iOS Safari).
     ensureContext();
@@ -820,7 +806,7 @@
 
     // EU AI Act: the greeting says it is an AI. The first time, also say where the voice goes.
     // Full instructions only the first time; after that a short greeting.
-    var intro = context ? tk("greetingContinue") : get("introHeard") ? tk("greetingShort") : tk("greeting");
+    var intro = get("introHeard") ? tk("greetingShort") : tk("greeting");
     if (!get("noticeHeard")) { intro = tt("notice") + " " + intro; set("noticeHeard", "1"); }
     set("introHeard", "1");
     lastSaid = intro;
@@ -843,28 +829,12 @@
     setState("idle");
     showConversationControls(false);
     if (!silent) sounds.end();
-    summarize(transcript.slice(), context);
   }
 
   function fail(code) {
     endConversation(true);
     sounds.end();
     setTimeout(function () { announce(code); }, 700);
-  }
-
-  async function summarize(messages, prevContext) {
-    if (!messages.some(function (m) { return m.role === "user"; })) return;
-    try {
-      var r = await api("/api/summary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lang: lang, context: prevContext, messages: messages.slice(-40) })
-      });
-      if (r.summary) {
-        saveHistory({ date: new Date().toISOString(), topic: r.topic || "", summary: r.summary });
-        showHistoryControls();
-      }
-    } catch (e) { /* history is a nice-to-have; stay silent */ }
   }
 
   // ---------- buttons ----------
@@ -893,12 +863,6 @@
     if (!active || !isSpace(e) || e.repeat || e.target === talkBtn || isOtherControl(e.target)) return;
     e.preventDefault();
     onTalkPress();
-  });
-
-  continueBtn.addEventListener("click", function () {
-    if (active) return;
-    talkBtn.focus();
-    startConversation(true);
   });
 
   langBtn.addEventListener("click", function () {
@@ -931,7 +895,6 @@
 
   // ---------- start-up ----------
   renderTexts();
-  showHistoryControls();
   // Wake a sleeping free server early so the first answer is not slow.
   fetch("/health").catch(function () {});
 })();

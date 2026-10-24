@@ -59,7 +59,6 @@ app.use((req, res, next) => {
 // ---------- pages, rendered in the visitor's language ----------
 const templates = {
   index: fs.readFileSync(path.join(PUBLIC, "index.html"), "utf8"),
-  history: fs.readFileSync(path.join(PUBLIC, "history.html"), "utf8"),
 };
 
 function escapeHtml(s) {
@@ -139,11 +138,12 @@ ${body}
 app.use(stats.router);
 
 app.get("/", renderPage("index"));
-app.get("/history", renderPage("history"));
+// History is no longer saved; old links go to the main page.
+app.get("/history", (req, res) => res.redirect(301, I18N.LANGS.includes(req.query.lang) ? "/?lang=" + req.query.lang : "/"));
 app.get("/privacy", renderLegal(LEGAL.PRIVACY));
 app.get("/accessibility", renderLegal(LEGAL.ACCESSIBILITY));
 app.get("/index.html", (req, res) => res.redirect(301, "/"));
-app.get("/history.html", (req, res) => res.redirect(301, "/history"));
+app.get("/history.html", (req, res) => res.redirect(301, "/"));
 app.get("/health", (req, res) => res.status(200).send("ok"));
 app.use(express.static(PUBLIC, { index: false }));
 
@@ -540,44 +540,6 @@ app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), 
 
 // Hidden text API for AI agents (no page links to it; see agent.js).
 require("./agent.js")(app, { runChat, limit, pickLang, errorCode, LANGS: I18N.LANGS, stats });
-
-// ---------- summary for the on-device history ----------
-app.post("/api/summary", express.json({ limit: "300kb" }), limit({ requests: 1 }), async (req, res) => {
-  try {
-    const lang = pickLang(req.body?.lang);
-    const context = String(req.body?.context || "").slice(0, 2000);
-    const convo = cleanMessages(req.body?.messages)
-      .slice(-40)
-      .map((m) => (m.role === "user" ? "User: " : "Assistant: ") + m.content)
-      .join("\n");
-    if (!convo) return res.json({});
-
-    const data = await groqChat({
-      model: SUMMARY_MODEL,
-      messages: [
-        {
-          role: "system",
-          content:
-            `Summarise the conversation in ${I18N.META[lang].english}. Reply with JSON only, in this form: ` +
-            `{"topic": "one short line", "summary": "two to four sentences with the main questions, facts found and sources named"}.`,
-        },
-        { role: "user", content: (context ? "Earlier summary: " + context + "\n\n" : "") + convo },
-      ],
-      temperature: 0.2,
-      reasoning_effort: "low",
-      max_completion_tokens: 800,
-    });
-    const text = String(data?.choices?.[0]?.message?.content || "");
-    let out = {};
-    try { out = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)); } catch {}
-    res.json({
-      topic: forSpeech(out.topic).slice(0, 120),
-      summary: forSpeech(out.summary || text).slice(0, 1200),
-    });
-  } catch (err) {
-    sendError(res, err, "summary");
-  }
-});
 
 // Never show stack traces or internals to visitors.
 app.use((err, req, res, next) => {
