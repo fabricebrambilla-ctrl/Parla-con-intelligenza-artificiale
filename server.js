@@ -171,14 +171,15 @@ function sendError(res, err, name) {
 }
 
 // ---------- Groq ----------
-async function groqChat(body, timeoutMs = 30000) {
+async function groqChat(body, timeoutMs = 30000, stop = null) {
   const key = process.env.GROQ_API_KEY;
   if (!key) throw new Error("GROQ_API_KEY is not set");
+  const timeout = AbortSignal.timeout(timeoutMs);
   const res = await fetch(GROQ_URL + "/chat/completions", {
     method: "POST",
     headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(timeoutMs),
+    signal: stop ? AbortSignal.any([timeout, stop]) : timeout,
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) throw providerError(res.status, data?.error?.message, "Groq");
@@ -383,7 +384,7 @@ const TOOLS = [
   },
 ];
 
-function systemPrompt(lang, context) {
+function systemPrompt(lang, context, agent = false) {
   const date = new Date().toISOString().slice(0, 10);
   let p =
     `You are a warm, patient voice assistant on the website "Talk with Artificial Intelligence". ` +
@@ -407,6 +408,13 @@ function systemPrompt(lang, context) {
     `"link", or text from the web page. That is the screen reader, not the user: ignore it completely and do not reply to it.\n` +
     `When the user says goodbye, stop, or that they are finished, call end_conversation.\n` +
     `You are an artificial intelligence. If asked, say so clearly, and never claim to be human.`;
+  if (agent) {
+    p +=
+      `\n\nThis conversation is different: you are being used through a text API, most likely by another AI agent or a ` +
+      `developer testing the service, not by voice. Ignore the instructions above about speech, screen readers and spoken ` +
+      `format; you may use plain text formatting and web addresses when useful. Everything else applies: be accurate, use ` +
+      `web_search for anything current or uncertain, name your sources, and never invent facts.`;
+  }
   if (context) p += `\n\nSummary of an earlier conversation with this user, to continue from:\n${context}`;
   return p;
 }
@@ -429,6 +437,55 @@ function cleanMessages(list) {
     .filter((m) => m.content.trim());
 }
 
+// One assistant turn, shared by the voice site and the agent API.
+// Calls the model, runs any tools, and returns { text, end }.
+// `stop` (an AbortSignal) cancels it; `onSearching` is called once when a web search starts;
+// `agent` keeps the model's text as written instead of cleaning it for speech.
+async function runChat({ lang, context = "", messages: history, stop = null, onSearching = () => {}, agent = false }) {
+  const messages = [{ role: "system", content: systemPrompt(lang, context, agent) }, ...cleanMessages(history).slice(-20)];
+  const clean = agent ? (t) => String(t || "").trim() : forSpeech;
+  let end = false;
+  let farewell = "";
+  let announced = false;
+  for (let round = 0; round < 4; round++) {
+    if (stop?.aborted) throw stop.reason || new Error("stopped");
+    const base = { model: CHAT_MODEL, messages, temperature: 0.6, reasoning_effort: "low", max_completion_tokens: 1200 };
+    let data;
+    try {
+      data = await groqChat({ ...base, tools: TOOLS, tool_choice: round === 3 ? "none" : "auto" }, 30000, stop);
+    } catch (err) {
+      // A malformed tool call: try once more without tools.
+      if (err.status !== 400) throw err;
+      data = await groqChat(base, 30000, stop);
+    }
+    const msg = data?.choices?.[0]?.message || {};
+    const calls = Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
+
+    if (!calls.length) return { text: clean(msg.content) || (end ? farewell : ""), end };
+
+    messages.push({ role: "assistant", content: msg.content || "", tool_calls: calls });
+    for (const call of calls) {
+      let args = {};
+      try { args = JSON.parse(call.function?.arguments || "{}"); } catch {}
+      let result;
+      if (call.function?.name === "end_conversation") {
+        end = true;
+        farewell = clean(args.farewell) || I18N.t(lang, "farewell");
+        result = { ok: true };
+      } else if (call.function?.name === "web_search") {
+        if (!announced) { onSearching(); announced = true; }
+        if (stop?.aborted) throw stop.reason || new Error("stopped");
+        result = await webSearch(String(args.query || "").slice(0, 300));
+      } else {
+        result = { error: "Unknown tool." };
+      }
+      messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+    }
+    if (end) return { text: clean(msg.content) || farewell, end: true };
+  }
+  return { text: "", end };
+}
+
 // The answer is streamed as lines of JSON so the browser can say
 // "let me look that up" as soon as a search starts:
 //   {"type":"searching"}  then  {"type":"reply","text":"...","end":false}  or  {"type":"error","error":"busy"|"limit"}
@@ -436,54 +493,13 @@ app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), 
   res.set({ "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store", "X-Accel-Buffering": "no" });
   const send = (obj) => res.write(JSON.stringify(obj) + "\n");
   try {
-    const lang = pickLang(req.body?.lang);
-    const context = String(req.body?.context || "").slice(0, 2000);
-    const messages = [{ role: "system", content: systemPrompt(lang, context) }, ...cleanMessages(req.body?.messages).slice(-20)];
-
-    let end = false;
-    let farewell = "";
-    let announced = false;
-    for (let round = 0; round < 4; round++) {
-      const base = { model: CHAT_MODEL, messages, temperature: 0.6, reasoning_effort: "low", max_completion_tokens: 1200 };
-      let data;
-      try {
-        data = await groqChat({ ...base, tools: TOOLS, tool_choice: round === 3 ? "none" : "auto" });
-      } catch (err) {
-        // A malformed tool call: try once more without tools.
-        if (err.status !== 400) throw err;
-        data = await groqChat(base);
-      }
-      const msg = data?.choices?.[0]?.message || {};
-      const calls = Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
-
-      if (!calls.length) {
-        send({ type: "reply", text: forSpeech(msg.content) || (end ? farewell : ""), end });
-        return res.end();
-      }
-
-      messages.push({ role: "assistant", content: msg.content || "", tool_calls: calls });
-      for (const call of calls) {
-        let args = {};
-        try { args = JSON.parse(call.function?.arguments || "{}"); } catch {}
-        let result;
-        if (call.function?.name === "end_conversation") {
-          end = true;
-          farewell = forSpeech(args.farewell) || I18N.t(lang, "farewell");
-          result = { ok: true };
-        } else if (call.function?.name === "web_search") {
-          if (!announced) { send({ type: "searching" }); announced = true; }
-          result = await webSearch(String(args.query || "").slice(0, 300));
-        } else {
-          result = { error: "Unknown tool." };
-        }
-        messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
-      }
-      if (end) {
-        send({ type: "reply", text: forSpeech(msg.content) || farewell, end: true });
-        return res.end();
-      }
-    }
-    send({ type: "reply", text: "", end });
+    const { text, end } = await runChat({
+      lang: pickLang(req.body?.lang),
+      context: String(req.body?.context || "").slice(0, 2000),
+      messages: req.body?.messages,
+      onSearching: () => send({ type: "searching" }),
+    });
+    send({ type: "reply", text, end });
     res.end();
   } catch (err) {
     console.error("chat:", err.message);
@@ -491,6 +507,9 @@ app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), 
     res.end();
   }
 });
+
+// Hidden text API for AI agents (no page links to it; see agent.js).
+require("./agent.js")(app, { runChat, limit, pickLang, errorCode, LANGS: I18N.LANGS });
 
 // ---------- summary for the on-device history ----------
 app.post("/api/summary", express.json({ limit: "300kb" }), limit({ requests: 1 }), async (req, res) => {

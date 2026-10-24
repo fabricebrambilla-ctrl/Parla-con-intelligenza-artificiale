@@ -25,6 +25,10 @@ const LIMITS = {
   burstPerMinute: num("REQUESTS_PER_MINUTE_PER_IP", 60),
   tavilyPerDay: num("DAILY_TAVILY_SEARCHES", 30),
   tavilyPerMonth: num("MONTHLY_TAVILY_SEARCHES", 950),
+  // The hidden agent API has its own small daily budget, so agents can never use up
+  // the free AI quota that blind visitors depend on. 0 turns the agent API off.
+  agentPerDay: num("AGENT_DAILY_MESSAGES", 40),
+  agentPerIpPerDay: num("AGENT_DAILY_MESSAGES_PER_IP", 20),
 };
 
 // ---------- stores ----------
@@ -167,4 +171,24 @@ async function takeTavilySearch() {
   return perDay <= LIMITS.tavilyPerDay && perMonth <= LIMITS.tavilyPerMonth;
 }
 
-module.exports = { LIMITS, limit, takeTavilySearch, clientIp, normalize };
+// Express middleware for the agent API: one message from the agents' own daily budget
+// (whole site and per address). A refused message uses nothing.
+function agentLimit() {
+  return async (req, res, next) => {
+    try {
+      if (!LIMITS.agentPerDay) return res.status(404).json({ error: "not found" });
+      const d = day(), ip = pseudonym(clientIp(req));
+      const [all, mine] = await Promise.all([store.incr(`a:${d}:g`, 1, DAY), store.incr(`a:${d}:i:${ip}`, 1, DAY)]);
+      if (all > LIMITS.agentPerDay || mine > LIMITS.agentPerIpPerDay) {
+        await Promise.all([store.incr(`a:${d}:g`, -1, DAY), store.incr(`a:${d}:i:${ip}`, -1, DAY)]);
+        return res.status(429).json({ error: "limit", message: "Today's agent message limit is used up. It resets at midnight UTC." });
+      }
+      next();
+    } catch (err) {
+      console.error("limits:", err.message);
+      res.status(503).json({ error: "unavailable" });
+    }
+  };
+}
+
+module.exports = { LIMITS, limit, agentLimit, takeTavilySearch, clientIp, normalize };
