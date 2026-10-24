@@ -20,7 +20,12 @@ const SUMMARY_MODEL = process.env.GROQ_SUMMARY_MODEL || "openai/gpt-oss-20b";
 // (per minute or per day); each model has its own limits on Groq.
 const FALLBACK_MODEL = process.env.GROQ_FALLBACK_MODEL || "openai/gpt-oss-20b";
 const STT_MODEL = process.env.GROQ_STT_MODEL || "whisper-large-v3-turbo";
-const SEARCH_FALLBACK_MODEL = process.env.GROQ_SEARCH_MODEL || "groq/compound";
+// Compound was retired on 2026-09-21. Never call it, even if an old Render
+// environment variable still selects it. Other research models require opt-in.
+const configuredSearchModel = process.env.GROQ_SEARCH_MODEL || "";
+const retiredSearchModels = new Set(["groq/compound", "groq/compound-mini"]);
+const SEARCH_FALLBACK_MODEL = retiredSearchModels.has(configuredSearchModel) ? "" : configuredSearchModel;
+let searchFallbackBlocked = false;
 // Natural AI voice, tried in this order:
 // 1. Fish Audio (FISH_API_KEY) for all six languages, on its free developer model.
 // 2. Groq Orpheus for English only.
@@ -321,7 +326,7 @@ app.post("/api/speak", express.json({ limit: "4kb" }), limit({ requests: 1 }), a
   res.send(audio.data);
 });
 
-// ---------- search: Tavily first, Groq Compound as fallback ----------
+// ---------- search: Tavily first, optional configured research fallback ----------
 async function tavilySearch(query) {
   const key = process.env.TAVILY_API_KEY;
   if (!key || !(await takeTavilySearch())) return null;
@@ -351,6 +356,7 @@ async function tavilySearch(query) {
 }
 
 async function compoundSearch(query) {
+  if (!SEARCH_FALLBACK_MODEL || searchFallbackBlocked) return null;
   const data = await groqChat({
     model: SEARCH_FALLBACK_MODEL,
     messages: [
@@ -374,12 +380,20 @@ async function webSearch(query) {
   } catch (err) {
     console.error("tavily:", err.message);
   }
-  try {
-    return await compoundSearch(query);
-  } catch (err) {
-    console.error("compound:", err.message);
-    return { error: "Web search is not available right now. Tell the user you could not search." };
+  if (SEARCH_FALLBACK_MODEL && !searchFallbackBlocked) {
+    try {
+      const result = await compoundSearch(query);
+      if (result) return result;
+    } catch (err) {
+      // A missing/inaccessible model is configuration, not a transient outage.
+      // Stop retrying it until restart, just as for unavailable speech models.
+      if ([400, 401, 403, 404].includes(err.status) && /does not exist|not found|not available|access|permission/i.test(err.message)) {
+        searchFallbackBlocked = true;
+      }
+      console.error("search fallback:", err.message);
+    }
   }
+  return { error: "Web search is not available right now. Tell the user you could not search." };
 }
 
 // ---------- chat ----------
@@ -563,7 +577,11 @@ async function selfCheck() {
   } catch (err) {
     console.error("check: could not reach Groq:", err.message);
   }
-  console.log("check: Tavily key " + (process.env.TAVILY_API_KEY ? "is set" : "is missing (searches will use Groq)"));
+  console.log("check: Tavily key " + (process.env.TAVILY_API_KEY ? "is set" : "is missing"));
+  if (retiredSearchModels.has(configuredSearchModel)) {
+    console.warn("check: GROQ_SEARCH_MODEL selects retired Compound; that fallback is disabled.");
+  }
+  console.log("check: research fallback " + (SEARCH_FALLBACK_MODEL || "is disabled; web search needs Tavily"));
   console.log("check: Fish Audio key " + (process.env.FISH_API_KEY
     ? "is set: natural AI voice in all six languages" + (fishVoice("en") || process.env.FISH_VOICE_IT ? "" : " (no FISH_VOICE chosen, using Fish Audio's default)")
     : (TTS_ENABLED ? "is missing: natural AI voice in English only (Groq Orpheus), device voice for the other languages" : "is missing: device voice for all languages")));
