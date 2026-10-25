@@ -23,7 +23,8 @@ DAILY = dict(primary_requests=1000, primary_tokens=200000, fallback_requests=100
 FRACTION = .75
 CAPS = {k: math.floor(v * FRACTION) for k, v in DAILY.items()}
 MONTH_SEARCH_CAP = 750
-QUESTIONS_PER_VISIT = 3
+QUESTION_MIN, QUESTION_MAX = 1, 5
+EXPECTED_QUESTIONS_PER_VISIT = (QUESTION_MIN + QUESTION_MAX) / 2
 EXPECTED_TOKENS_PER_VISIT = 3500  # Planning estimate, not measured token telemetry.
 MODELS = ("openai/gpt-oss-120b", "openai/gpt-oss-20b", "whisper-large-v3-turbo")
 
@@ -145,9 +146,20 @@ def planned_user_count(remaining):
     # calls and tool rounds are separately charged at execution.
     return max(0, min(100, math.floor(min(
         remaining["primary_tokens"] / (EXPECTED_TOKENS_PER_VISIT * 1.05),
-        remaining["primary_requests"] / (2 * QUESTIONS_PER_VISIT * 1.05),
-        remaining["speech_requests"] / (QUESTIONS_PER_VISIT * 1.05),
-        remaining["audio_seconds"] / (15 * QUESTIONS_PER_VISIT * 1.05)))))
+        remaining["primary_requests"] / (2 * EXPECTED_QUESTIONS_PER_VISIT * 1.05),
+        remaining["speech_requests"] / (EXPECTED_QUESTIONS_PER_VISIT * 1.05),
+        remaining["audio_seconds"] / (15 * EXPECTED_QUESTIONS_PER_VISIT * 1.05)))))
+
+def visit_questions(scenario, rng):
+    # randint uses an unbiased integer draw; each count has probability 1/5.
+    # Do not balance buckets, reject repeats, or cycle through the five counts.
+    count = rng.randint(QUESTION_MIN, QUESTION_MAX)
+    texts = list(scenario["turns"])
+    if len(texts) < count:
+        texts += rng.sample(vt.FOLLOW_UPS, count - len(texts))
+    short = vt.SHORT_TURNS.get(scenario["name"], [])
+    return [{"text": t, "short_text": short[n] if n < len(short) else None}
+            for n, t in enumerate(texts[:count])]
 
 def make_daily_plan(start, hours, count, pool, rng, seed, zone):
     if start.tzinfo is None or hours <= 0 or count < 1:
@@ -167,16 +179,10 @@ def make_daily_plan(start, hours, count, pool, rng, seed, zone):
     visits = []
     for i, identity in enumerate(identities):
         scenario = rng.choice(vt.SCENARIOS)
-        questions = QUESTIONS_PER_VISIT
-        texts = list(scenario["turns"])
-        if len(texts) < questions:
-            texts += rng.sample(vt.FOLLOW_UPS, questions - len(texts))
-        short = vt.SHORT_TURNS.get(scenario["name"], [])
         visits.append(dict(agent_id=identity, conversation_id=str(uuid.uuid4()),
             arrival=(start + timedelta(seconds=rng.uniform(i * span, (i + 1) * span))).isoformat(),
             scenario=scenario["name"], returning=identity in reused,
-            questions=[{"text": t, "short_text": short[n] if n < len(short) else None}
-                       for n, t in enumerate(texts[:questions])]))
+            questions=visit_questions(scenario, rng)))
     # First-ever launch bootstraps returning behaviour within the same day;
     # the returned visit has fresh context and different questions.
     missing = returning_count - len(reused)
@@ -187,11 +193,9 @@ def make_daily_plan(start, hours, count, pool, rng, seed, zone):
         upper = end - timedelta(seconds=reserve)
         when = lower + (upper - lower) * rng.random()
         scenario = rng.choice(vt.SCENARIOS)
-        n = QUESTIONS_PER_VISIT
-        texts = list(scenario["turns"]) + rng.sample(vt.FOLLOW_UPS, 5)
         visits.append(dict(agent_id=original["agent_id"], conversation_id=str(uuid.uuid4()),
             arrival=when.isoformat(), scenario=scenario["name"], returning=True,
-            questions=[{"text": t, "short_text": None} for t in texts[:n]]))
+            questions=visit_questions(scenario, rng)))
     visits.sort(key=lambda x: x["arrival"])
     return {"synthetic": True, "seed": seed, "timezone": zone,
             "start": start.isoformat(), "end": end.isoformat(),
@@ -200,16 +204,47 @@ def make_daily_plan(start, hours, count, pool, rng, seed, zone):
             "hours": hours, "unique_identities": count, "new_identities": count - len(reused),
             "returning_identities": returning_count, "retention_fraction_planned": returning_count / count,
             "visits": visits, "expected_tokens_per_visit": EXPECTED_TOKENS_PER_VISIT,
+            "question_count_distribution": {"minimum": QUESTION_MIN, "maximum": QUESTION_MAX,
+                "probability_each": 1 / (QUESTION_MAX - QUESTION_MIN + 1), "repeats_allowed": True},
             "user_count_is_a_budget_planning_estimate": True}
 
+def started_visits(folder):
+    path = folder / "requests.jsonl"
+    rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()] if path.exists() else []
+    return {row["conversation_id"] for row in rows if row.get("conversation_id")}
+
+def update_remaining_plan(plan, folder, rng, seed):
+    """Change only unstarted visits; keep UUIDs, arrivals and original deadline."""
+    started = started_visits(folder)
+    scenarios = {s["name"]: s for s in vt.SCENARIOS}
+    changes = []
+    for visit in plan["visits"]:
+        if visit["conversation_id"] in started:
+            continue
+        old_count = len(visit["questions"])
+        visit["questions"] = visit_questions(scenarios[visit["scenario"]], rng)
+        changes.append({"conversation_id": visit["conversation_id"], "before": old_count,
+                        "after": len(visit["questions"])})
+    plan["seed"] = seed
+    plan["question_count_distribution"] = {"minimum": QUESTION_MIN, "maximum": QUESTION_MAX,
+        "probability_each": 1 / (QUESTION_MAX - QUESTION_MIN + 1), "repeats_allowed": True}
+    return changes
+
 class DailyJournal(vt.Journal):
-    def __init__(self, folder, zone):
+    def __init__(self, folder, zone, resume=False):
+        previous = []
+        if resume and (folder / "requests.jsonl").exists():
+            previous = [json.loads(line) for line in (folder / "requests.jsonl").read_text().splitlines() if line.strip()]
         super().__init__(folder)
         self.zone, self.folder = ZoneInfo(zone), folder
         self.csvfile.seek(0)
         self.csvfile.truncate()
         self.writer = csv.DictWriter(self.csvfile, fieldnames=vt.FIELDS + ["request_time_local"], extrasaction="ignore")
         self.writer.writeheader()
+        self.rows = previous
+        for row in previous:
+            self.writer.writerow(row)
+        self.csvfile.flush()
 
     def write(self, row):
         row["request_time_local"] = datetime.fromisoformat(row["request_time"]).astimezone(self.zone).isoformat()
@@ -307,14 +342,23 @@ def do_visit(visit, args, client, folder, rng, clock, deadline, pool, pool_path,
 
 def execute(plan, args, folder, ledger, pool, pool_path, clock, journal):
     deadline = datetime.fromisoformat(plan["end"])
+    started = {row["conversation_id"] for row in journal.rows if row.get("conversation_id")}
+    old_outcomes = folder / "conversations.jsonl"
+    outcomes = [json.loads(line) for line in old_outcomes.read_text().splitlines() if line.strip()] if old_outcomes.exists() else []
+    finished = {row["conversation_id"] for row in outcomes if row.get("ended_by_model") or
+                row.get("completed_turns", 0) >= row.get("planned_turns", 1)}
     client = DailyClient(args, journal, plan["run_id"], ledger, clock, deadline)
     capability = client.call("/api/qa", agent_id="synthetic-preflight")
     if capability.get("version") != 1 or tuple(capability.get(k) for k in ("primary_model", "fallback_model", "speech_model")) != MODELS:
         raise StopRun("Backend QA guard is missing or models changed. No paid requests sent.")
-    completed, skipped, reason = 0, [], None
+    completed, skipped, reason = len(finished), [], None
     last_chat = [clock.now() - timedelta(minutes=1)]
     try:
         for visit in plan["visits"]:
+            if visit["conversation_id"] in started:
+                if visit["conversation_id"] not in finished:
+                    skipped.append(dict(conversation_id=visit["conversation_id"], reason="previously started; no request replay on resume"))
+                continue
             scheduled = datetime.fromisoformat(visit["arrival"])
             wait_until(scheduled, deadline, clock)
             now = clock.now()
@@ -346,6 +390,7 @@ def execute(plan, args, folder, ledger, pool, pool_path, clock, journal):
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--live", action="store_true", help="send actual requests; otherwise preview only")
+    p.add_argument("--resume", type=Path, help="resume a saved plan after stopping the old process; keep its deadline and skip started visits")
     p.add_argument("--hours", type=float, default=8)
     p.add_argument("--users", type=int, help="optional smaller override of the automatic budget plan")
     p.add_argument("--timezone", default="Europe/Zurich")
@@ -361,6 +406,12 @@ def parser():
 
 def main(argv=None):
     args = parser().parse_args(argv)
+    saved_plan = None
+    if args.resume:
+        saved_plan = json.loads(args.resume.resolve().read_text())
+        args.base_url, args.timezone = saved_plan["base_url"], saved_plan["timezone"]
+        if args.users is not None:
+            raise SystemExit("--users cannot replace identities in a resumed plan.")
     if not 0 < args.hours <= 8 or args.timeout <= 0 or not 0 <= args.noise <= .02:
         raise SystemExit("Hours must be >0 and <=8; timeout/noise must be valid.")
     ZoneInfo(args.timezone)
@@ -372,23 +423,44 @@ def main(argv=None):
     start = clock.now()
     seed, rng = vt.random_stream(args.seed)
     run_id = str(uuid.uuid4())
-    folder = args.out.resolve() / run_id
-    folder.mkdir(parents=True)
+    folder = args.resume.resolve().parent if saved_plan else args.out.resolve() / run_id
+    folder.mkdir(parents=True, exist_ok=bool(saved_plan))
     pool_path = args.state.resolve() / "identities.json"
     pool = json.loads(pool_path.read_text()) if pool_path.exists() else {"users": {}}
     journal = None
     with Ledger(args.state.resolve(), clock) as ledger:
-        count = planned_user_count(ledger.remaining())
-        if args.users is not None:
-            if not 1 <= args.users <= count:
-                raise SystemExit(f"--users must be between 1 and the current estimate ({count}).")
-            count = args.users
-        if count < 1:
-            print("No budget remains for another planned visit. Shared state was preserved.")
-            return 0
-        plan = make_daily_plan(start, args.hours, count, pool, rng, seed, args.timezone)
-        plan.update(run_id=run_id, base_url=args.base_url, budget=ledger.snapshot())
-        atomic(folder / "plan.json", plan)
+        if saved_plan:
+            if datetime.fromisoformat(saved_plan["end"]) <= start:
+                print("The original deadline has passed. No requests sent.")
+                return 0
+            plan = saved_plan
+            changes = update_remaining_plan(plan, folder, rng, seed)
+            count = plan["unique_identities"]
+            # Prevent a wake/restart from replaying missed arrivals in a burst.
+            clock.resumed = True
+            if args.live:
+                backup_id = start.strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
+                for name in ("plan.json", "daily-summary.json", "failure.txt"):
+                    original = folder / name
+                    if original.exists():
+                        (folder / (name + ".before-resume-" + backup_id)).write_bytes(original.read_bytes())
+                (folder / "failure.txt").unlink(missing_ok=True)
+                append(folder / "schedule-updates.jsonl", dict(at=start.isoformat(), seed=seed,
+                    reason="Owner requested independent uniform 1–5 questions", changes=changes,
+                    original_deadline=plan["end"], no_started_visits_replayed=True))
+        else:
+            count = planned_user_count(ledger.remaining())
+            if args.users is not None:
+                if not 1 <= args.users <= count:
+                    raise SystemExit(f"--users must be between 1 and the current estimate ({count}).")
+                count = args.users
+            if count < 1:
+                print("No budget remains for another planned visit. Shared state was preserved.")
+                return 0
+            plan = make_daily_plan(start, args.hours, count, pool, rng, seed, args.timezone)
+            plan.update(run_id=run_id, base_url=args.base_url, budget=ledger.snapshot())
+        if not saved_plan or args.live:
+            atomic(folder / "plan.json", plan)
         print(f"Plan: {count} identities, {len(plan['visits'])} visits, "
               f"{sum(len(v['questions']) for v in plan['visits'])} questions; "
               f"{plan['local_start']} to {plan['local_end']}", flush=True)
@@ -398,7 +470,7 @@ def main(argv=None):
             print("Preview only: no audio synthesized and no network requests made.")
             return 0
         try:
-            journal = DailyJournal(folder, args.timezone)
+            journal = DailyJournal(folder, args.timezone, resume=bool(saved_plan))
             execute(plan, args, folder, ledger, pool, pool_path, clock, journal)
         except (Exception, KeyboardInterrupt) as exc:
             (folder / "failure.txt").write_text((vt.safe_error(exc) or "Interrupted") + "\n")

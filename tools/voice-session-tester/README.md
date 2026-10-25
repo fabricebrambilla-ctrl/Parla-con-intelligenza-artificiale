@@ -1,6 +1,6 @@
 # Voice session tester
 
-For the approved **eight-hour runner**, use [EIGHT-HOUR-RUNNER.md](EIGHT-HOUR-RUNNER.md). It caps visits at **three questions**, plans **40 identities/day**, and enforces the supplied **75% budgets**. The `voice_tester.py` commands below remain the separate short-session tool.
+For the approved **eight-hour runner**, use [EIGHT-HOUR-RUNNER.md](EIGHT-HOUR-RUNNER.md). It samples **1–5 questions per visit uniformly and independently**, plans **40 identities/day**, and enforces the supplied **75% budgets**. The `voice_tester.py` commands below remain the separate short-session tool.
 
 A standalone client for your Talk with Artificial Intelligence website. No repository access or Groq API key is needed: it calls the same public voice endpoints as your frontend, which uses its own backend configuration.
 

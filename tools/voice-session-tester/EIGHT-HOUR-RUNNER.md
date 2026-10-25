@@ -16,17 +16,17 @@ Requires Python 3.11+, macOS `say`, and `afconvert`. No Python packages or API k
 
 ## Daily and weekly volume
 
-The default plan is **40 synthetic identities per day**. Each visit has **at most three question-and-answer exchanges**, retaining context between questions. The assistant can end a visit earlier. Each new visit starts with empty conversation history, even when an identity returns.
+The default plan is **40 synthetic identities per day**. Each visit independently samples **1–5 question-and-answer exchanges**, uniformly: each possible count has a 20% probability, and repeats are allowed. Context is retained within the visit. The assistant can end a visit earlier. Each new visit starts with empty conversation history, even when an identity returns.
 
 | Day | New UUIDs | Returning UUIDs | Planned visits | Maximum questions |
 | --- | ---: | ---: | ---: | ---: |
-| First run, no identity history | 40 | 2 of those 40 return later that day | 42 | 126 |
-| Each subsequent day | 38 | 2 from the saved identity pool | 40 | 120 |
-| Seven consecutive days, starting fresh | **268 distinct UUIDs** | 5% of each day's 40 identities return | **282 visits** | **846** |
+| First run, no identity history | 40 | 2 of those 40 return later that day | 42 | 210 |
+| Each subsequent day | 38 | 2 from the saved identity pool | 40 | 200 |
+| Seven consecutive days, starting fresh | **268 distinct UUIDs** | 5% of each day's 40 identities return | **282 visits** | **1,410** |
 
-These are planning numbers, not guaranteed completions. The model's actual usage, early endings, provider errors, sleep and remaining shared budget can reduce them. The same returning person may be selected on more than one day. The client keeps UUIDs in `daily-state/identities.json`; it never rotates an identity to bypass a provider limit.
+The expected question counts are 126 on the first day, 120 on each later day, and 846 across the week; the actual sampled totals vary. These are planning numbers, not guaranteed completions. The model's actual usage, early endings, provider errors, sleep and remaining shared budget can reduce them. The same returning person may be selected on more than one day. The client keeps UUIDs in `daily-state/identities.json`; it never rotates an identity to bypass a provider limit.
 
-The estimate uses 3,500 answer-model tokens per visit, plus allowance for return visits. Tokens are the expected constraint. Actual usage depends on response length, prior context and tool calls, so an exact maximum user count cannot be known in advance. The backend checks a conservative allowance **before** each provider call and refunds only usage confirmed by the provider.
+The estimate uses 3,500 answer-model tokens per visit at an expected three questions (the mean of 1–5), plus allowance for return visits. Longer sampled visits can use more tokens; the hard usage guards remain authoritative. Tokens are the expected constraint. Actual usage depends on response length, prior context and tool calls, so an exact maximum user count cannot be known in advance. The backend checks a conservative allowance **before** each provider call and refunds only usage confirmed by the provider.
 
 ## Timing and variation
 
@@ -72,7 +72,7 @@ The daily runner skips remote speech-output and summary calls because their addi
 
 Each run prints its results folder under `daily-results`. It saves:
 
-- `plan.json`: arrivals, UUIDs, topics, three-question visits and deadline.
+- `plan.json`: arrivals, UUIDs, topics, independently sampled 1–5-question visits and deadline.
 - `turns.jsonl` and `conversations.jsonl`: completed exchanges and visit outcomes.
 - `requests.csv` / `requests.jsonl`: actual client timestamps, latency, IDs and errors.
 - `provider-requests.jsonl`: safe per-model usage returned by the backend; no API keys.
@@ -86,7 +86,7 @@ Preview without any network requests or speech generation:
 python3 daily_runner.py
 ```
 
-Use fewer identities if desired, still with at most three questions per visit:
+Use fewer identities if desired, still with uniformly sampled 1–5 questions per visit:
 
 ```sh
 sh run-eight-hours.command --users 10
@@ -98,4 +98,10 @@ The backend must expose `/api/qa` version 1 and safe QA accounting. The runner v
 
 ## Verification scope
 
-Automated tests use real local HTTP with a virtual clock to exercise the complete eight-hour schedule, three-question context, returning identities, quota reservations, missing telemetry and sleep skips. They use explicitly labelled acoustic fixtures, not production requests. Native macOS speech is checked separately. This is not a claim that an eight-hour production run has already completed.
+Automated tests use real local HTTP with a virtual clock to exercise the complete eight-hour schedule, variable-length context, independent uniform count sampling, safe continuation without replay, returning identities, quota reservations, missing telemetry and sleep skips. They use explicitly labelled acoustic fixtures, not production requests. Native macOS speech is checked separately. This is not a claim that an eight-hour production run has already completed.
+
+## Continue an interrupted run without extending it
+
+After stopping the old process, the updated runner can continue the same saved plan with `--resume /absolute/path/to/plan.json`. It preserves the original deadline, identity UUIDs, arrivals, request history and shared budget. It skips all previously started visits (including partial visits) instead of replaying any uncertain requests, and samples new counts only for unstarted visits. Missed arrivals are skipped. Before updating the plan, it saves backup copies and records the changes in `schedule-updates.jsonl`. It refuses to run beside another process using the same state folder.
+
+The approved active run on 25 October was migrated using this continuation path. The normal morning command is unchanged.

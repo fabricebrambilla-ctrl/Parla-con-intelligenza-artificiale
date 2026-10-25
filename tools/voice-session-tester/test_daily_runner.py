@@ -127,21 +127,86 @@ class DailyTests(unittest.TestCase):
         b=dr.make_daily_plan(FakeClock().now()+timedelta(minutes=23),8,20,{"users":{}},random.Random(2),2,"Europe/Zurich")
         self.assertEqual(datetime.fromisoformat(a["end"])-datetime.fromisoformat(a["start"]),timedelta(hours=8))
         self.assertNotEqual([x["arrival"] for x in a["visits"]],[x["arrival"] for x in b["visits"]])
-        self.assertTrue(all(len(x["questions"]) == 3 for x in a["visits"]))
+        self.assertTrue(all(1 <= len(x["questions"]) <= 5 for x in a["visits"]))
 
-    def test_default_three_questions_and_weekly_unique_identity_total(self):
+    def test_variable_questions_and_weekly_unique_identity_total(self):
         pool={"users":{}}
         new_total=0
         for day in range(7):
             plan=dr.make_daily_plan(FakeClock().now()+timedelta(days=day),8,40,pool,random.Random(day),day,"Europe/Zurich")
             self.assertEqual(plan["returning_identities"],2)
-            self.assertTrue(all(len(v["questions"]) == 3 for v in plan["visits"]))
+            self.assertTrue(all(1 <= len(v["questions"]) <= 5 for v in plan["visits"]))
             self.assertEqual(len(plan["visits"]),42 if day == 0 else 40)
             new_total += plan["new_identities"]
             for visit in plan["visits"]:
                 pool["users"][visit["agent_id"]]={}
         self.assertEqual(new_total,268)
         self.assertEqual(len(pool["users"]),268)
+
+    def test_uniform_independent_count_draws_include_repeats_and_both_bounds(self):
+        rng=random.Random(765)
+        counts=[len(dr.visit_questions(vt.SCENARIOS[0],rng)) for _ in range(10000)]
+        self.assertEqual(set(counts),{1,2,3,4,5})
+        self.assertTrue(any(a==b for a,b in zip(counts,counts[1:])))
+        self.assertTrue(all(1800 < counts.count(n) < 2200 for n in range(1,6)))
+        for n in range(1,6):
+            with patch.object(rng,'randint',return_value=n) as draw:
+                self.assertEqual(len(dr.visit_questions(vt.SCENARIOS[0],rng)),n)
+                self.assertEqual(len(dr.visit_questions(vt.SCENARIOS[0],rng)),n)
+                self.assertEqual(draw.call_args_list,[((1,5),),((1,5),)])
+
+    def test_resume_changes_only_unstarted_question_counts_and_keeps_deadline(self):
+        plan=dr.make_daily_plan(FakeClock().now(),8,20,{"users":{}},random.Random(7),7,'Europe/Zurich')
+        original=json.loads(json.dumps(plan))
+        with tempfile.TemporaryDirectory() as tmp:
+            folder=Path(tmp)
+            (folder/'requests.jsonl').write_text(json.dumps({'conversation_id':plan['visits'][0]['conversation_id']})+'\n')
+            rng=random.Random(8)
+            with patch.object(rng,'randint',return_value=1):
+                changed=dr.update_remaining_plan(plan,folder,rng,8)
+            self.assertEqual(plan['visits'][0],original['visits'][0])
+            self.assertEqual(len(changed),len(plan['visits'])-1)
+            self.assertTrue(all(len(v['questions'])==1 for v in plan['visits'][1:]))
+            self.assertEqual(plan['end'],original['end'])
+            self.assertEqual([(v['agent_id'],v['conversation_id'],v['arrival']) for v in plan['visits']],
+                             [(v['agent_id'],v['conversation_id'],v['arrival']) for v in original['visits']])
+
+    def test_resume_preserves_request_history_and_never_replays_started_visits(self):
+        with tempfile.TemporaryDirectory() as tmp, LocalAPI() as api:
+            folder=Path(tmp)/'run';folder.mkdir()
+            clock=FakeClock()
+            plan=dr.make_daily_plan(clock.now(),8,3,{'users':{}},random.Random(9),9,'Europe/Zurich')
+            plan['run_id']='resume-fixture'
+            plan['base_url']=api.base
+            dr.atomic(folder/'plan.json',plan)
+            old=dr.DailyJournal(folder,'Europe/Zurich')
+            for visit in plan['visits'][:2]:
+                row=dict.fromkeys(vt.FIELDS)
+                row.update(request_time=clock.now().isoformat(),conversation_id=visit['conversation_id'],
+                           agent_id=visit['agent_id'],endpoint='/api/limit',test_request_id=visit['conversation_id'])
+                old.write(row)
+            old.close()
+            previous=(folder/'requests.jsonl').read_bytes()
+            first=plan['visits'][0]
+            (folder/'conversations.jsonl').write_text(json.dumps(dict(conversation_id=first['conversation_id'],
+                planned_turns=len(first['questions']),completed_turns=len(first['questions'])))+'\n')
+            with patch.object(dr,'Clock',return_value=clock),patch.object(vt,'AudioFactory',FixtureAudio),redirect_stdout(io.StringIO()):
+                code=dr.main(['--live','--resume',str(folder/'plan.json'),'--state',str(Path(tmp)/'state'),'--seed','987'])
+            self.assertEqual(code,0)
+            self.assertTrue((folder/'requests.jsonl').read_bytes().startswith(previous))
+            touched={x['identity'] for x in api.calls}
+            self.assertTrue(all(v['agent_id'] not in touched for v in plan['visits'][:2]))
+            self.assertIn(plan['visits'][2]['agent_id'],touched)
+            self.assertEqual(clock.now(),datetime.fromisoformat(plan['end']))
+            summary=json.loads((folder/'daily-summary.json').read_text())
+            self.assertEqual(summary['visits_completed'],2)
+            self.assertEqual(len(summary['skipped']),1)
+            updated=json.loads((folder/'plan.json').read_text())
+            self.assertEqual(updated['end'],plan['end'])
+            self.assertEqual(updated['visits'][:2],plan['visits'][:2])
+            self.assertEqual(updated['question_count_distribution']['probability_each'],.2)
+            self.assertTrue(list(folder.glob('plan.json.before-resume-*')))
+            self.assertTrue((folder/'schedule-updates.jsonl').exists())
 
     def test_ledger_reserves_before_post_and_survives_crash_and_reset_boundary(self):
         with tempfile.TemporaryDirectory() as tmp:
