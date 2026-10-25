@@ -12,6 +12,7 @@ const functions = source.slice(source.indexOf('async function compoundSearch('),
 function fixture(model, search, completion) {
   const calls = [];
   const context = {
+    qa: require("../synthetic-qa.js"),
     process: { env: model === undefined ? {} : { GROQ_SEARCH_MODEL: model } },
     console: { error() {}, warn() {} },
     tavilySearch: search || (async () => null),

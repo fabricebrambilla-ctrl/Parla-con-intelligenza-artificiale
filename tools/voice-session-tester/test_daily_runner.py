@@ -1,0 +1,213 @@
+"""Offline tests: virtual clock, labelled acoustic fixtures and local HTTP only."""
+import io
+import json
+import random
+import tempfile
+import threading
+import unittest
+import wave
+from contextlib import redirect_stdout
+from datetime import datetime, timedelta, timezone
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from unittest.mock import patch
+import daily_runner as dr
+import voice_tester as vt
+
+class FakeClock:
+    def __init__(self):
+        self.at = datetime(2026, 10, 26, 8, tzinfo=timezone.utc)
+        self.resumed = False
+        self.oversleep_once = False
+    def now(self):
+        return self.at
+    def sleep(self, seconds):
+        self.at += timedelta(seconds=seconds)
+        if self.oversleep_once:
+            self.at += timedelta(hours=3)
+            self.resumed = True
+            self.oversleep_once = False
+
+class FixtureAudio:
+    def __init__(self, args, rng):
+        self.rng = rng
+    def make(self, text, folder, stem, short_text=None):
+        seconds = self.rng.randrange(5 * vt.RATE, 25 * vt.RATE + 1) / vt.RATE
+        path = folder / (stem + ".wav")
+        with wave.open(str(path), "wb") as w:
+            w.setparams((1, 2, vt.RATE, 0, "NONE", "fixture"))
+            w.writeframes(b"\x00\x10" * round(seconds * vt.RATE))
+        return dict(text=text, wav=str(path), audio_seconds=seconds, audio_target_seconds=seconds)
+
+class LocalAPI:
+    def __init__(self, mode="ok"):
+        self.mode, self.calls = mode, []
+        outer = self
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *_): pass
+            def do_GET(self): self.answer()
+            def do_POST(self): self.answer()
+            def answer(self):
+                raw = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+                audio = self.headers.get("Content-Type") == "audio/wav"
+                payload = raw if audio else json.loads(raw) if raw else None
+                envelope = json.loads(self.headers.get("X-QA-Budget", "{}"))
+                outer.calls.append(dict(path=self.path, payload=payload, envelope=envelope,
+                    identity=self.headers.get("X-Anon-Id"), synthetic=self.headers.get("X-Synthetic-Test"),
+                    request_id=self.headers.get("X-Test-Request-Id")))
+                used = dict.fromkeys(dr.CAPS, 0)
+                provider = []
+                status, ctype = 200, "application/json"
+                if self.path == "/api/qa":
+                    data = dict(version=1, primary_model=dr.MODELS[0], fallback_model=dr.MODELS[1], speech_model=dr.MODELS[2])
+                elif self.path == "/api/limit":
+                    data = {"ok": True}
+                elif self.path.startswith("/api/transcribe"):
+                    with wave.open(io.BytesIO(raw)) as wav:
+                        seconds = wav.getnframes() / wav.getframerate()
+                    used.update(speech_requests=1, audio_seconds=max(10, __import__("math").ceil(seconds)))
+                    data = {"text": "Fixture question referring to prior discussion."}
+                elif self.path == "/api/chat":
+                    if outer.mode == "quota":
+                        status, data = 429, {"error": "limit"}
+                    elif envelope.get("primary_tokens", 0) < 500:
+                        data = {"type": "error", "error": "qa_budget"}
+                    else:
+                        used.update(primary_requests=1, primary_tokens=500, searches=envelope.get("searches",0))
+                        provider = [dict(model=dr.MODELS[0], accounted_tokens=500, input_tokens=450,
+                            output_tokens=50, usage_measured=True, status=200)]
+                        data = {"type":"reply","text":"A useful fixture response that keeps context.", "lang":"en","end":False}
+                    ctype = "application/x-ndjson"
+                elif self.path == "/api/stats/visit":
+                    data = {"ok":True}
+                else:
+                    data = {"ok":True}
+                if envelope and outer.mode != "missing-telemetry":
+                    data["telemetry"] = {"qa":{"version":1,"spent":used,"provider_calls":provider}}
+                response = (json.dumps(data) + ("\n" if "ndjson" in ctype else "")).encode()
+                self.send_response(status)
+                self.send_header("Content-Type",ctype)
+                self.send_header("Content-Length",str(len(response)))
+                self.end_headers()
+                self.wfile.write(response)
+        self.server = ThreadingHTTPServer(("127.0.0.1",0), Handler)
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+    def __enter__(self):
+        self.thread.start()
+        return self
+    def __exit__(self,*_):
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join()
+
+class DailyTests(unittest.TestCase):
+    def test_original_limits_seventy_five_percent_and_default_users(self):
+        self.assertEqual(dr.CAPS, dict(primary_requests=750,primary_tokens=150000,
+            fallback_requests=750,fallback_tokens=150000,speech_requests=1500,audio_seconds=21600,searches=24))
+        self.assertEqual(dr.planned_user_count(dr.CAPS),40)
+
+    def test_retention_first_day_and_following_day_context_is_not_in_pool(self):
+        start=FakeClock().now()
+        first=dr.make_daily_plan(start,8,20,{"users":{}},random.Random(12),12,"Europe/Zurich")
+        self.assertEqual(first["unique_identities"],20)
+        self.assertEqual(len(first["visits"]),21)
+        returned=[x for x in first["visits"] if x["returning"]]
+        self.assertEqual(len(returned),1)
+        same=[x for x in first["visits"] if x["agent_id"]==returned[0]["agent_id"]]
+        self.assertLess(same[0]["arrival"],same[1]["arrival"])
+        pool={"users":{x["agent_id"]:{} for x in first["visits"]}}
+        second=dr.make_daily_plan(start+timedelta(days=1),8,20,pool,random.Random(45),45,"Europe/Zurich")
+        self.assertEqual(second["new_identities"],19)
+        self.assertEqual(len(second["visits"]),20)
+        self.assertEqual(sum(v["returning"] for v in second["visits"]),1)
+
+    def test_eight_elapsed_hours_and_new_random_arrivals(self):
+        a=dr.make_daily_plan(FakeClock().now(),8,20,{"users":{}},random.Random(1),1,"Europe/Zurich")
+        b=dr.make_daily_plan(FakeClock().now()+timedelta(minutes=23),8,20,{"users":{}},random.Random(2),2,"Europe/Zurich")
+        self.assertEqual(datetime.fromisoformat(a["end"])-datetime.fromisoformat(a["start"]),timedelta(hours=8))
+        self.assertNotEqual([x["arrival"] for x in a["visits"]],[x["arrival"] for x in b["visits"]])
+        self.assertTrue(all(len(x["questions"]) == 3 for x in a["visits"]))
+
+    def test_default_three_questions_and_weekly_unique_identity_total(self):
+        pool={"users":{}}
+        new_total=0
+        for day in range(7):
+            plan=dr.make_daily_plan(FakeClock().now()+timedelta(days=day),8,40,pool,random.Random(day),day,"Europe/Zurich")
+            self.assertEqual(plan["returning_identities"],2)
+            self.assertTrue(all(len(v["questions"]) == 3 for v in plan["visits"]))
+            self.assertEqual(len(plan["visits"]),42 if day == 0 else 40)
+            new_total += plan["new_identities"]
+            for visit in plan["visits"]:
+                pool["users"][visit["agent_id"]]={}
+        self.assertEqual(new_total,268)
+        self.assertEqual(len(pool["users"]),268)
+
+    def test_ledger_reserves_before_post_and_survives_crash_and_reset_boundary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            clock=FakeClock()
+            with dr.Ledger(tmp,clock) as ledger:
+                e=ledger.reserve("/api/chat")
+                self.assertEqual(ledger.remaining()["primary_tokens"],0)
+                with self.assertRaises(dr.StopRun):ledger.reserve("/api/chat")
+            with dr.Ledger(tmp,clock) as ledger:
+                self.assertEqual(ledger.remaining()["primary_tokens"],0)
+                clock.at += timedelta(hours=25)
+                self.assertEqual(ledger.remaining()["primary_tokens"],150000)
+                # Same-month search reservations remain bounded even after 24h.
+                self.assertEqual(ledger.remaining()["searches"],24)
+
+    def test_invalid_telemetry_does_not_refund_reservation(self):
+        with tempfile.TemporaryDirectory() as tmp, dr.Ledger(tmp,FakeClock()) as ledger:
+            e=ledger.reserve("/api/chat")
+            with self.assertRaises(dr.StopRun):ledger.settle(e,None)
+            self.assertEqual(ledger.remaining()["primary_tokens"],0)
+            spent=dict.fromkeys(dr.CAPS,0);spent["primary_tokens"]=150001
+            with self.assertRaises(dr.StopRun):ledger.settle(e,{"version":1,"spent":spent})
+
+    def run_local(self,mode="ok",users=40,oversleep=False):
+        tmp=tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        folder=Path(tmp.name)/"run";folder.mkdir()
+        clock=FakeClock();clock.oversleep_once=oversleep
+        with LocalAPI(mode) as api, dr.Ledger(Path(tmp.name)/"state",clock) as ledger:
+            args=dr.parser().parse_args(["--base-url",api.base]);args.audio_min,args.audio_max=5,25
+            plan=dr.make_daily_plan(clock.now(),8,users,{"users":{}},random.Random(17),17,args.timezone)
+            plan["run_id"]="fixture-run"
+            journal=dr.DailyJournal(folder,args.timezone)
+            try:
+                with patch.object(vt,"AudioFactory",FixtureAudio),redirect_stdout(io.StringIO()):
+                    dr.execute(plan,args,folder,ledger,{"users":{}},Path(tmp.name)/"identities.json",clock,journal)
+            finally:
+                journal.close()
+            return api.calls,plan,clock,journal.rows,json.loads((folder/"daily-summary.json").read_text())
+
+    def test_full_eight_hours_accelerated_real_http_context_identity_audio_and_budgets(self):
+        calls,plan,clock,rows,summary=self.run_local()
+        self.assertEqual(clock.now(),datetime.fromisoformat(plan["end"]))
+        self.assertEqual(summary["visits_completed"],42)
+        chat=[x for x in calls if x["path"]=="/api/chat"]
+        self.assertTrue(chat)
+        self.assertTrue(all(x["synthetic"]=="true" for x in calls))
+        first=[x for x in chat if len(x["payload"]["messages"])==1]
+        self.assertEqual(len(first),42)
+        self.assertTrue(any(len(x["payload"]["messages"])>1 for x in chat))
+        self.assertEqual(len({x["request_id"] for x in calls}),len(calls))
+        self.assertEqual(len({x["identity"] for x in first}),40)
+        self.assertLessEqual(sum(x["envelope"].get("searches",0) for x in chat),24)
+        self.assertTrue(all(5<=x["audio_seconds"]<=25 for x in rows if x["audio_seconds"]))
+        self.assertFalse(any(x["path"]=="/api/speak" for x in calls))
+        self.assertTrue(all("request_time_local" in x for x in rows))
+
+    def test_sleep_skips_missed_arrivals_without_catchup(self):
+        calls,plan,clock,rows,summary=self.run_local(users=5,oversleep=True)
+        self.assertTrue(summary["skipped"])
+        self.assertEqual(clock.now(),datetime.fromisoformat(plan["end"]))
+
+    def test_missing_telemetry_and_quota_stop_before_another_user(self):
+        for mode in ("missing-telemetry","quota"):
+            with self.subTest(mode=mode), self.assertRaises((dr.StopRun,vt.APIError)):
+                self.run_local(mode,users=2)
+
+if __name__=="__main__":
+    unittest.main()

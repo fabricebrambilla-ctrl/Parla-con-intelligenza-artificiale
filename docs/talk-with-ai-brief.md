@@ -416,6 +416,8 @@ Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public 
 
 ### Current state of the code (keep this up to date)
 
+- 2026-10-25: opt-in synthetic QA budget envelopes and safe per-provider accounting for the eight-hour tester. `/api/qa` describes the guard; labelled requests carrying `X-QA-Budget` bound hidden model/search/audio calls and expose measured usage (or conservative reserved allowances when unknown). Normal visitors keep existing behavior and no new general quotas. QA stops on provider 429, disables unbudgeted research fallback, and never requires API credentials in the client.
+
 - 2026-10-24 Render advisory follow-up: pin native Node runtime to 24.22.1 with `.node-version` and patched 24.x engines; upgrade locked body-parser 2.3.0 to 2.4.0 (compatible qs/iconv-lite patches). npm audit reports zero vulnerabilities after update. See Render eMudhra advisory and Node October 21 security release.
 
 - Julian feedback (2026-10-24): localized microphone-permission status and blocked-permission recovery; pending requests cancelled safely on end/restart. Dedicated Alt+Shift+T operates Talk from other page controls when delivered by browser/screen reader; ordinary link keyboard behavior stays native. Automated regression coverage; real NVDA/JAWS retest is still pending.
@@ -477,6 +479,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Change | Files |
 |---|---|---|
+| 2026-10-25 | Add opt-in synthetic-only QA envelopes, usage telemetry and capability endpoint to support an eight-hour local tester with 75% ceilings, 5% returning identities and at most three real 5–25-second spoken questions per visit. Existing frontend and ordinary visitors unchanged. | `synthetic-qa.js`, `server.js`, `test/synthetic-qa*.test.js`, `test/search-fallback.test.js`, `tools/voice-session-tester/*`, this brief |
 | 2026-10-24 | Act on the preserved Render security notice: select patched Node 24.22.1 and update body-parser to 2.4.0, qs to 6.16.1, iconv-lite to 0.7.3. npm audit now reports zero vulnerabilities. | `.node-version`, `package.json`, `package-lock.json`, this brief |
 | 2026-10-24 | Implement Julian’s microphone-permission guidance and dedicated Alt+Shift+T Talk shortcut in all six languages. Prevent cancelled microphone requests from affecting a new session. Update accessibility instructions and add regression tests. Real NVDA/JAWS retest remains pending. | `public/app.js`, `public/index.html`, `public/i18n.js`, `legal.js`, `test/accessibility-feedback.test.js`, this brief |
 | 2026-10-24 | Prevent repeated `model_not_found` errors from retired Groq Compound: no default research-model fallback, retired IDs ignored even if configured, inaccessible custom research models blocked until restart. Tavily remains the primary search; unavailable search is reported honestly. Focused offline regression checks added. | `server.js`, `test/search-fallback.test.js`, this brief |
@@ -510,6 +513,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Preference |
 |---|---|
+| 2026-10-25 | Eight-hour synthetic QA runner: use 75% (not 45%) of the supplied daily limits, 5% returning identities, at most three question-and-answer exchanges per visit (latest instruction replaces 3–10), real randomly sampled 5–25-second audio, response-dependent pauses and random arrivals over eight elapsed hours after launch. Label test traffic and use actual provider metrics. This replaces earlier three-conversation/3–5-turn test settings. |
 | 2026-10-24 | Act on private tester feedback, verify changes before reporting them as implemented, and keep NVDA product-testing correspondence off the locked group topic. Explain microphone permissions and add a dedicated Talk shortcut. |
 | 2026-10-24 | Voice-session testing: one agent keeps one anonymous identity across three separate conversations, with 3–5 contextual exchanges per conversation and actual 5–25-second spoken inputs. Avoid retired-model errors; preserve measured timing/token information rather than inventing it. |
 | 2026-10-24 | **Never save conversation history.** No summaries, no "Continue last conversation", no past-conversations page. |

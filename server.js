@@ -7,6 +7,7 @@ const I18N = require("./public/i18n.js");
 const LEGAL = require("./legal.js");
 const { limit, takeTavilySearch } = require("./limits.js");
 const stats = require("./stats.js");
+const qa = require("./synthetic-qa.js");
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC = path.join(__dirname, "public");
@@ -47,6 +48,10 @@ const aiVoiceLangs = () =>
 
 const app = express();
 app.disable("x-powered-by");
+app.use(qa.middleware);
+app.get("/api/qa", (req, res) => res.json({ version: 1, synthetic_only: true,
+  primary_model: CHAT_MODEL, fallback_model: FALLBACK_MODEL, speech_model: STT_MODEL,
+  budgets: qa.KEYS, output_voice_budgeted: false }));
 
 app.use((req, res, next) => {
   res.set({
@@ -176,6 +181,7 @@ function providerError(status, message, name) {
 }
 
 function errorCode(err) {
+  if (err.qaBudget) return { status: 429, error: "qa_budget" };
   if (err.daily) return { status: 429, error: "limit" };
   return { status: 503, error: "busy" };
 }
@@ -190,6 +196,7 @@ function sendError(res, err, name) {
 async function groqChat(body, timeoutMs = 30000, stop = null) {
   const key = process.env.GROQ_API_KEY;
   if (!key) throw new Error("GROQ_API_KEY is not set");
+  const ticket = qa.reserveModel(body, CHAT_MODEL, FALLBACK_MODEL);
   const timeout = AbortSignal.timeout(timeoutMs);
   const res = await fetch(GROQ_URL + "/chat/completions", {
     method: "POST",
@@ -198,6 +205,7 @@ async function groqChat(body, timeoutMs = 30000, stop = null) {
     signal: stop ? AbortSignal.any([timeout, stop]) : timeout,
   });
   const data = await res.json().catch(() => null);
+  qa.finishModel(ticket, data, res.status, res.headers.get("x-request-id"));
   if (!res.ok) throw providerError(res.status, data?.error?.message, "Groq");
   return data;
 }
@@ -207,7 +215,7 @@ async function groqAnswer(body, stop) {
   try {
     return await groqChat(body, 30000, stop);
   } catch (err) {
-    if (err.status !== 429 || !FALLBACK_MODEL || body.model === FALLBACK_MODEL || stop?.aborted) throw err;
+    if (err.qaBudget || (qa.current() && err.status === 429) || err.status !== 429 || !FALLBACK_MODEL || body.model === FALLBACK_MODEL || stop?.aborted) throw err;
     console.warn(`chat: ${body.model} is over a Groq rate limit, answering with ${FALLBACK_MODEL}`);
     return await groqChat({ ...body, model: FALLBACK_MODEL }, 30000, stop);
   }
@@ -251,6 +259,7 @@ app.post(
       form.append("response_format", "verbose_json");
       form.append("temperature", "0");
 
+      qa.audio(wavSeconds(buf));
       const r = await fetch(GROQ_URL + "/audio/transcriptions", {
         method: "POST",
         headers: { Authorization: "Bearer " + key },
@@ -329,7 +338,8 @@ app.post("/api/speak", express.json({ limit: "4kb" }), limit({ requests: 1 }), a
 // ---------- search: Tavily first, optional configured research fallback ----------
 async function tavilySearch(query) {
   const key = process.env.TAVILY_API_KEY;
-  if (!key || !(await takeTavilySearch())) return null;
+  if (!key || !qa.searchAvailable() || !(await takeTavilySearch())) return null;
+  qa.search();
   const r = await fetch(TAVILY_URL, {
     method: "POST",
     headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
@@ -380,7 +390,7 @@ async function webSearch(query) {
   } catch (err) {
     console.error("tavily:", err.message);
   }
-  if (SEARCH_FALLBACK_MODEL && !searchFallbackBlocked) {
+  if (!qa.current() && SEARCH_FALLBACK_MODEL && !searchFallbackBlocked) {
     try {
       const result = await compoundSearch(query);
       if (result) return result;
@@ -493,7 +503,7 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
     const base = { model: CHAT_MODEL, messages, temperature: 0.6, reasoning_effort: "low", max_completion_tokens: 1200 };
     let data;
     try {
-      data = await groqAnswer({ ...base, tools: TOOLS, tool_choice: round === 3 ? "none" : "auto" }, stop);
+      data = await groqAnswer({ ...base, tools: TOOLS, tool_choice: round === 3 || qa.lastModelCall() ? "none" : "auto" }, stop);
     } catch (err) {
       // A malformed tool call: try once more without tools.
       if (err.status !== 400) throw err;
@@ -532,7 +542,7 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
 //   {"type":"searching"}  then  {"type":"reply","text":"...","end":false,"lang":"en"}  or  {"type":"error","error":"busy"|"limit"}
 app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), async (req, res) => {
   res.set({ "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store", "X-Accel-Buffering": "no" });
-  const send = (obj) => res.write(JSON.stringify(obj) + "\n");
+  const send = (obj) => res.write(JSON.stringify(qa.decorate(obj)) + "\n");
   try {
     const lang = pickLang(req.body?.lang);
     const { text, end } = await runChat({
@@ -594,3 +604,4 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on http://localhost:${PORT}`);
   if (process.env.NODE_ENV !== "test") selfCheck();
 });
+
