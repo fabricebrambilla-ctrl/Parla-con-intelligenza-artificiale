@@ -104,4 +104,12 @@ Automated tests use real local HTTP with a virtual clock to exercise the complet
 
 After stopping the old process, the updated runner can continue the same saved plan with `--resume /absolute/path/to/plan.json`. It preserves the original deadline, identity UUIDs, arrivals, request history and shared budget. It skips all previously started visits (including partial visits) instead of replaying any uncertain requests, and samples new counts only for unstarted visits. Missed arrivals are skipped. Before updating the plan, it saves backup copies and records the changes in `schedule-updates.jsonl`. It refuses to run beside another process using the same state folder.
 
-The approved active run on 25 October was migrated using this continuation path. The normal morning command is unchanged.
+The 25 October run used this continuation path, then stopped after an unaccounted network failure. It is not still running. The normal morning command is unchanged.
+
+## Carry never-started visits into a new eight-hour run
+
+After an old plan has expired, `--carry-unstarted /absolute/path/to/old/plan.json` adds only its never-started visits to a fresh daily plan. It preserves the old UUIDs and questions, leaves the old files intact, and samples new arrivals across the next eight hours. Completed, partial and uncertain visits are excluded by checking all result journals. Original planned times are provenance only; every actual request uses its current timestamp.
+
+Use the same `daily-state` and `daily-results` folders. The new visits and carry-over share the same rolling budget. The 5% return rule applies to each original daily cohort; combining cohorts can change the combined ratio. The larger queue may not finish before the budget or deadline stops it. This mode cannot be combined with `--resume`, cannot use an unexpired plan or a different site, and cannot run beside another copy using the same state.
+
+On 26 October, the authorized catch-up combined 26 never-started visits with 40 visits planned for today. It scheduled 66 visits and 65 distinct UUIDs from 13:27 to 21:27 Europe/Zurich, subject to the remaining budget. Do not launch a second copy while that process is active.

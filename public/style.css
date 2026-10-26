@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --bg: #f4f7fb;
   --fg: #0b1220;
   --muted: #2b3954;
@@ -8,11 +9,12 @@
   --btn2-fg: #0b1220;
   --border: #0b1220;
   --end: #a3122a;
-  --focus: #ffbf00;
+  --focus: #005fcc;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
+    color-scheme: dark;
     --bg: #0b1220;
     --fg: #f4f7fb;
     --muted: #c9d3e6;
@@ -22,8 +24,12 @@
     --btn2-fg: #f4f7fb;
     --border: #f4f7fb;
     --end: #ff9aa9;
+    --focus: #ffbf00;
   }
 }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { overflow-wrap: anywhere; }
 
 body {
   margin: 0;
@@ -33,7 +39,8 @@ body {
 }
 
 main {
-  max-width: 40rem;
+  width: 100%;
+  max-width: 42rem;
   margin: 0 auto;
   padding: 2rem 1rem 3rem;
   display: flex;
@@ -43,12 +50,17 @@ main {
   text-align: center;
 }
 
+main > *, footer > * { min-width: 0; }
+
 h1 { font-size: 2rem; line-height: 1.2; margin: 0.5rem 0; }
 
 button {
   font: inherit;
   cursor: pointer;
   min-height: 3rem;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  touch-action: manipulation;
   padding: 0.75rem 1.25rem;
   border: 3px solid var(--border);
   border-radius: 1rem;
@@ -58,7 +70,7 @@ button {
 
 .talk {
   width: min(15rem, 80vw);
-  aspect-ratio: 1;
+  min-height: min(15rem, 80vw);
   border-radius: 50%;
   border-width: 4px;
   background: var(--btn);
@@ -117,3 +129,4 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; }
 }
+

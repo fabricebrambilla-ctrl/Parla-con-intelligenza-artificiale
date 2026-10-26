@@ -148,7 +148,7 @@ The daily runner adds safe backend accounting for every hidden answer-model call
 ## Offline verification
 
 ```sh
-python3 -m unittest -v test_voice_tester.py test_daily_timing.py test_daily_runner.py
+python3 -m unittest -v test_voice_tester.py test_daily_timing.py test_daily_runner.py test_catchup.py
 ```
 
 The tests use a local mock server and explicitly labeled audio/metadata fixtures. They cover three conversations per identity, context continuity and reset, distinct identities, measured WAV duration, chunked Unicode reply parsing, conditional speech output, surfaced failures, rate-limit stopping without retries, and missing versus returned provider metrics. They do not consume production API quota.

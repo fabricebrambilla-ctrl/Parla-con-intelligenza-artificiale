@@ -2,6 +2,7 @@
 """Eight elapsed hours of explicitly labelled synthetic voice QA; standard library only."""
 from __future__ import annotations
 import argparse
+import copy
 import csv
 import fcntl
 import json
@@ -213,6 +214,63 @@ def started_visits(folder):
     rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()] if path.exists() else []
     return {row["conversation_id"] for row in rows if row.get("conversation_id")}
 
+def carry_unstarted_into_plan(plan, sources, output_root, rng):
+    """Rebook only never-started visits, using current timestamps and one ledger.
+
+    Preserve source UUIDs/questions and the old files. A partial or uncertain
+    visit is never replayed. Today's cohort and the carryover cohort keep their
+    internal order, so a returning visit cannot precede its first visit.
+    """
+    source_plans = [(Path(p).resolve(), json.loads(Path(p).read_text())) for p in sources]
+    roots = {Path(output_root).resolve(), *(p.parent.parent for p, _ in source_plans)}
+    started = set()
+    for root in roots:
+        for journal in root.glob("*/requests.jsonl"):
+            started.update(started_visits(journal.parent))
+        for outcomes in root.glob("*/conversations.jsonl"):
+            started.update(json.loads(line)["conversation_id"] for line in outcomes.read_text().splitlines() if line.strip())
+    now = datetime.fromisoformat(plan["start"])
+    carry, seen, excluded = [], set(), []
+    for path, old in source_plans:
+        if old.get("synthetic") is not True or old.get("base_url") != plan["base_url"]:
+            raise ValueError("Carryover must be a synthetic plan for the same website.")
+        if datetime.fromisoformat(old["end"]) > now:
+            raise ValueError("The source plan has not ended. Use --resume for its original deadline.")
+        for visit in old["visits"]:
+            cid = visit["conversation_id"]
+            if cid in seen or cid in started:
+                excluded.append({"conversation_id": cid, "reason": "already started or duplicate source"})
+                continue
+            if not QUESTION_MIN <= len(visit["questions"]) <= QUESTION_MAX:
+                raise ValueError("Carryover question count is outside the current range.")
+            seen.add(cid)
+            row = copy.deepcopy(visit)
+            row.update(carryover_source=str(path), source_run_id=old["run_id"],
+                       originally_scheduled_at=visit["arrival"])
+            carry.append(row)
+    today = list(plan["visits"])
+    merged, a, b = [], 0, 0
+    while a < len(carry) or b < len(today):
+        if rng.randrange(len(carry) - a + len(today) - b) < len(carry) - a:
+            merged.append(carry[a]); a += 1
+        else:
+            merged.append(today[b]); b += 1
+    window = (datetime.fromisoformat(plan["end"]) - now).total_seconds()
+    reserve = min(45 * 60, window * .12)
+    for i, visit in enumerate(merged):
+        visit["arrival"] = (now + timedelta(seconds=rng.uniform(i, i + 1) * (window - reserve) / len(merged))).isoformat()
+    plan.update(today_unique_identities=plan["unique_identities"], today_visits=len(today),
+                today_new_identities=plan["new_identities"], today_returning_identities=plan["returning_identities"],
+                carried_visits=len(carry), carryover_excluded=excluded,
+                carryover_sources=[str(p) for p, _ in source_plans], visits=merged,
+                unique_identities=len({v["agent_id"] for v in merged}),
+                new_identities=len({v["agent_id"] for v in merged if not v["returning"]}),
+                returning_identities=len({v["agent_id"] for v in merged if v["returning"]}),
+                retention_scope="5% planned separately for each original daily cohort; catch-up changes the combined ratio",
+                timestamps="Actual current request times; original dates are provenance only",
+                combined_plan_may_exceed_available_budget=True)
+    return plan
+
 def update_remaining_plan(plan, folder, rng, seed):
     """Change only unstarted visits; keep UUIDs, arrivals and original deadline."""
     started = started_visits(folder)
@@ -391,6 +449,7 @@ def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--live", action="store_true", help="send actual requests; otherwise preview only")
     p.add_argument("--resume", type=Path, help="resume a saved plan after stopping the old process; keep its deadline and skip started visits")
+    p.add_argument("--carry-unstarted", type=Path, nargs="+", help="add never-started visits from expired plans to a fresh schedule; preserve IDs, actual timestamps and shared budgets")
     p.add_argument("--hours", type=float, default=8)
     p.add_argument("--users", type=int, help="optional smaller override of the automatic budget plan")
     p.add_argument("--timezone", default="Europe/Zurich")
@@ -406,6 +465,8 @@ def parser():
 
 def main(argv=None):
     args = parser().parse_args(argv)
+    if args.resume and args.carry_unstarted:
+        raise SystemExit("Choose either --resume or --carry-unstarted.")
     saved_plan = None
     if args.resume:
         saved_plan = json.loads(args.resume.resolve().read_text())
@@ -449,7 +510,10 @@ def main(argv=None):
                     reason="Owner requested independent uniform 1–5 questions", changes=changes,
                     original_deadline=plan["end"], no_started_visits_replayed=True))
         else:
-            count = planned_user_count(ledger.remaining())
+            # A catch-up run retains today's full original daily cohort. The
+            # shared rolling ledger still decides whether each POST can run;
+            # queueing visits does not create additional provider allowance.
+            count = planned_user_count(CAPS if args.carry_unstarted else ledger.remaining())
             if args.users is not None:
                 if not 1 <= args.users <= count:
                     raise SystemExit(f"--users must be between 1 and the current estimate ({count}).")
@@ -459,6 +523,9 @@ def main(argv=None):
                 return 0
             plan = make_daily_plan(start, args.hours, count, pool, rng, seed, args.timezone)
             plan.update(run_id=run_id, base_url=args.base_url, budget=ledger.snapshot())
+            if args.carry_unstarted:
+                carry_unstarted_into_plan(plan, args.carry_unstarted, args.out, rng)
+                count = plan["unique_identities"]
         if not saved_plan or args.live:
             atomic(folder / "plan.json", plan)
         print(f"Plan: {count} identities, {len(plan['visits'])} visits, "
@@ -466,6 +533,9 @@ def main(argv=None):
               f"{plan['local_start']} to {plan['local_end']}", flush=True)
         print(f"Budget ceiling: {CAPS}; token usage may end traffic before every visit completes.", flush=True)
         print(f"Results: {folder}", flush=True)
+        if args.carry_unstarted:
+            print(f"Catch-up: {plan['carried_visits']} never-started visits plus {plan['today_visits']} today's visits. "
+                  "Original dates are provenance only. No completed/partial visits replayed; no extra budget.", flush=True)
         if not args.live:
             print("Preview only: no audio synthesized and no network requests made.")
             return 0
