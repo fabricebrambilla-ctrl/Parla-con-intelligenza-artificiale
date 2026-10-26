@@ -15,6 +15,7 @@ function fixture(model, search, completion) {
     qa: require("../synthetic-qa.js"),
     process: { env: model === undefined ? {} : { GROQ_SEARCH_MODEL: model } },
     console: { error() {}, warn() {} },
+    logFailure() {},
     tavilySearch: search || (async () => null),
     groqChat: async (body) => {
       calls.push(body);

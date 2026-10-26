@@ -70,4 +70,15 @@ test("missing explicit synthetic label rejects budget envelope",async()=>{
   const h=headers();delete h["x-synthetic-test"];
   const r=await fetch(base+"/api/chat",{method:"POST",headers:h,body:"{}"});
   assert.equal(r.status,400);
+  assert.equal(r.headers.get("cache-control"),"no-store");
+  assert.match(r.headers.get("content-security-policy"),/frame-ancestors 'none'/);
+});
+test("empty or malformed chat inputs never dispatch a paid provider request",async()=>{
+  const before=modelCalls;
+  for(const body of [{},{messages:[]},{messages:[{role:"assistant",content:"not a user question"}]},
+    {messages:[{role:"user",content:"question"}],context:{invalid:true}}]){
+    const r=await fetch(base+"/api/chat",{method:"POST",headers:headers(),body:JSON.stringify(body)});
+    assert.equal(r.status,400);assert.equal(r.headers.get("cache-control"),"no-store");
+  }
+  assert.equal(modelCalls,before);
 });

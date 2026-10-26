@@ -56,8 +56,8 @@ class RedisStore {
   constructor(url) {
     const { createClient } = require("redis");
     this.client = createClient({ url, disableOfflineQueue: true });
-    this.client.on("error", (err) => console.error("redis:", err.message));
-    this.ready = this.client.connect().catch((err) => console.error("redis connect:", err.message));
+    this.client.on("error", (err) => console.error("redis: connection unavailable"));
+    this.ready = this.client.connect().catch((err) => console.error("redis: initial connection unavailable"));
   }
   async incr(key, amount, ttlSeconds) {
     await this.ready;
@@ -164,7 +164,7 @@ function limit(cost) {
       if (!(await charge(req, c))) return res.status(429).json({ error: "limit" });
       next();
     } catch (err) {
-      console.error("limits:", err.message);
+      console.error("limits: counter unavailable");
       res.status(503).json({ error: "unavailable" });
     }
   };
@@ -195,7 +195,7 @@ function agentLimit() {
       }
       next();
     } catch (err) {
-      console.error("limits:", err.message);
+      console.error("limits: counter unavailable");
       res.status(503).json({ error: "unavailable" });
     }
   };
@@ -214,3 +214,4 @@ async function statsIdAllowed(req, id) {
 }
 
 module.exports = { LIMITS, limit, agentLimit, takeTavilySearch, statsIdAllowed, clientId, clientIp, normalize };
+

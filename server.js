@@ -48,10 +48,6 @@ const aiVoiceLangs = () =>
 
 const app = express();
 app.disable("x-powered-by");
-app.use(qa.middleware);
-app.get("/api/qa", (req, res) => res.json({ version: 1, synthetic_only: true,
-  primary_model: CHAT_MODEL, fallback_model: FALLBACK_MODEL, speech_model: STT_MODEL,
-  budgets: qa.KEYS, output_voice_budgeted: false }));
 
 app.use((req, res, next) => {
   res.set({
@@ -65,6 +61,14 @@ app.use((req, res, next) => {
   });
   next();
 });
+
+// Chat IDs grant access to temporary transcripts. Never cache API responses,
+// including error responses; keep security headers on QA preflight failures too.
+app.use("/api", (req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
+app.use(qa.middleware);
+app.get("/api/qa", (req, res) => res.json({ version: 1, synthetic_only: true,
+  primary_model: CHAT_MODEL, fallback_model: FALLBACK_MODEL, speech_model: STT_MODEL,
+  budgets: qa.KEYS, output_voice_budgeted: false }));
 
 // ---------- pages, rendered in the visitor's language ----------
 const templates = {
@@ -105,6 +109,7 @@ function renderPage(name) {
     const html = templates[name].replace(/\{\{(\w+)\}\}/g, (_, key) =>
       key === "htmlLang" ? I18N.META[lang].html : escapeHtml(I18N.t(lang, key))
     );
+    if (name === "index" && req.method === "GET") stats.recordVisit();
     sendHtml(res, lang, html);
   };
 }
@@ -115,8 +120,8 @@ function renderLegal(pages) {
     const page = pages[lang] || pages.en;
     const fill = (text) =>
       escapeHtml(text)
-        .replace(/\{owner\}/g, escapeHtml(process.env.OWNER_NAME || "the owner of this website"))
-        .replace(/\{email\}/g, escapeHtml(process.env.OWNER_EMAIL || "(contact address not set yet)"));
+        .replace(/\{owner\}/g, escapeHtml(process.env.OWNER_NAME || "Fabrice Brambilla"))
+        .replace(/\{email\}/g, escapeHtml(process.env.OWNER_EMAIL || "brambillafabrice@gmail.com"));
     const links = LEGAL.POLICY_LINKS.map(([name, url]) => `<li><a href="${url}">${name}</a></li>`).join("");
     const body = page.sections
       // A list (one item per screen reader or command) is quicker to move through than a long paragraph.
@@ -163,14 +168,20 @@ function pickLang(value) {
 
 // Answers whether the visitor can start a conversation (costs nothing), and
 // which languages have the natural AI voice.
-// It is called only when "Start conversation" or "Continue last conversation" is pressed,
-// so a successful answer is also counted as a conversation in the owner's statistics.
+// This endpoint does not record visitors or conversations.
 app.get("/api/limit", limit({ seconds: 0, requests: 0, burst: false }), (req, res) => {
-  stats.recordDevice(req, "conversation");
   res.json({ ok: true, aiVoice: aiVoiceLangs() });
 });
 
 // ---------- errors ----------
+// Upstream error text can echo input or credentials. Never persist it in logs.
+function logFailure(label, err = {}) {
+  const status = Number.isInteger(err.status) && err.status >= 100 && err.status <= 599 ? ` (HTTP ${err.status})` : "";
+  const kind = err.qaBudget ? "QA budget exhausted" : err.daily ? "daily limit" :
+    err.name === "AbortError" ? "cancelled" : err.name === "TimeoutError" ? "timeout" : "request failed";
+  console.error(`${label}: ${kind}${status}`);
+}
+
 // Groq's daily quota means "today's limit is used up"; per-minute limits and
 // other failures are temporary, and the browser just asks the user to repeat.
 function providerError(status, message, name) {
@@ -187,7 +198,7 @@ function errorCode(err) {
 }
 
 function sendError(res, err, name) {
-  console.error(name + ":", err.message);
+  logFailure(name, err);
   const e = errorCode(err);
   res.status(e.status).json({ error: e.error });
 }
@@ -323,14 +334,15 @@ app.post("/api/speak", express.json({ limit: "4kb" }), limit({ requests: 1 }), a
   if (!text || !aiVoiceLangs().includes(lang)) return res.status(404).json({ error: "no voice" });
   let audio = null;
   if (process.env.FISH_API_KEY) {
-    try { audio = await fishSpeak(text, lang); } catch (err) { console.error("speak (Fish):", err.message); }
+    try { audio = await fishSpeak(text, lang); } catch (err) { logFailure("speak (Fish)", err); }
   }
   if (!audio && lang === "en" && orpheusUsable()) {
-    try { audio = await groqSpeak(text); } catch (err) { console.error("speak (Groq):", err.message); }
+    try { audio = await groqSpeak(text); } catch (err) { logFailure("speak (Groq)", err); }
   }
   // The browser falls back to the device voice; this is never shown to the user.
   if (!audio) return res.status(503).json({ error: "busy" });
   res.set("Content-Type", audio.type);
+  res.set("X-AI-Generated", "true");
   res.set("Cache-Control", "no-store");
   res.send(audio.data);
 });
@@ -348,7 +360,7 @@ async function tavilySearch(query) {
   });
   const data = await r.json().catch(() => null);
   if (!r.ok || !data || !Array.isArray(data.results)) {
-    console.error("tavily:", r.status, data?.detail?.error || data?.error || "");
+    logFailure("tavily", { status: r.status });
     return null;
   }
   return {
@@ -388,7 +400,7 @@ async function webSearch(query) {
     const t = await tavilySearch(query);
     if (t && t.results.length) return t;
   } catch (err) {
-    console.error("tavily:", err.message);
+    logFailure("tavily", err);
   }
   if (!qa.current() && SEARCH_FALLBACK_MODEL && !searchFallbackBlocked) {
     try {
@@ -400,7 +412,7 @@ async function webSearch(query) {
       if ([400, 401, 403, 404].includes(err.status) && /does not exist|not found|not available|access|permission/i.test(err.message)) {
         searchFallbackBlocked = true;
       }
-      console.error("search fallback:", err.message);
+      logFailure("search fallback", err);
     }
   }
   return { error: "Web search is not available right now. Tell the user you could not search." };
@@ -541,6 +553,12 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
 // "let me look that up" as soon as a search starts:
 //   {"type":"searching"}  then  {"type":"reply","text":"...","end":false,"lang":"en"}  or  {"type":"error","error":"busy"|"limit"}
 app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), async (req, res) => {
+  // Reject empty/type-confused prompts before they can consume provider quota.
+  const history = cleanMessages(req.body?.messages);
+  if (!history.some(m => m.role === "user") ||
+      (req.body?.context !== undefined && typeof req.body.context !== "string")) {
+    return res.status(400).json({ error: "bad request" });
+  }
   res.set({ "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store", "X-Accel-Buffering": "no" });
   const send = (obj) => res.write(JSON.stringify(qa.decorate(obj)) + "\n");
   try {
@@ -548,26 +566,28 @@ app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), 
     const { text, end } = await runChat({
       lang,
       context: String(req.body?.context || "").slice(0, 2000),
-      messages: req.body?.messages,
+      messages: history,
       onSearching: () => send({ type: "searching" }),
     });
     // The language the reply is actually written in, so the browser speaks it with a voice of
     // that language (the user may have asked for an answer in another language).
-    send({ type: "reply", text, end, lang: I18N.detectLang(text, lang) });
+    send({ type: "reply", text, end, lang: I18N.detectLang(text, lang), ai_generated: true });
     res.end();
   } catch (err) {
-    console.error("chat:", err.message);
+    logFailure("chat", err);
     send({ type: "error", error: errorCode(err).error });
     res.end();
   }
 });
 
 // Hidden text API for AI agents (no page links to it; see agent.js).
-require("./agent.js")(app, { runChat, limit, pickLang, errorCode, LANGS: I18N.LANGS, stats });
+require("./agent.js")(app, { runChat, limit, pickLang, errorCode, logFailure, LANGS: I18N.LANGS });
+
+app.use((req, res) => res.status(404).type("text").send("Not found"));
 
 // Never show stack traces or internals to visitors.
 app.use((err, req, res, next) => {
-  if (err.status !== 413 && err.status !== 400) console.error("request:", err.message);
+  if (err.status !== 413 && err.status !== 400) logFailure("request", err);
   res.status(err.status === 413 || err.status === 400 ? err.status : 500).json({ error: "request" });
 });
 
@@ -585,7 +605,7 @@ async function selfCheck() {
       console.log(`check: Groq model ${m} ${ids.includes(m) ? "is available" : "is NOT available to this key"}`);
     }
   } catch (err) {
-    console.error("check: could not reach Groq:", err.message);
+    logFailure("check: could not reach Groq", err);
   }
   console.log("check: Tavily key " + (process.env.TAVILY_API_KEY ? "is set" : "is missing"));
   if (retiredSearchModels.has(configuredSearchModel)) {
@@ -596,7 +616,7 @@ async function selfCheck() {
     ? "is set: natural AI voice in all six languages" + (fishVoice("en") || process.env.FISH_VOICE_IT ? "" : " (no FISH_VOICE chosen, using Fish Audio's default)")
     : (TTS_ENABLED ? "is missing: natural AI voice in English only (Groq Orpheus), device voice for the other languages" : "is missing: device voice for all languages")));
   if (!process.env.OWNER_NAME || !process.env.OWNER_EMAIL) {
-    console.warn("check: OWNER_NAME / OWNER_EMAIL are not set; the privacy notice needs them.");
+    console.log("check: using the confirmed Fabrice Brambilla privacy contact where an owner override is unset.");
   }
 }
 

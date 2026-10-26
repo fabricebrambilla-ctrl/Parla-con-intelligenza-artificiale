@@ -16,8 +16,7 @@
 //
 // Each agent has an agent_id: the server gives one with the first chat, and the
 // agent sends it back when it creates more chats (body "agent_id" or header
-// X-Agent-Id). In the owner's statistics one agent_id is one unique user and each
-// answered chat one conversation, exactly like a person's device.
+// X-Agent-Id). This links the caller's temporary chats, not analytics records.
 //
 //   GET    /api/agent                      how to use the API (JSON)
 //   POST   /api/agent/chats                new chat; optional first message
@@ -35,7 +34,7 @@ const MAX_MESSAGES = 60; // per chat (user + assistant); the model sees the last
 const MAX_LENGTH = 4000; // characters per message
 const IDLE_MS = 24 * 3600 * 1000;
 
-module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCode, LANGS, stats }) {
+module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCode, LANGS, logFailure = (label) => console.error(label + ": request failed") }) {
   const chats = new Map();
 
   function sweep() {
@@ -47,6 +46,9 @@ module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCo
       for (const c of idle.slice(0, chats.size - MAX_CHATS + 1)) chats.delete(c.id);
     }
   }
+  // Expiry must run even when nobody creates another chat. Previously an idle
+  // chat remained readable beyond the advertised 24-hour retention window.
+  setInterval(sweep, 60000).unref();
 
   const view = (c) => ({
     chat_id: c.id,
@@ -68,7 +70,11 @@ module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCo
   }
 
   function findChat(req, res, next) {
-    const c = chats.get(req.params.id);
+    let c = chats.get(req.params.id);
+    if (c && !c.running && Date.now() - c.updated > IDLE_MS) {
+      chats.delete(c.id);
+      c = null;
+    }
     if (!c) return res.status(404).json({ error: "not found", message: "No chat with this ID. It may have expired or the server restarted; create a new one." });
     req.chat = c;
     next();
@@ -101,15 +107,13 @@ module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCo
       });
       c.messages.push({ role: "assistant", content: text, at: new Date().toISOString() });
       c.ended = end;
-      // First answered message of this chat: one conversation for this agent in the statistics.
-      if (!c.counted) { c.counted = true; stats?.recordAgentChat(c.agentId); }
-      res.status(status).json({ chat_id: c.id, agent_id: c.agentId, reply: text, ended: end, searched_web: searched });
+      res.status(status).json({ chat_id: c.id, agent_id: c.agentId, reply: text, ended: end, searched_web: searched, ai_generated: true });
     } catch (err) {
       c.messages.pop();
       if (controller.signal.aborted) {
         res.status(status).json({ chat_id: c.id, reply: null, stopped: true });
       } else {
-        console.error("agent chat:", err.message);
+        logFailure("agent chat", err);
         const e = errorCode(err);
         res.status(e.status).json({ chat_id: c.id, error: e.error, message: e.error === "limit" ? "The AI's daily limit is used up. Try again tomorrow." : "The AI is busy right now. Try again in a moment." });
       }
@@ -151,12 +155,13 @@ module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCo
     readMessage(req, res, () => paid[0](req, res, () => paid[1](req, res, next)));
   }, async (req, res) => {
     sweep();
+    // Never grow the in-memory store past its cap when every chat is busy.
+    if (chats.size >= MAX_CHATS) return res.status(503).json({ error: "busy", message: "All chat slots are busy. Try again later." });
     // The agent's own ID from an earlier chat, or a new one for a new agent.
     const given = String(req.body?.agent_id || req.get("x-agent-id") || "");
     const c = {
       id: crypto.randomUUID(),
       agentId: /^[\w-]{8,64}$/.test(given) ? given : crypto.randomUUID(),
-      counted: false,
       lang: pickLang(req.body?.lang),
       context: typeof req.body?.context === "string" ? req.body.context.slice(0, 2000) : "",
       created: Date.now(),
@@ -189,3 +194,4 @@ module.exports = function mountAgentApi(app, { runChat, limit, pickLang, errorCo
     res.status(204).end();
   });
 };
+

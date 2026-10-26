@@ -13,12 +13,8 @@
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
-  function randomId() {
-    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
-  }
-  var anonId = get("anonId");
-  if (!anonId) { anonId = randomId(); set("anonId", anonId); }
+  // Previous releases saved a tracking identifier. It is no longer needed.
+  try { localStorage.removeItem("anonId"); } catch (e) {}
 
   // Conversations are never saved (owner's choice, 2026-10-24); delete what older versions saved.
   try { localStorage.removeItem("history"); } catch (e) {}
@@ -244,7 +240,7 @@
     var timer = setTimeout(function () { ctl.abort(); }, 12000);
     return fetch("/api/speak", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Anon-Id": anonId },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lang: code, text: text }),
       signal: ctl.signal
     }).then(function (r) {
@@ -448,7 +444,7 @@
     // Generous: a sleeping free server can take ~50 s to wake up.
     var timer = setTimeout(function () { ctl.abort(); }, 60000);
     opts.signal = ctl.signal;
-    opts.headers = Object.assign({ "X-Anon-Id": anonId }, opts.headers || {});
+    opts.headers = Object.assign({}, opts.headers || {});
     try {
       var res = await fetch(url, opts);
       if (res.status === 429) throw { code: "errLimit" };
@@ -817,6 +813,16 @@
     }
     if (my !== session) return;
 
+    // Give the AI disclosure and first-layer privacy information before any
+    // microphone access or language recording. A new notice version refreshes
+    // the old, incomplete notice without saving conversation content.
+    var firstPrivacyNotice = get("privacyNoticeVersion") !== "2026-10-26";
+    var disclosure = tt("aiDisclosure") + (firstPrivacyNotice ? " " + tt("notice") : "");
+    var disclosureInterrupted = await say(disclosure);
+    if (my !== session) return;
+    if (firstPrivacyNotice && !disclosureInterrupted) set("privacyNoticeVersion", "2026-10-26");
+    setState("processing");
+
     try {
       await openMic();
     } catch (e) {
@@ -835,10 +841,9 @@
       if (my !== session) return;
     }
 
-    // EU AI Act: the greeting says it is an AI. The first time, also say where the voice goes.
-    // Full instructions only the first time; after that a short greeting.
+    // Identity was disclosed once before microphone access. Keep the remaining
+    // instructions brief, with a shorter return-visit version.
     var intro = get("introHeard") ? tk("greetingShort") : tk("greeting");
-    if (!get("noticeHeard")) { intro = tt("notice") + " " + intro; set("noticeHeard", "1"); }
     set("introHeard", "1");
     lastSaid = intro;
     await say(intro);
@@ -856,6 +861,10 @@
     if (stopSpeaking) { stopSpeaking(); stopSpeaking = null; }
     closeMic();
     rec = null;
+    transcript = [];
+    context = "";
+    lastSaid = "";
+    lastSaidLang = null;
     if (recResolve) { var done = recResolve; recResolve = null; done(null); }
     setState("idle");
     showConversationControls(false);
