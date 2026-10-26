@@ -56,7 +56,7 @@ A free, voice-only AI assistant that blind people can use **without sighted help
 1. User presses "Start conversation" (Enter or Space).
 2. **First time only**, the browser asks for microphone permission. This is a browser dialog; both JAWS and NVDA read it. Do not add our own pop-up before it.
 3. A short, soft **start sound** (earcon) plays, then the AI greets in the chosen language, e.g. *"Hi, I'm listening. Ask me anything. When you're done, just say goodbye."*
-4. The same button **stays focused** and changes its label to "End conversation". Do **not** move focus anywhere else. Do not open new panels.
+4. The same button **stays focused** and changes its label to "End conversation". The microphone-permission explanation is the exception: it receives focus immediately before a permission request, then returns focus to Talk when it clears if the user has not moved elsewhere. Do not open new panels. See the current push-to-talk behavior in §12 for the current button labels.
 5. The user simply talks. The AI answers by voice. The user can interrupt the AI by speaking (see §5 for how this stays reliable on speakers).
 6. The conversation ends when the user **presses the button again** or **says goodbye / stop** (the model calls an `end_conversation` function — implement it). Play an end sound; label returns to "Start conversation".
 
@@ -156,7 +156,7 @@ Consequences:
 ### 4.3b Facts the push-to-talk design relies on (checked 2026-10-10)
 
 - In NVDA browse mode and the JAWS virtual cursor, the screen reader captures the keyboard. **Space or Enter on a focused button is not delivered to the page as a key press**; the screen reader activates the button (a synthetic click, sometimes a simulated mouse click at its position, or the accessibility API "invoke"). So the app's real control is the **Talk button's click handler**; the page-wide Space shortcut only helps when no screen reader is running or it is in focus mode. Keep the button's content plain text (no child elements), never call `stopPropagation` on its click, and never move it while a conversation runs.
-- Users must keep the reading cursor on the Talk button for Space to work; the accessibility statement says so. Focus stays there because the app never moves it.
+- Users must keep the reading cursor on the Talk button for Space to work; the accessibility statement says so. Focus normally stays there. The microphone-permission explanation temporarily receives focus before the browser prompt and restores Talk afterward if it still owns page focus; changing language also moves focus as documented below.
 - VoiceOver on iPhone and TalkBack on Android activate the button with a double tap (a click); there is no space bar, so phones and tablets (`pointer: coarse` and no fine pointer) get "press the Talk button" wording.
 - **`autofocus` on the Talk button**: W3C notes autofocus overrides reading from the top, and NVDA's developers consider that the intended effect. For this single-purpose page it means the screen reader announces the title and "Start conversation, button" plus its description (`aria-describedby` = the help text), and Space works immediately. The description is removed during a conversation so returning to the button stays short.
 - The End conversation button appears right after Talk during a conversation; when it disappears and had focus, focus goes back to Talk (never left on a hidden element). Escape also ends a conversation when the screen reader lets it through.
@@ -180,10 +180,11 @@ Consequences:
   - Use `role="alert"` alone (don't also add `aria-live`).
   - Use it **only for errors**, never for transcripts or status.
   - One short sentence per message, and never while the AI is speaking.
+- The microphone-permission explanation is programmatically focusable and has no live-region role or attributes. It receives focus synchronously before `getUserMedia`, avoiding a second live-region announcement of the same text. Actual JAWS/NVDA speech behavior still requires a real-reader retest.
 
 ### 4.6 Focus
 
-- Never move focus without the user asking. After changing language, put focus back on "Start conversation".
+- Never move focus without the user asking. After changing language, put focus back on "Start conversation". Starting a conversation may focus the microphone-permission explanation immediately before the browser request. When it clears, return to Talk only if the explanation still owns focus. Do not pull focus from browser controls, another app, a user-selected control or a newer session.
 - Do not use modals, dialogs, overlays, or "toast" pop-ups.
 - Visible focus outline (thick, high contrast) for low-vision users.
 
@@ -416,6 +417,7 @@ Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public 
 
 ### Current state of the code (keep this up to date)
 
+- 2026-10-26: the microphone-permission explanation receives direct focus synchronously before the browser request when page focus is available. It is outside the Tab order and has a visible focus outline; its former live-region role is removed to avoid duplicate announcements. Grant, denial and cancellation clear it and restore Talk only if it still owns focus. Window-return restoration is guarded by both request and session; no delayed focus move can interrupt the browser prompt or a newer session. Local mock regression coverage passes twice (77 passed, one optional Redis integration skipped per run). Real JAWS/NVDA and physical permission-prompt retests remain pending; this is not a claim that the explanation has been heard in those programs.
 - 2026-10-26: narrow layouts and 200% text now wrap long content without horizontal overflow; the Talk button grows to contain enlarged labels, and the light keyboard-focus outline has improved contrast. All six languages were checked across phone, landscape, tablet and desktop viewport sizes. See `docs/responsive-accessibility-checks.md` for executed checks and real screen-reader testing still pending.
 - 2026-10-26: the synthetic runner can carry never-started visits from expired plans into a fresh eight-hour schedule with `--carry-unstarted`. Old UUIDs/questions and journals are preserved, completed/partial/uncertain visits are excluded, and current request times and the same rolling budget remain authoritative. Combining cohorts does not create more budget or guarantee every queued visit finishes.
 - 2026-10-26: privacy review changes replace persistent visitor analytics with aggregate page openings, shorten the spoken introduction to a single AI identity statement, deliver privacy information before microphone access, and identify Fabrice Brambilla in Switzerland as operator. Groq inference zero data retention was enabled in the account with explicit owner approval. These changes are technical/privacy improvements, not a certification of worldwide compliance. See `docs/privacy-security-checklist.md`.
@@ -426,7 +428,7 @@ Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public 
 
 - 2026-10-24 Render advisory follow-up: pin native Node runtime to 24.22.1 with `.node-version` and patched 24.x engines; upgrade locked body-parser 2.3.0 to 2.4.0 (compatible qs/iconv-lite patches). npm audit reports zero vulnerabilities after update. See Render eMudhra advisory and Node October 21 security release.
 
-- Julian feedback (2026-10-24): localized microphone-permission status and blocked-permission recovery; pending requests cancelled safely on end/restart. Dedicated Alt+Shift+T operates Talk from other page controls when delivered by browser/screen reader; ordinary link keyboard behavior stays native. Automated regression coverage; real NVDA/JAWS retest is still pending.
+- Julian feedback (2026-10-24, focus follow-up 2026-10-26): localized microphone-permission explanation and blocked-permission recovery; the explanation now receives direct focus rather than a live-region update. Pending requests are cancelled safely on end/restart. Dedicated Alt+Shift+T operates Talk from other page controls when delivered by browser/screen reader; ordinary link keyboard behavior stays native. Automated regression coverage; real NVDA/JAWS retest is still pending.
 
 As of 2026-10-10 the app is a full first version built with **Groq + Tavily** (Gemini Live is not used yet, see "Deviations" below).
 
@@ -485,6 +487,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Change | Files |
 |---|---|---|
+| 2026-10-26 | Focus the microphone-permission explanation synchronously before the browser request, remove its live-region role to avoid a duplicate announcement, add a visible focus outline, and restore Talk only while the explanation owns focus. Window return and stale requests are guarded by request/session. Local mock regression suite passed twice (77 passed, one optional Redis integration skipped per run); real JAWS/NVDA and browser-prompt retests pending. | `public/app.js`, `public/index.html`, `public/style.css`, `test/accessibility-feedback.test.js`, this brief |
 | 2026-10-26 | Fix long-word and enlarged-text overflow, allow the Talk button to grow with its label, improve light-theme keyboard focus contrast and add color regression checks. Document six-language responsive/keyboard verification and pending real-device tests. Add safe catch-up of only never-started synthetic visits with current timestamps and unchanged shared budgets. | `public/style.css`, `test/accessibility-contrast.test.js`, responsive checklist, `tools/voice-session-tester/daily_runner.py`, `test_catchup.py`, runner instructions, this brief |
 | 2026-10-26 | Remove persistent visitor tracking and old ID tables; keep a simple seven-day page-opening counter. Correct six-language privacy/accessibility text, name the Swiss operator, shorten onboarding, disclose AI/privacy before microphone access, clear ended session memory and remove raw upstream error logging. Harden API caching/input validation, temporary agent-chat retention/capacity, external database TLS and stats reset CSRF. Add license inventory and regression coverage. | `server.js`, `agent.js`, `limits.js`, `stats.js`, `privacy-notice.js`, `legal.js`, `public/app.js`, `public/i18n.js`, `public/index.html`, `public/stats.js`, tests, `THIRD_PARTY_NOTICES.md`, privacy checklist, this brief |
 | 2026-10-25 | Replace fixed three-question visits with independent uniform 1–5 draws; add safe same-deadline continuation, append-preserved journals, no-replay checks and updated instructions. | `tools/voice-session-tester/daily_runner.py`, `tools/voice-session-tester/test_daily_runner.py`, tester documentation, this brief |
@@ -522,6 +525,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Preference |
 |---|---|
+| 2026-10-26 | Apply the tester's request to focus the microphone-permission explanation directly when it appears so the screen reader can read it. Preserve browser-prompt focus, user-selected focus, the simple voice interface, privacy before microphone access, native link keys and Alt+Shift+T. Confirm behavior with real JAWS/NVDA before claiming it is read reliably. |
 | 2026-10-26 | Proactively apply substantive recipient feedback to future outreach, testing and documentation. Mention both NVDA and JAWS in future app emails, without resending old introductions or claiming real-device certification. Improve responsive behavior across screen sizes while preserving the simple voice interface. |
 | 2026-10-26 | Run yesterday's never-started visits with today's plan using current timestamps, the same identities and the same 75% rolling budget. Do not backdate traffic, replay completed/partial/uncertain visits, or start duplicate runners. |
 | 2026-10-26 | Fabrice confirmed he is 18 and remains a high school student in Switzerland. Do not infer that being in high school makes him a minor. |

@@ -317,8 +317,31 @@
   var rec = null;
   var noise = 0.004;   // background noise level, learned while recording
 
-  var micRequest = 0;
+  var micRequest = 0, restoreMicFocus = null;
+  function cancelMicFocusRestore() {
+    if (restoreMicFocus) window.removeEventListener("focus", restoreMicFocus);
+    restoreMicFocus = null;
+  }
+  function clearMicPermission() {
+    cancelMicFocusRestore();
+    micPermission.textContent = "";
+    if (document.activeElement !== micPermission) return;
+    var my = session, request = micRequest;
+    restoreMicFocus = function () {
+      if (my !== session || request !== micRequest || document.activeElement !== micPermission) {
+        cancelMicFocusRestore();
+        return;
+      }
+      // Browser permission controls may still own focus when the request settles.
+      if (!document.hasFocus()) return;
+      cancelMicFocusRestore();
+      talkBtn.focus({ preventScroll: true });
+    };
+    window.addEventListener("focus", restoreMicFocus);
+    restoreMicFocus();
+  }
   async function openMic() {
+    cancelMicFocusRestore();
     var my = session, request = ++micRequest, acquired = null, audioSource = null;
     function current() { return active && my === session && request === micRequest; }
     function cancelled() { var e = new Error("Microphone request cancelled"); e.name = "AbortError"; return e; }
@@ -328,13 +351,18 @@
         try { granted = (await navigator.permissions.query({ name: "microphone" })).state === "granted"; } catch (e) {}
       }
       if (!current()) throw cancelled();
-      if (!granted) micPermission.textContent = tt("micPending");
+      if (!granted) {
+        micPermission.textContent = tt("micPending");
+        // Focus once, before the browser opens its prompt. Never schedule a later
+        // focus move that could interrupt the browser's permission controls.
+        if (document.hasFocus()) micPermission.focus({ preventScroll: true });
+      }
       acquired = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true,
           voiceIsolation: { ideal: true }, channelCount: 1 }
       });
       if (!current()) throw cancelled();
-      micPermission.textContent = "";
+      clearMicPermission();
       try {
         audioSource = ctx.createMediaStreamSource(acquired);
       } catch (e) {
@@ -364,13 +392,13 @@
       if (acquired) acquired.getTracks().forEach(function (t) { t.stop(); });
       throw e;
     } finally {
-      if (request === micRequest) micPermission.textContent = "";
+      if (my === session && request === micRequest) clearMicPermission();
     }
   }
 
   function closeMic() {
     micRequest++;
-    micPermission.textContent = "";
+    clearMicPermission();
     try { if (source) source.disconnect(); } catch (e) {}
     try { if (node) { node.port.onmessage = null; node.disconnect(); } } catch (e) {}
     try { if (sink) sink.disconnect(); } catch (e) {}

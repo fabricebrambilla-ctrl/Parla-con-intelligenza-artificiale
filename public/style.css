@@ -89,7 +89,7 @@ body[data-state="listening"] .talk { animation: pulse 1.6s ease-in-out infinite;
   50% { box-shadow: 0 0 0 1rem transparent; }
 }
 
-button:focus-visible, a:focus-visible {
+button:focus-visible, a:focus-visible, #micPermission:focus {
   outline: 5px solid var(--focus);
   outline-offset: 4px;
 }
@@ -123,7 +123,7 @@ a { color: inherit; }
 @media (forced-colors: active) {
   button { border: 3px solid ButtonText; }
   .talk[data-active="true"] { border-style: double; border-width: 6px; }
-  button:focus-visible, a:focus-visible { outline: 5px solid Highlight; }
+  button:focus-visible, a:focus-visible, #micPermission:focus { outline: 5px solid Highlight; }
 }
 
 @media (prefers-reduced-motion: reduce) {
