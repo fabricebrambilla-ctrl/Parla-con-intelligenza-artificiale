@@ -419,6 +419,8 @@ Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public 
 
 ### Current state of the code (keep this up to date)
 
+- 2026-10-27, organization contact edit: the About contact section now directly invites organizations to discuss a free pilot or collaboration, with the existing email and phone links below. All six languages use the same invitation. This is an invitation, not a list of accepted partnerships. The removed public trial/feedback section remains absent.
+
 - 2026-10-27, latest owner edit: remove the entire About pilot/trial/feedback section in all six languages, including the public UICI Teramo reference. Keep the creator story, portrait, mission and contact section. The internally confirmed pilot is not withdrawn by this copy change. Do not restore a logo or pilot section merely because an earlier permission request receives a response.
 
 - 2026-10-27 release preparation: the integrated About, privacy-prompt and daily-question-counter code passed the full local suite twice: 97 tests, 96 passed, one optional Redis integration skipped and zero failures per run. Evidence: `/tmp/fabrice-app-20261027-full-1-authorized.log` and `/tmp/fabrice-app-20261027-full-2.log`. Subsequent changes correct documentation only, including the confirmed age of 17, original portrait and aggregate-question scope. Provider contracts, sensitive-data handling, transfer safeguards and real assistive-technology testing remain unresolved. Copy-back is a local release-preparation step; no deployment or push is included.
@@ -495,6 +497,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Change | Files |
 |---|---|---|
+| 2026-10-27 | Make the About contact section a concise invitation for organizations to discuss a free pilot or collaboration, in all six languages. Preserve public contact links and the removed trial/feedback block. | `about.js`, this brief |
 | 2026-10-27 | Remove the owner-selected About pilot/trial/feedback section and its six-language strings. Keep creator/mission/contact content. Adjust the existing About regression and document the superseding preference. | `about.js`, `test/server.test.js`, this brief |
 | 2026-10-27 | Complete integrated regression verification twice (97 tests, 96 passed, one optional Redis skip and zero failures per run). Correct the privacy/security checklist and asset inventory for confirmed age 17, the owner-supplied original portrait and day-only submitted-question aggregates. Preserve open legal/provider and real-reader checks; prepare local copy-back without deploying or pushing. | Privacy/security checklist, `THIRD_PARTY_NOTICES.md`, this brief |
 | 2026-10-27 | Add a day-only voice-question submission aggregate beside page openings, excluding labelled synthetic/QA traffic and the separate text API. Document that failures, repeats and unflagged automation can count, without identifying unique humans or reconstructing historical questions. Update six-language privacy text and its date. Counter-focused mock checks passed twice (23 per run); integrated full suite passed twice (97 tests, 96 passed, one optional Redis skip per run). | `stats.js`, `server.js`, `privacy-notice.js`, `legal.js`, counter tests, this brief |
@@ -538,6 +541,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Preference |
 |---|---|
+| 2026-10-27 | Invite organizations to contact Fabrice about a pilot or collaboration on About. Keep the requested trial/feedback paragraph removed. Do not invent accepted partners. |
 | 2026-10-27 | Latest edit: delete the entire About section headed "Help shape the next version", including the UICI Teramo pilot link and trial/feedback text, in every language. This supersedes the earlier public pilot-listing preference; retain internal factual adoption records. |
 | 2026-10-27 | Measure adoption with real pilots and aggregate activity while preserving privacy. Count submitted voice questions with synthetic/QA and text-API traffic excluded. Keep only daily totals for seven days, with no new tracking IDs or reconstruction of earlier questions. Do not describe these totals as unique or verified human users. |
 | 2026-10-27 | Fabrice explicitly confirmed he is **17**, replacing the earlier statement of 18. The public About page may state 17. Do not infer a guardian's approval or provider/account contractual eligibility from this fact. |

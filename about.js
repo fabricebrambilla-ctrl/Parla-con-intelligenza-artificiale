@@ -6,37 +6,37 @@ const PAGES = {
     title: "About Talk with AI", intro: "I'm 17 and a high school student in Switzerland. I'd like to study engineering.",
     storyTitle: "Why I built this", story: "My aunt was born blind and uses JAWS. She found mainstream AI tools difficult to use, especially for researching things online. I started this project to make that simpler.",
     missionTitle: "Ask by voice. Explore the web.", mission: "Talk with AI is a free voice assistant for questions and web research. You speak, listen to the answer, and ask another question. I'm building it for people who use screen readers, including JAWS and NVDA.",
-    contactTitle: "Get in touch", contact: "Have a question, feedback, or an idea for a pilot with your organisation? Email or call me.", emailLabel: "Email", phoneLabel: "Phone"
+    contactTitle: "For organizations", contact: "If your organization supports people who use screen readers, I'd love to discuss a free pilot or collaboration and improve the app together. Email or call me to arrange a short conversation.", emailLabel: "Email", phoneLabel: "Phone"
   },
   it: {
     title: "Il progetto Talk with AI", intro: "Ho 17 anni e frequento una scuola superiore in Svizzera. Vorrei studiare ingegneria.",
     storyTitle: "Perché ho creato questo progetto", story: "Mia zia è cieca dalla nascita e usa JAWS. Trovava difficili da usare i principali strumenti di intelligenza artificiale, soprattutto per fare ricerche online. Ho iniziato questo progetto per rendere tutto più semplice.",
     missionTitle: "Chiedi a voce. Esplora il web.", mission: "Talk with AI è un assistente vocale gratuito per fare domande e ricerche sul web. Parli, ascolti la risposta e fai un'altra domanda. Lo sto sviluppando per chi usa un lettore di schermo, come JAWS o NVDA.",
-    contactTitle: "Contattami", contact: "Hai una domanda, un commento o un'idea per una sperimentazione con la tua organizzazione? Scrivimi o chiamami.", emailLabel: "Email", phoneLabel: "Telefono"
+    contactTitle: "Per le organizzazioni", contact: "Se la vostra organizzazione affianca persone che usano lettori di schermo, mi piacerebbe discutere una sperimentazione gratuita o una collaborazione e migliorare il sito insieme. Scrivetemi o chiamatemi per un breve confronto.", emailLabel: "Email", phoneLabel: "Telefono"
   },
   fr: {
     title: "À propos de Talk with AI", intro: "J'ai 17 ans et je suis lycéen en Suisse. J'aimerais étudier l'ingénierie.",
     storyTitle: "Pourquoi ce projet", story: "Ma tante est aveugle de naissance et utilise JAWS. Elle trouvait les principaux outils d'IA difficiles à utiliser, surtout pour faire des recherches en ligne. J'ai commencé ce projet pour lui simplifier la tâche.",
     missionTitle: "Posez vos questions à voix haute. Explorez le web.", mission: "Talk with AI est un assistant vocal gratuit pour poser des questions et faire des recherches sur le web. Vous parlez, écoutez la réponse, puis posez une autre question. Je le développe pour les personnes qui utilisent un lecteur d'écran, notamment JAWS et NVDA.",
-    contactTitle: "Me contacter", contact: "Une question, un retour ou une idée d'essai avec votre organisation ? Écrivez-moi ou appelez-moi.", emailLabel: "E-mail", phoneLabel: "Téléphone"
+    contactTitle: "Pour les organisations", contact: "Si votre organisation accompagne des personnes utilisant un lecteur d'écran, j'aimerais discuter d'un essai gratuit ou d'une collaboration pour améliorer le site ensemble. Écrivez-moi ou appelez-moi pour convenir d'un court échange.", emailLabel: "E-mail", phoneLabel: "Téléphone"
   },
   bg: {
     title: "За Talk with AI", intro: "На 17 години съм и уча в гимназия в Швейцария. Бих искал да уча инженерство.",
     storyTitle: "Защо създадох този проект", story: "Леля ми е незряща по рождение и използва JAWS. За нея популярните инструменти с изкуствен интелект бяха трудни за използване, особено за проучване в интернет. Започнах този проект, за да улесня това.",
     missionTitle: "Питайте с глас. Проучвайте в интернет.", mission: "Talk with AI е безплатен гласов асистент за въпроси и проучване в интернет. Говорите, слушате отговора и задавате следващ въпрос. Разработвам го за хора, които използват екранни четци, включително JAWS и NVDA.",
-    contactTitle: "Свържете се с мен", contact: "Имате въпрос, мнение или идея за пилотно изпитване с вашата организация? Пишете ми или се обадете.", emailLabel: "Имейл", phoneLabel: "Телефон"
+    contactTitle: "За организациите", contact: "Ако вашата организация подкрепя хора, които използват екранни четци, бих се радвал да обсъдим безплатно пилотно изпитване или сътрудничество и да подобрим приложението заедно. Пишете ми или се обадете за кратък разговор.", emailLabel: "Имейл", phoneLabel: "Телефон"
   },
   ru: {
     title: "О проекте Talk with AI", intro: "Мне 17 лет, я учусь в старшей школе в Швейцарии. Я хотел бы изучать инженерное дело.",
     storyTitle: "Почему я создал этот проект", story: "Моя тётя незрячая с рождения и пользуется JAWS. Ей было трудно пользоваться популярными инструментами ИИ, особенно для поиска информации в интернете. Я начал этот проект, чтобы упростить эту задачу.",
     missionTitle: "Задавайте вопросы голосом. Исследуйте интернет.", mission: "Talk with AI: бесплатный голосовой помощник для вопросов и поиска информации в интернете. Вы говорите, слушаете ответ и задаёте следующий вопрос. Я разрабатываю его для пользователей программ экранного доступа, включая JAWS и NVDA.",
-    contactTitle: "Свяжитесь со мной", contact: "Есть вопрос, отзыв или идея пилотного тестирования с вашей организацией? Напишите мне или позвоните.", emailLabel: "Эл. почта", phoneLabel: "Телефон"
+    contactTitle: "Для организаций", contact: "Если ваша организация поддерживает пользователей программ экранного доступа, я буду рад обсудить бесплатное пилотное тестирование или сотрудничество и вместе улучшить приложение. Напишите мне или позвоните, чтобы договориться о коротком разговоре.", emailLabel: "Эл. почта", phoneLabel: "Телефон"
   },
   zh: {
     title: "关于 Talk with AI", intro: "我今年17岁，在瑞士读高中。我希望将来学习工程。",
     storyTitle: "我为什么创建这个项目", story: "我的阿姨天生失明，使用 JAWS。她觉得主流人工智能工具很难使用，尤其是在网上查找资料时。我开始这个项目，就是想让这些事情变得简单一些。",
     missionTitle: "用语音提问，探索网络。", mission: "Talk with AI 是一个免费的语音助手，可用于提问和网上查找资料。您说出问题，听取回答，然后继续提问。我正在为使用 JAWS、NVDA 等屏幕阅读器的人开发它。",
-    contactTitle: "联系我", contact: "有问题、反馈，或希望您的组织参与试用？欢迎给我发邮件或打电话。", emailLabel: "电子邮件", phoneLabel: "电话"
+    contactTitle: "面向机构", contact: "如果您的机构为屏幕阅读器使用者提供支持，我很希望与您讨论免费试用或合作，一起改进这个应用。欢迎发邮件或打电话，安排一次简短交流。", emailLabel: "电子邮件", phoneLabel: "电话"
   }
 };
 
