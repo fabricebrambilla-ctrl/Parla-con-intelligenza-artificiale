@@ -91,7 +91,15 @@ test("About is server-rendered in all six languages with the same confirmed prof
     assert.match(html, /NVDA/);
     assert.match(html, /href="mailto:brambillafabrice@gmail\.com"/);
     assert.match(html, /href="tel:\+41783351572"/);
-    assert.doesNotMatch(html, /pilot-section|UICI Teramo|uicite\.it/);
+    assert.doesNotMatch(html, /pilot-list-section|UICI Teramo|uicite\.it/);
+    assert.ok(html.includes(about.PAGES[lang].generalContactTitle));
+    assert.ok(html.includes(about.PAGES[lang].generalContact));
+    assert.ok(!html.includes(about.PAGES[lang].contact));
+    const footer = html.match(/<footer>([\s\S]*?)<\/footer>/)[1];
+    assert.ok(footer.includes(`href="/organizations?lang=${lang}"`));
+    assert.ok(footer.includes(about.PAGES[lang].organizationsTitle));
+    assert.equal((footer.match(/<a\b/g) || []).length, 3);
+    assert.doesNotMatch(html, /class="about-section pilot-section"|Help shape the next version|Tell me what worked/);
     assert.match(html, new RegExp(`href="/\\?lang=${lang}"`));
     assert.ok(html.includes(about.PAGES[lang].title.replace(/&/g, "&amp;")));
     assert.doesNotMatch(html, /<script\b|<iframe\b|<form\b|fonts\.google|\{\{|[\u2013\u2014]/);
@@ -109,6 +117,47 @@ test("About honours the language header and safely rejects malicious or unsuppor
     assert.doesNotMatch(html, /fixture|<script|\.\.\/|constructor/);
   }
   assert.equal((await fetch(BASE + "/about.js")).status, 404);
+});
+
+test("organizations page contains the confirmed pilot and invitation in all six languages", async () => {
+  const about = require("../about.js");
+  for (const lang of I18N.LANGS) {
+    const r = await fetch(`${BASE}/organizations?lang=${lang}`, { headers: { "Accept-Language": "de" } });
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get("content-language"), I18N.META[lang].html);
+    const html = await r.text(), p = about.PAGES[lang];
+    assert.match(html, new RegExp(`<html lang="${I18N.META[lang].html}">`));
+    assert.equal((html.match(/<h1>/g) || []).length, 1);
+    assert.equal((html.match(/<main\b/g) || []).length, 1);
+    assert.ok(html.includes(`<h1>${p.organizationsTitle}</h1>`));
+    assert.ok(html.includes(`<h2>${p.pilotsTitle}</h2>`));
+    assert.ok(html.includes(`<h2>${p.contactTitle}</h2>`));
+    assert.ok(html.includes(p.contact.replace(/'/g, "&#39;")));
+    const list = html.match(/<ul>([\s\S]*?)<\/ul>/)[1];
+    assert.equal((list.match(/<li>/g) || []).length, 1);
+    assert.match(list, /href="https:\/\/uicite\.it\/" lang="it">UICI Teramo<\/a>/);
+    assert.ok(list.includes(p.pilotCountry));
+    for (const href of [`/about?lang=${lang}`, `/?lang=${lang}`, `/privacy?lang=${lang}`, `/accessibility?lang=${lang}`, "mailto:brambillafabrice@gmail.com", "tel:+41783351572"]) {
+      assert.ok(html.includes(`href="${href}"`), href);
+    }
+    assert.doesNotMatch(html, /<script\b|<iframe\b|<form\b|<img\b|autofocus|tabindex=|role="alert"|aria-live|fonts\.google|\{\{|[\u2013\u2014]/);
+    assert.doesNotMatch(html, /Help shape the next version|Tell me what worked/);
+    assert.equal((html.match(/href="https:\/\//g) || []).length, 1);
+  }
+});
+
+test("organizations language safely follows the allowlisted URL then the header", async () => {
+  const byHeader = await fetch(BASE + "/organizations", { headers: { "Accept-Language": "fr-FR,fr;q=0.9" } });
+  assert.equal(byHeader.headers.get("content-language"), "fr");
+  assert.match(await byHeader.text(), /<html lang="fr">/);
+  for (const lang of ['<script>alert("fixture")</script>', "constructor", "../../server.js", "de"]) {
+    const r = await fetch(BASE + "/organizations?lang=" + encodeURIComponent(lang), { headers: { "Accept-Language": "it" } });
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get("content-language"), "it");
+    const html = await r.text();
+    assert.match(html, /<html lang="it">/);
+    assert.doesNotMatch(html, /fixture|<script|\.\.\/|constructor/);
+  }
 });
 
 test("the original local portrait is served without external image or font requests", async () => {

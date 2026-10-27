@@ -162,6 +162,10 @@ app.get("/about", (req, res) => {
   const lang = requestLang(req);
   sendHtml(res, lang, ABOUT.render(lang));
 });
+app.get("/organizations", (req, res) => {
+  const lang = requestLang(req);
+  sendHtml(res, lang, ABOUT.renderOrganizations(lang));
+});
 app.get("/index.html", (req, res) => res.redirect(301, "/"));
 app.get("/history.html", (req, res) => res.redirect(301, "/"));
 app.get("/health", (req, res) => res.status(200).send("ok"));
