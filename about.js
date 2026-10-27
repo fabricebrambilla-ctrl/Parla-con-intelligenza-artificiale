@@ -6,48 +6,36 @@ const PAGES = {
     title: "About Talk with AI", intro: "I'm 17 and a high school student in Switzerland. I'd like to study engineering.",
     storyTitle: "Why I built this", story: "My aunt was born blind and uses JAWS. She found mainstream AI tools difficult to use, especially for researching things online. I started this project to make that simpler.",
     missionTitle: "Ask by voice. Explore the web.", mission: "Talk with AI is a free voice assistant for questions and web research. You speak, listen to the answer, and ask another question. I'm building it for people who use screen readers, including JAWS and NVDA.",
-    pilotTitle: "Help shape the next version", pilotStart: "A pilot is underway with", pilotEnd: ". If you use a screen reader or support people who do, I'd welcome a short trial and honest feedback.",
-    feedback: "Tell me what worked, what got in the way, and which browser and screen reader you used.",
     contactTitle: "Get in touch", contact: "Have a question, feedback, or an idea for a pilot with your organisation? Email or call me.", emailLabel: "Email", phoneLabel: "Phone"
   },
   it: {
     title: "Il progetto Talk with AI", intro: "Ho 17 anni e frequento una scuola superiore in Svizzera. Vorrei studiare ingegneria.",
     storyTitle: "Perché ho creato questo progetto", story: "Mia zia è cieca dalla nascita e usa JAWS. Trovava difficili da usare i principali strumenti di intelligenza artificiale, soprattutto per fare ricerche online. Ho iniziato questo progetto per rendere tutto più semplice.",
     missionTitle: "Chiedi a voce. Esplora il web.", mission: "Talk with AI è un assistente vocale gratuito per fare domande e ricerche sul web. Parli, ascolti la risposta e fai un'altra domanda. Lo sto sviluppando per chi usa un lettore di schermo, come JAWS o NVDA.",
-    pilotTitle: "Aiutami a migliorare la prossima versione", pilotStart: "È in corso una sperimentazione con", pilotEnd: ". Se usi un lettore di schermo o affianchi chi lo usa, mi farebbe piacere una breve prova con un riscontro sincero.",
-    feedback: "Dimmi cosa ha funzionato, quali difficoltà hai incontrato e quale browser e lettore di schermo hai usato.",
     contactTitle: "Contattami", contact: "Hai una domanda, un commento o un'idea per una sperimentazione con la tua organizzazione? Scrivimi o chiamami.", emailLabel: "Email", phoneLabel: "Telefono"
   },
   fr: {
     title: "À propos de Talk with AI", intro: "J'ai 17 ans et je suis lycéen en Suisse. J'aimerais étudier l'ingénierie.",
     storyTitle: "Pourquoi ce projet", story: "Ma tante est aveugle de naissance et utilise JAWS. Elle trouvait les principaux outils d'IA difficiles à utiliser, surtout pour faire des recherches en ligne. J'ai commencé ce projet pour lui simplifier la tâche.",
     missionTitle: "Posez vos questions à voix haute. Explorez le web.", mission: "Talk with AI est un assistant vocal gratuit pour poser des questions et faire des recherches sur le web. Vous parlez, écoutez la réponse, puis posez une autre question. Je le développe pour les personnes qui utilisent un lecteur d'écran, notamment JAWS et NVDA.",
-    pilotTitle: "Aidez-moi à améliorer la prochaine version", pilotStart: "Un essai pilote est en cours avec", pilotEnd: ". Si vous utilisez un lecteur d'écran ou accompagnez des personnes qui en utilisent un, je serais heureux de recueillir vos impressions après un court essai.",
-    feedback: "Dites-moi ce qui a fonctionné, les difficultés rencontrées, ainsi que le navigateur et le lecteur d'écran utilisés.",
     contactTitle: "Me contacter", contact: "Une question, un retour ou une idée d'essai avec votre organisation ? Écrivez-moi ou appelez-moi.", emailLabel: "E-mail", phoneLabel: "Téléphone"
   },
   bg: {
     title: "За Talk with AI", intro: "На 17 години съм и уча в гимназия в Швейцария. Бих искал да уча инженерство.",
     storyTitle: "Защо създадох този проект", story: "Леля ми е незряща по рождение и използва JAWS. За нея популярните инструменти с изкуствен интелект бяха трудни за използване, особено за проучване в интернет. Започнах този проект, за да улесня това.",
     missionTitle: "Питайте с глас. Проучвайте в интернет.", mission: "Talk with AI е безплатен гласов асистент за въпроси и проучване в интернет. Говорите, слушате отговора и задавате следващ въпрос. Разработвам го за хора, които използват екранни четци, включително JAWS и NVDA.",
-    pilotTitle: "Помогнете ми да подобря следващата версия", pilotStart: "Провежда се пилотно изпитване с", pilotEnd: ". Ако използвате екранен четец или подкрепяте хора, които го използват, ще се радвам да изпробвате приложението и да споделите честно мнение.",
-    feedback: "Кажете ми какво работи, какво ви затрудни и кой браузър и екранен четец използвахте.",
     contactTitle: "Свържете се с мен", contact: "Имате въпрос, мнение или идея за пилотно изпитване с вашата организация? Пишете ми или се обадете.", emailLabel: "Имейл", phoneLabel: "Телефон"
   },
   ru: {
     title: "О проекте Talk with AI", intro: "Мне 17 лет, я учусь в старшей школе в Швейцарии. Я хотел бы изучать инженерное дело.",
     storyTitle: "Почему я создал этот проект", story: "Моя тётя незрячая с рождения и пользуется JAWS. Ей было трудно пользоваться популярными инструментами ИИ, особенно для поиска информации в интернете. Я начал этот проект, чтобы упростить эту задачу.",
     missionTitle: "Задавайте вопросы голосом. Исследуйте интернет.", mission: "Talk with AI: бесплатный голосовой помощник для вопросов и поиска информации в интернете. Вы говорите, слушаете ответ и задаёте следующий вопрос. Я разрабатываю его для пользователей программ экранного доступа, включая JAWS и NVDA.",
-    pilotTitle: "Помогите улучшить следующую версию", pilotStart: "Пилотное тестирование проходит с", pilotEnd: ". Если вы пользуетесь программой экранного доступа или помогаете её пользователям, буду рад короткому тесту и честному отзыву.",
-    feedback: "Расскажите, что сработало, что вызвало трудности и какие браузер и программу экранного доступа вы использовали.",
     contactTitle: "Свяжитесь со мной", contact: "Есть вопрос, отзыв или идея пилотного тестирования с вашей организацией? Напишите мне или позвоните.", emailLabel: "Эл. почта", phoneLabel: "Телефон"
   },
   zh: {
     title: "关于 Talk with AI", intro: "我今年17岁，在瑞士读高中。我希望将来学习工程。",
     storyTitle: "我为什么创建这个项目", story: "我的阿姨天生失明，使用 JAWS。她觉得主流人工智能工具很难使用，尤其是在网上查找资料时。我开始这个项目，就是想让这些事情变得简单一些。",
     missionTitle: "用语音提问，探索网络。", mission: "Talk with AI 是一个免费的语音助手，可用于提问和网上查找资料。您说出问题，听取回答，然后继续提问。我正在为使用 JAWS、NVDA 等屏幕阅读器的人开发它。",
-    pilotTitle: "帮助我改进下一个版本", pilotStart: "目前正在与", pilotEnd: " 开展试用。如果您使用屏幕阅读器，或为使用者提供支持，欢迎您花一点时间试用并分享真实反馈。",
-    feedback: "请告诉我哪些地方好用、遇到了什么困难，以及您使用的浏览器和屏幕阅读器。",
     contactTitle: "联系我", contact: "有问题、反馈，或希望您的组织参与试用？欢迎给我发邮件或打电话。", emailLabel: "电子邮件", phoneLabel: "电话"
   }
 };
@@ -85,11 +73,6 @@ function render(lang) {
     <section class="about-section">
       <h2>${e(p.missionTitle)}</h2>
       <p>${e(p.mission)}</p>
-    </section>
-    <section class="about-section pilot-section">
-      <h2>${e(p.pilotTitle)}</h2>
-      <p>${e(p.pilotStart)} <a href="https://uicite.it/" lang="it">UICI Teramo</a>${e(p.pilotEnd)}</p>
-      <p>${e(p.feedback)}</p>
     </section>
     <section class="about-section contact-section">
       <h2>${e(p.contactTitle)}</h2>

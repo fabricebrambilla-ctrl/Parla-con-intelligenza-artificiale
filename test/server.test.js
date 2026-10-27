@@ -91,7 +91,7 @@ test("About is server-rendered in all six languages with the same confirmed prof
     assert.match(html, /NVDA/);
     assert.match(html, /href="mailto:brambillafabrice@gmail\.com"/);
     assert.match(html, /href="tel:\+41783351572"/);
-    assert.match(html, /href="https:\/\/uicite\.it\/" lang="it">UICI Teramo<\/a>/);
+    assert.doesNotMatch(html, /pilot-section|UICI Teramo|uicite\.it/);
     assert.match(html, new RegExp(`href="/\\?lang=${lang}"`));
     assert.ok(html.includes(about.PAGES[lang].title.replace(/&/g, "&amp;")));
     assert.doesNotMatch(html, /<script\b|<iframe\b|<form\b|fonts\.google|\{\{|[\u2013\u2014]/);
