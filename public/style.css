@@ -120,36 +120,56 @@ a { color: inherit; }
 .history h2 { font-size: 1.4rem; margin: 1.5rem 0 0.25rem; }
 .history p { margin: 0; }
 
-/* The voice screen keeps one clear action and the same stable reading order. */
-.voice-page { min-height: 100svh; display: flex; flex-direction: column; }
+/* Home: one tactile voice control, stable source order and no extra reading. */
+.voice-page {
+  --bg: #e5f1f8; --fg: #102f45; --muted: #294b62;
+  --btn: #0b4d73; --btn-fg: #ffffff; --btn2: transparent;
+  --btn2-fg: #102f45; --border: #102f45; --end: #8b2147; --focus: #865000;
+  min-height: 100svh; display: flex; flex-direction: column;
+  font-family: "Avenir Next", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
 .voice-panel {
-  width: calc(100% - 2rem);
-  max-width: 44rem;
-  margin: clamp(1rem, 5vh, 3rem) auto 1.75rem;
-  padding: 2.5rem 2rem;
-  gap: 0;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-top: 5px solid var(--btn);
-  border-radius: 1.5rem;
+  width: 100%; max-width: 70rem; margin: 0 auto;
+  padding: clamp(2rem, 6vh, 4rem) clamp(1.25rem, 5vw, 4rem) 2rem;
+  gap: 0; background: transparent; border: 0; border-radius: 0;
 }
 .voice-panel h1 {
-  max-width: 31rem;
-  margin: 0 0 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
+  max-width: 19ch; margin: 0 0 2rem;
+  font-size: clamp(2.35rem, 5.5vw, 4.6rem); font-weight: 650;
+  line-height: 1.06; letter-spacing: -0.045em; text-wrap: balance;
 }
-.voice-panel .talk { margin: 0 0 1.5rem; }
-.voice-panel #endConv { margin-bottom: 1rem; }
-.voice-panel #lang { border-width: 2px; border-radius: 0.75rem; }
+.voice-panel .talk {
+  display: block; position: relative; width: min(26rem, 100%);
+  min-height: 15rem; margin: 0 0 1.8rem; padding: 2rem 1.5rem;
+  border: 3px solid var(--btn); border-radius: 4rem;
+  box-shadow: 0 8px 0 #062e48; font-size: clamp(1.5rem, 3vw, 1.85rem);
+  font-weight: 650; line-height: 1.3; transition: background-color 120ms, box-shadow 120ms;
+}
+.voice-panel .talk::before {
+  content: ""; display: block; width: 3.25rem; height: 3.25rem; margin: 0 auto 1.1rem;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Crect x='11' y='3' width='10' height='17' rx='5'/%3E%3Cpath d='M7 15v2a9 9 0 0 0 18 0v-2M16 26v4M11 30h10'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Crect x='11' y='3' width='10' height='17' rx='5'/%3E%3Cpath d='M7 15v2a9 9 0 0 0 18 0v-2M16 26v4M11 30h10'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+}
+.voice-panel .talk:hover { box-shadow: 0 10px 0 #062e48; }
+.voice-panel .talk:active { box-shadow: 0 3px 0 #062e48; }
+.voice-panel .talk[data-active="true"] { background: var(--end); border-color: var(--end); }
+.voice-panel #endConv { margin-bottom: 1.25rem; border-color: var(--end); }
+.voice-panel #lang { border: 2px solid currentColor; border-radius: 2rem; padding: 0.65rem 1.25rem; font-size: 1.05rem; }
 .voice-panel #langs:not([hidden]) { margin-top: 1rem; }
-.voice-panel .help { margin-top: 1.5rem; }
-.voice-panel #micPermission:not(:empty), .voice-panel #alert:not(:empty) {
-  margin-top: 1.25rem;
-  max-width: 32rem;
-}
-.voice-page footer { margin-top: auto; }
+.voice-panel .help { max-width: 41rem; margin-top: 1.75rem; font-size: 1.1rem; line-height: 1.6; }
+.voice-panel .privacy { font-size: 1rem; margin-top: 0.75rem; }
+.voice-panel #micPermission:not(:empty), .voice-panel #alert:not(:empty) { margin-top: 1.25rem; max-width: 38rem; }
+.voice-page footer { margin-top: auto; gap: 0.5rem 1.75rem; padding: 1.5rem 1.25rem; }
 footer a { padding: 0.5rem 0; text-underline-offset: 0.2em; }
+@media (prefers-color-scheme: dark) {
+  .voice-page { --bg: #102632; --fg: #f5faff; --muted: #c9dce6; --btn: #b7e4f7; --btn-fg: #102632; --btn2-fg: #f5faff; --border: #f5faff; --end: #efa4b7; --focus: #ffd082; }
+  .voice-panel .talk, .voice-panel .talk:hover, .voice-panel .talk:active { box-shadow: 0 8px 0 #07161f; }
+}
+@media (forced-colors: active) {
+  .voice-panel .talk { border: 3px solid ButtonText; box-shadow: none; }
+  .voice-panel .talk::before { background: ButtonText; }
+}
 
 /* A separate, readable project page without adding to the voice interface. */
 .about {
@@ -177,7 +197,9 @@ footer a { padding: 0.5rem 0; text-underline-offset: 0.2em; }
 .contact-links span { display: block; color: var(--muted); font-size: 1rem; margin-bottom: 0.25rem; }
 
 @media (max-width: 36rem) {
-  .voice-panel { width: 100%; margin-top: 0; padding: 2rem 1rem; border-inline: 0; border-radius: 0 0 1.5rem 1.5rem; }
+  .voice-panel { padding: 2rem 1.25rem 1.5rem; }
+  .voice-panel h1 { margin-bottom: 1.75rem; }
+  .voice-panel .talk { border-radius: 3rem; min-height: 14rem; }
   .about { padding-inline: 1rem; }
   .about-profile { align-items: flex-start; flex-direction: column; gap: 1.25rem; }
   .pilot-section { padding: 1.25rem; }
