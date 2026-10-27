@@ -75,6 +75,66 @@ test("legal pages exist in every language", async () => {
   }
 });
 
+test("About is server-rendered in all six languages with the same confirmed profile and contact", async () => {
+  const about = require("../about.js");
+  for (const lang of I18N.LANGS) {
+    const r = await fetch(`${BASE}/about?lang=${lang}`, { headers: { "Accept-Language": "de" } });
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get("content-language"), I18N.META[lang].html);
+    const html = await r.text();
+    assert.match(html, new RegExp(`<html lang="${I18N.META[lang].html}">`));
+    assert.equal((html.match(/<h1>/g) || []).length, 1);
+    assert.equal((html.match(/<main\b/g) || []).length, 1);
+    assert.match(html, /<h1>Fabrice Brambilla<\/h1>/);
+    assert.match(html, /17/);
+    assert.match(html, /JAWS/);
+    assert.match(html, /NVDA/);
+    assert.match(html, /href="mailto:brambillafabrice@gmail\.com"/);
+    assert.match(html, /href="tel:\+41783351572"/);
+    assert.match(html, /href="https:\/\/uicite\.it\/" lang="it">UICI Teramo<\/a>/);
+    assert.match(html, new RegExp(`href="/\\?lang=${lang}"`));
+    assert.ok(html.includes(about.PAGES[lang].title.replace(/&/g, "&amp;")));
+    assert.doesNotMatch(html, /<script\b|<iframe\b|<form\b|fonts\.google|\{\{|[\u2013\u2014]/);
+  }
+});
+
+test("About honours the language header and safely rejects malicious or unsupported language values", async () => {
+  const byHeader = await (await fetch(BASE + "/about", { headers: { "Accept-Language": "fr-FR,fr;q=0.9" } })).text();
+  assert.match(byHeader, /<html lang="fr">/);
+  for (const lang of ['<script>alert("fixture")</script>', "constructor", "../../server.js", "de"]) {
+    const r = await fetch(BASE + "/about?lang=" + encodeURIComponent(lang), { headers: { "Accept-Language": "it" } });
+    const html = await r.text();
+    assert.equal(r.status, 200);
+    assert.match(html, /<html lang="it">/);
+    assert.doesNotMatch(html, /fixture|<script|\.\.\/|constructor/);
+  }
+  assert.equal((await fetch(BASE + "/about.js")).status, 404);
+});
+
+test("the original local portrait is served without external image or font requests", async () => {
+  const fs = require("node:fs");
+  const original = fs.readFileSync(path.join(__dirname, "../public/images/fabrice-brambilla.png"));
+  const r = await fetch(BASE + "/images/fabrice-brambilla.png");
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get("content-type"), /image\/png/);
+  assert.deepEqual(Buffer.from(await r.arrayBuffer()), original);
+  assert.equal(original.readUInt32BE(16), 130);
+  assert.equal(original.readUInt32BE(20), 130);
+  const html = await (await fetch(BASE + "/about")).text();
+  assert.match(html, /src="\/images\/fabrice-brambilla\.png" width="130" height="130" alt="Fabrice Brambilla"/);
+  assert.equal((html.match(/<img\b/g) || []).length, 1);
+  assert.doesNotMatch(html, /(?:src|href)="https:\/\/(?!uicite\.it\/)/);
+});
+
+test("home has just three footer links with server-rendered language destinations", async () => {
+  for (const lang of I18N.LANGS) {
+    const html = await (await fetch(`${BASE}/?lang=${lang}`)).text();
+    const footer = html.match(/<footer>([\s\S]*?)<\/footer>/)[1];
+    assert.equal((footer.match(/<a\b/g) || []).length, 3);
+    for (const page of ["about", "privacy", "accessibility"]) assert.ok(footer.includes(`href="/${page}?lang=${lang}"`));
+  }
+});
+
 test("security headers are set", async () => {
   const r = await fetch(BASE + "/");
   assert.match(r.headers.get("content-security-policy"), /frame-ancestors 'none'/);
@@ -93,3 +153,4 @@ test("reply language detection picks the language the text is written in", () =>
   ];
   for (const [text, fallback, want] of cases) assert.equal(I18N.detectLang(text, fallback), want, text);
 });
+

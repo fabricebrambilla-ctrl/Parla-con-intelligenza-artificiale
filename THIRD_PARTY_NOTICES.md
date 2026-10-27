@@ -1,8 +1,8 @@
 # Third-party notices and asset inventory
 
-Reviewed 26 October 2026. This inventory describes the production dependency lockfile. It does not replace the packages' own license and NOTICE files, which must remain with redistributed copies. Install with npm ci so dependency licensing files remain intact.
+Dependency inventory reviewed 26 October 2026; asset inventory updated 27 October 2026. This inventory describes the production dependency lockfile. It does not replace the packages' own license and NOTICE files, which must remain with redistributed copies. Install with npm ci so dependency licensing files remain intact.
 
-The public frontend uses HTML, JavaScript, CSS and installed system fonts. No bundled font, photo, icon pack or image file was found in public/. Using the name of a system font in CSS does not copy that font into the app. No external JavaScript bundle is loaded by the page. This review does not establish authorship of every historical code fragment or grant rights in user content, provider outputs, trademarks or linked material.
+The public frontend uses HTML, JavaScript, CSS and installed system fonts. The About page includes `public/images/fabrice-brambilla.png`, the original 130 by 130 PNG portrait supplied by Fabrice Brambilla, whose public use he explicitly requested. The file is unchanged and contains only IHDR, IDAT and IEND chunks, with no EXIF chunk. Its SHA-256 is `c04f41820ffde7f13dd2401287d182973e9c59cff407b73ac0eeb732047a35a1`. This publication instruction is not a claim about the photographer's copyright or a separate third-party licence. No bundled font or icon pack, external font request, remote image or UICI logo is used. Using the name of a system font in CSS does not copy that font into the app. No external JavaScript bundle is loaded by the page. This review does not establish authorship of every historical code fragment or grant rights in user content, provider outputs, trademarks or linked material.
 
 | Package | Locked version | Declared license |
 |---|---|---|

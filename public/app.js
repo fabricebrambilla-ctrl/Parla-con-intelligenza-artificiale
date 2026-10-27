@@ -20,7 +20,14 @@
   try { localStorage.removeItem("history"); } catch (e) {}
 
   // ---------- language ----------
-  var lang = I.pick(get("lang") ? [get("lang")] : navigator.languages || [navigator.language]);
+  // Links back from About and the legal pages carry the selected language.
+  var urlLang = null;
+  try {
+    var pageParams = new URLSearchParams(window.location.search);
+    if (pageParams.getAll("lang").length === 1) urlLang = pageParams.get("lang");
+  } catch (e) {}
+  var lang = I.LANGS.indexOf(urlLang) !== -1 ? urlLang :
+    I.pick(get("lang") ? [get("lang")] : navigator.languages || [navigator.language]);
   var tt = function (key) { return I.t(lang, key); };
   // Same, but with the touch wording on phones and tablets.
   var tk = function (key) { return IS_TOUCH && I.S[lang][key + "Touch"] ? tt(key + "Touch") : tt(key); };
@@ -37,6 +44,7 @@
     talkBtn.textContent = talkLabel ? tt("talk") : tt("start");
     endBtn.textContent = tt("end");
     // Keep the chosen language on the other pages too.
+    $("aboutLink").href = "/about?lang=" + lang;
     $("privacyLink").href = "/privacy?lang=" + lang;
     $("accessibilityLink").href = "/accessibility?lang=" + lang;
     var opts = langsBox.querySelectorAll("[data-set-lang]");

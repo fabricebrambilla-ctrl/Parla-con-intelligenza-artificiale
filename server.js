@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const I18N = require("./public/i18n.js");
 const LEGAL = require("./legal.js");
+const ABOUT = require("./about.js");
 const { limit, takeTavilySearch } = require("./limits.js");
 const stats = require("./stats.js");
 const qa = require("./synthetic-qa.js");
@@ -107,7 +108,7 @@ function renderPage(name) {
   return (req, res) => {
     const lang = requestLang(req);
     const html = templates[name].replace(/\{\{(\w+)\}\}/g, (_, key) =>
-      key === "htmlLang" ? I18N.META[lang].html : escapeHtml(I18N.t(lang, key))
+      key === "htmlLang" ? I18N.META[lang].html : key === "pageLang" ? lang : escapeHtml(I18N.t(lang, key))
     );
     if (name === "index" && req.method === "GET") stats.recordVisit();
     sendHtml(res, lang, html);
@@ -157,6 +158,10 @@ app.get("/", renderPage("index"));
 app.get("/history", (req, res) => res.redirect(301, I18N.LANGS.includes(req.query.lang) ? "/?lang=" + req.query.lang : "/"));
 app.get("/privacy", renderLegal(LEGAL.PRIVACY));
 app.get("/accessibility", renderLegal(LEGAL.ACCESSIBILITY));
+app.get("/about", (req, res) => {
+  const lang = requestLang(req);
+  sendHtml(res, lang, ABOUT.render(lang));
+});
 app.get("/index.html", (req, res) => res.redirect(301, "/"));
 app.get("/history.html", (req, res) => res.redirect(301, "/"));
 app.get("/health", (req, res) => res.status(200).send("ok"));
@@ -451,7 +456,8 @@ function systemPrompt(lang, context, agent = false) {
   const date = new Date().toISOString().slice(0, 10);
   let p =
     `You are a warm, patient voice assistant on the website "Talk with Artificial Intelligence". ` +
-    `The user is blind or visually impaired and talks to you by voice; everything you write is read aloud. Today's date is ${date}.\n` +
+    `This interface is designed for spoken replies and screen-reader access; everything you write is read aloud. Today's date is ${date}.\n` +
+    `Do not infer the user's health, disability, age or other personal attributes from their use of this service.\n` +
     `Language: reply in ${I18N.META[lang].english} unless the user clearly switches language; then reply in their language.\n` +
     `How to talk: like a kind, knowledgeable friend on the phone. Use natural, everyday spoken language, short sentences and ` +
     `contractions where the language has them. Answer in 2 to 4 sentences, then, when useful, offer to say more or ask one short ` +
@@ -558,6 +564,16 @@ app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), 
   if (!history.some(m => m.role === "user") ||
       (req.body?.context !== undefined && typeof req.body.context !== "string")) {
     return res.status(400).json({ error: "bad request" });
+  }
+  // Daily integer only, once per submitted voice question. Provider/tool
+  // retries and the separate text API never pass this counting point.
+  // Flagged tests are excluded even without a QA budget header. This cannot
+  // establish whether an unflagged caller is human or deduplicate submissions.
+  if (history.at(-1)?.role === "user" && !qa.current() &&
+      req.get("x-qa-budget") === undefined &&
+      String(req.get("x-synthetic-test") || "").toLowerCase() !== "true") {
+    try { stats.recordQuestionSubmission(); }
+    catch { console.error("stats: question counter unavailable"); }
   }
   res.set({ "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store", "X-Accel-Buffering": "no" });
   const send = (obj) => res.write(JSON.stringify(qa.decorate(obj)) + "\n");

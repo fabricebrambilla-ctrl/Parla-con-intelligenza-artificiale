@@ -3,7 +3,7 @@
 // filled in from the OWNER_NAME and OWNER_EMAIL environment variables.
 // Have a person who knows EU law check these texts before a public launch.
 
-const UPDATED = "2026-10-26";
+const UPDATED = "2026-10-27";
 
 const PRIVACY = require("./privacy-notice.js");
 

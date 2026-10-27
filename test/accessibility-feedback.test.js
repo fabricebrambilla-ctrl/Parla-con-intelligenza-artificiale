@@ -91,3 +91,28 @@ test('all languages and HTML expose permission guidance and shortcut',()=>{
  const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');const guidance=html.match(/<div id="micPermission"[^>]*>/)[0];
  assert.match(guidance,/tabindex="-1"/);assert.doesNotMatch(guidance,/role=|aria-live=|aria-atomic=/);assert.match(html,/aria-keyshortcuts="Alt\+Shift\+T"/);
 });
+
+test('changing the page language keeps About and legal links in that language',()=>{
+ const elements=Object.fromEntries(['helpText','privacyLink','accessibilityLink','aboutLink'].map(id=>[id,{}]));
+ const c=vm.createContext({I:{applyPage(){}},lang:'fr',tk:()=>'',tt:key=>key,IS_TOUCH:false,
+  micPermission:{textContent:''},talkBtn:{},talkLabel:false,endBtn:{},langsBox:{querySelectorAll:()=>[]},
+  $:id=>elements[id]});
+ vm.runInContext(app.slice(app.indexOf('  function renderTexts()'),app.indexOf('  // ---------- state ----------')),c);
+ c.renderTexts();
+ assert.equal(elements.aboutLink.href,'/about?lang=fr');
+ assert.equal(elements.privacyLink.href,'/privacy?lang=fr');
+ assert.equal(elements.accessibilityLink.href,'/accessibility?lang=fr');
+});
+
+test('an allowlisted return-link language wins over browser preferences; invalid values stay out',()=>{
+ const language=app.slice(app.indexOf('  var urlLang = null;'),app.indexOf('  var tt = function'));
+ function pick(search,saved,languages){
+  const c=vm.createContext({I,get:()=>saved,navigator:{languages},window:{location:{search}},URLSearchParams});
+  vm.runInContext(language,c);return c.lang;
+ }
+ assert.equal(pick('?lang=it','en',['fr']),'it');
+ assert.equal(pick('?lang=%3Cscript%3E','fr',['en']),'fr');
+ assert.equal(pick('?lang=constructor',null,['ru']),'ru');
+ assert.equal(pick('?lang=it&lang=fr','zh',['en']),'zh');
+ assert.equal(pick('',null,['bg']),'bg');
+});

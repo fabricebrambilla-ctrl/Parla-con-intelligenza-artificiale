@@ -1,5 +1,6 @@
-// Aggregate page visits only. No visitor IDs, IP addresses, transcripts or
-// per-visit timestamps are stored here. Refreshes and bots can add visits.
+// Daily aggregate page openings and voice questions submitted. No visitor IDs,
+// IP addresses, text or individual timestamps. Counts cannot establish people
+// or successful answers. Refreshes and unflagged automation can add activity.
 const crypto = require("crypto");
 const express = require("express");
 const TZ = "Europe/Zurich", KEEP_DAYS = 7;
@@ -44,6 +45,8 @@ async function ensureTables() {
     CREATE TABLE IF NOT EXISTS stat_daily_visits (
       day date PRIMARY KEY, visits bigint NOT NULL CHECK (visits >= 0)
     );
+    ALTER TABLE stat_daily_visits ADD COLUMN IF NOT EXISTS questions_submitted
+      bigint NOT NULL DEFAULT 0 CHECK (questions_submitted >= 0);
     DROP TABLE IF EXISTS stat_events;
     DROP TABLE IF EXISTS stat_visits;
     DROP TABLE IF EXISTS stat_presses;
@@ -53,13 +56,21 @@ async function ensureTables() {
   }).catch(err => { ready = null; throw err; });
   return ready;
 }
-function recordVisit() {
-  const d = day();
-  pending.set(d, (pending.get(d) || 0) + 1);
+function trimPending() {
   const oldest = lastDays().at(-1);
   for (const key of pending.keys()) if (key < oldest) pending.delete(key);
 }
+function increment(field) {
+  trimPending();
+  const d = day(), value = pending.get(d) || { visits: 0, questions: 0 };
+  value[field] += 1;
+  pending.set(d, value);
+}
+function recordVisit() { increment("visits"); }
+// Call once at validated voice-chat ingress, not inside the model/tool loop.
+function recordQuestionSubmission() { increment("questions"); }
 async function flush() {
+  trimPending();
   if (!db() || !pending.size) return;
   if (flushing) return flushing;
   const rows = [...pending];
@@ -67,17 +78,24 @@ async function flush() {
   flushing = (async () => {
     try {
       await ensureTables();
-      const slots = rows.map((_, i) => `($${i*2+1}::date, $${i*2+2}::bigint)`).join(",");
-      await db().query(`INSERT INTO stat_daily_visits (day, visits) VALUES ${slots}
-        ON CONFLICT (day) DO UPDATE SET visits = stat_daily_visits.visits + EXCLUDED.visits`, rows.flat());
+      const slots = rows.map((_, i) => `($${i*3+1}::date, $${i*3+2}::bigint, $${i*3+3}::bigint)`).join(",");
+      await db().query(`INSERT INTO stat_daily_visits (day, visits, questions_submitted) VALUES ${slots}
+        ON CONFLICT (day) DO UPDATE SET visits = stat_daily_visits.visits + EXCLUDED.visits,
+        questions_submitted = stat_daily_visits.questions_submitted + EXCLUDED.questions_submitted`,
+        rows.flatMap(([d, value]) => [d, value.visits, value.questions]));
     } catch (err) {
-      for (const [d, count] of rows) pending.set(d, (pending.get(d) || 0) + count);
+      for (const [d, value] of rows) {
+        const newer = pending.get(d) || { visits: 0, questions: 0 };
+        pending.set(d, { visits: newer.visits + value.visits, questions: newer.questions + value.questions });
+      }
+      trimPending();
       console.error("stats: aggregate counter could not be saved");
     }
   })().finally(() => { flushing = null; });
   return flushing;
 }
 async function cleanup() {
+  trimPending();
   if (!db()) return;
   try {
     await ensureTables();
@@ -88,16 +106,20 @@ setInterval(flush, 3000).unref();
 setInterval(cleanup, 3600000).unref();
 setTimeout(cleanup, 10000).unref();
 async function readStats() {
+  trimPending();
   const days = lastDays();
   let counts;
   if (db()) {
     await flush();
     await ensureTables();
-    const result = await db().query("SELECT to_char(day, 'YYYY-MM-DD') AS d, visits FROM stat_daily_visits WHERE day >= $1::date", [days.at(-1)]);
-    counts = new Map(result.rows.map(r => [r.d, Number(r.visits)]));
+    const result = await db().query("SELECT to_char(day, 'YYYY-MM-DD') AS d, visits, questions_submitted FROM stat_daily_visits WHERE day >= $1::date", [days.at(-1)]);
+    counts = new Map(result.rows.map(r => [r.d, { visits: Number(r.visits), questions: Number(r.questions_submitted) }]));
   } else counts = pending;
-  const rows = days.map(date => ({ date, visits: counts.get(date) || 0 }));
-  return { rows, today: rows[0], week: { visits: rows.reduce((sum, row) => sum + row.visits, 0) }, persistent: !!db() };
+  const rows = days.map(date => ({ date, visits: counts.get(date)?.visits || 0, questions: counts.get(date)?.questions || 0 }));
+  return { rows, today: rows[0], week: {
+    visits: rows.reduce((sum, row) => sum + row.visits, 0),
+    questions: rows.reduce((sum, row) => sum + row.questions, 0),
+  }, persistent: !!db() };
 }
 async function clearAll() {
   await flush();
@@ -133,7 +155,7 @@ function requireClearToken(req, res, next) {
   next();
 }
 function page(body) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Page visits</title><link rel="icon" href="data:,"><link rel="stylesheet" href="/style.css"></head><body><main>${body}</main></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>App activity</title><link rel="icon" href="data:,"><link rel="stylesheet" href="/style.css"></head><body><main>${body}</main></body></html>`;
 }
 const router = express.Router();
 // Compatibility only: older clients can still call the beacon. Discard its
@@ -143,11 +165,11 @@ router.get("/stats", guard, async (req, res) => {
   res.set("Content-Security-Policy", "default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
   try {
     const s = await readStats();
-    res.type("html").send(page(`<h1>Page visits</h1><p>Today (${s.today.date}): <strong>${s.today.visits}</strong>.</p><p>Last seven days: <strong>${s.week.visits}</strong>.</p><p>Visits are page openings, not unique people. Refreshes and automated visits can be counted. No visitor identifiers are stored.</p>${s.persistent ? "" : "<p>Counter is in memory and resets when the server restarts.</p>"}<form method="post" action="/stats/clear"><input type="hidden" name="csrf" value="${clearToken}"><button type="submit">Reset visit counter</button></form>`));
-  } catch { res.status(503).type("html").send(page("<h1>Page visits</h1><p>The counter is temporarily unavailable.</p>")); }
+    res.type("html").send(page(`<h1>App activity</h1><p>Today (${s.today.date}): <strong>${s.today.visits}</strong> page visits; <strong>${s.today.questions}</strong> questions submitted.</p><p>Last seven days: <strong>${s.week.visits}</strong> page visits; <strong>${s.week.questions}</strong> questions submitted.</p><p>Visits are page openings, not unique people. Refreshes and automated visits can be counted. Questions submitted counts valid voice-chat requests, including requests whose answers fail. Flagged synthetic tests and the separate text API are excluded from questions. Unflagged automation and repeated submissions can still be counted; these are not verified humans or successful answers. Only daily totals are stored, without visitor identifiers. Question totals begin with this update; earlier questions are not reconstructed.</p>${s.persistent ? "" : "<p>Counters are in memory and reset when the server restarts.</p>"}<form method="post" action="/stats/clear"><input type="hidden" name="csrf" value="${clearToken}"><button type="submit">Reset counters</button></form>`));
+  } catch { res.status(503).type("html").send(page("<h1>App activity</h1><p>The counters are temporarily unavailable.</p>")); }
 });
 router.post("/stats/clear", guard, express.urlencoded({extended:false,limit:"1kb",parameterLimit:2}), requireClearToken, async (req,res) => {
   try { await clearAll(); res.redirect(303,"/stats"); }
   catch { res.status(503).send("The counter could not be reset."); }
 });
-module.exports = { router, recordVisit, readStats, clearAll, flush, cleanup };
+module.exports = { router, recordVisit, recordQuestionSubmission, readStats, clearAll, flush, cleanup };
