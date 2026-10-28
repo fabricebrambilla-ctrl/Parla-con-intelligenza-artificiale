@@ -1,4 +1,4 @@
-// Privacy notice and accessibility statement, in the six site languages.
+// Privacy notice and accessibility statement, in all supported site languages.
 // Each page is a list of [heading, paragraph] pairs. {owner} and {email} are
 // filled in from the OWNER_NAME and OWNER_EMAIL environment variables.
 // Have a person who knows EU law check these texts before a public launch.
@@ -8,6 +8,59 @@ const UPDATED = "2026-10-27";
 const PRIVACY = require("./privacy-notice.js");
 
 const ACCESSIBILITY = {
+  ja: {
+    "title": "アクセシビリティに関する方針：Talk with AI",
+    "h1": "アクセシビリティに関する方針",
+    "sections": [
+      [
+        "マイクの許可とキーボード操作",
+        "マイクの許可を待っています。ブラウザーから確認が出たら「許可」を選んでください。この操作はページの外にあります。ブラウザーとスクリーンリーダーがキー操作を通す場合、ページ内のどこからでもAlt+Shift+Tで話すボタンを操作できます。"
+      ],
+      [
+        "目標",
+        "このサイトは、音声とスクリーンリーダーで使えるように開発しています。WCAG 2.2のレベルAAと欧州規格EN 301 549への対応を目標としています。"
+      ],
+      [
+        "使い方",
+        "ページには見出しと大きな開始ボタンがあります。押すと開始します。初回は使いたい言語を聞かれるので、言語名を答えてください。スペースキーまたは話すボタンを押して話し始め、話し終えたらもう一度押して回答を聞きます。7秒間話さないと自動的に送信されます。回答中にスペースキーを押すと中断できます。「さようなら」と言うと会話が終了します。「日本語に切り替えて」などと言うか、言語ボタンで言語を変更できます。スマートフォンやタブレットではスペースキーの代わりに話すボタンを使います。話すボタンの直後にある「会話を終了する」ボタンでも、いつでも終了できます。"
+      ],
+      [
+        "使える音声コマンド",
+        [
+          "「もう一度」：直前の回答を繰り返します。",
+          "「言語を変更」または「英語に切り替えて」：言語を変更します。",
+          "「ヘルプ」：使えるコマンドを聞きます。",
+          "「さようなら」：会話を終了します。"
+        ]
+      ],
+      [
+        "スクリーンリーダーの操作",
+        [
+          "NVDA：ページを開くと「会話を始める」ボタンにフォーカスがあります。スペースキーまたはEnterで開始します。ブラウズモードで使えるため、フォーカスモードにする必要はありません。別の場所へ移動した場合、Bで次のボタン、Shift+Bで前のボタンに移動します。Escapeで会話を終了し、ControlでNVDAの読み上げを止めます。",
+          "JAWS：NVDAと同様です。仮想カーソルでボタンに移動してスペースキーまたはEnterで操作し、BとShift+Bでボタン間を移動します。Escapeで会話を終了し、ControlでJAWSの読み上げを止めます。",
+          "ナレーター：スキャンモードでボタン上のスペースキーまたはEnterを押します。Bで次のボタンに移動し、Caps Lock+Spaceでスキャンモードを切り替えます。",
+          "MacのVoiceOver：ボタン上でControl+Option+Spaceを押します。キーボードのフォーカスがある場合はスペースキーでも操作できます。Tabでボタン間を移動します。",
+          "iPhoneとiPadのVoiceOver：右にスワイプして開始ボタンに移動し、ダブルタップします。その後、話すボタンをダブルタップして話し、もう一度ダブルタップして回答を聞きます。終了ボタンは話すボタンの直後にあります。",
+          "AndroidのTalkBack：右にスワイプしてボタンに移動し、ダブルタップします。",
+          "LinuxのOrca：ボタン上でスペースキーまたはEnterを押します。Bで次のボタンに移動し、Orca+Aでブラウズモードとフォーカスモードを切り替えます。"
+        ]
+      ],
+      [
+        "想定する環境",
+        "WindowsのJAWS、NVDA、ナレーター、MacとiPhoneのVoiceOver、AndroidのTalkBack、LinuxのOrca、および現在のChrome、Edge、Firefox、Safariでの利用を想定しています。すべての組み合わせで動作が確認されたわけではありません。"
+      ],
+      [
+        "既知の制限",
+        "読み上げ音声は端末と運営者が有効にしているサービスによって異なり、自然な日本語音声が使えない環境もあります。自動チェックは実施していますが、JAWS、NVDA、VoiceOverによる完全な実機確認はまだ完了していません。声で回答を中断することはできないため、ボタンを押してください。端末のスクリーンリーダーの音声がマイクに入ることがあります。"
+      ],
+      [
+        "ご意見",
+        "使えないところがありましたら、{email}にご連絡ください。すべてのメッセージを確認します。"
+      ]
+    ],
+    "updated": "最終更新日：",
+    "back": "会話のページに戻る"
+  },
   en: {
     title: "Accessibility statement: Talk with Artificial Intelligence",
     h1: "Accessibility statement",

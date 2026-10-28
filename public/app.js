@@ -167,6 +167,7 @@
     fr: /denise|vivienne|henri|remy|eloise|amélie|amelie|thomas|audrey|google français/,
     bg: /kalina|borislav|daria/,
     ru: /svetlana|dariya|dmitry|milena|yuri|katya|google русский/,
+    ja: /nanami|keita|kyoko|otoya|haruka|ichiro|sayaka|google 日本語/,
     zh: /xiaoxiao|xiaoyi|yunxi|yunjian|tingting|lili|google 普通话|google 中文/
   };
 
@@ -235,7 +236,7 @@
         u.onend = next;
         u.onerror = next;
         // Some browsers never fire onend; never get stuck.
-        var perChar = code === "zh" ? 300 : 110;
+        var perChar = (code === "zh" || code === "ja") ? 300 : 110;
         watchdog = setTimeout(next, 4000 + chunk.length * perChar);
         speechSynthesis.speak(u);
       }
@@ -546,6 +547,8 @@
                  "arrête", "arrete", "довиждане", "чао", "стоп", "до свидания", "пока", "хватит"];
   function isGoodbye(text) {
     var clean = text.toLowerCase().replace(/[.,!?¡¿;:。，！？«»"“”]/g, " ").replace(/\s+/g, " ").trim();
+    var compact = clean.replace(/[\s「」『』。]/g, "");
+    if (/^(さようなら|さよなら|終了|終わり|会話を終了|会話を終了して|会話を終了してください|会話を終わります|ストップ)$/.test(compact)) return true;
     if (lang === "zh" || /[一-鿿]/.test(clean)) {
       return clean.length <= 6 && /再见|拜拜|停止/.test(clean);
     }
@@ -616,14 +619,15 @@
 
   // ---------- language question (first conversation only) ----------
   var LANG_WORDS = {
-    en: ["english", "inglese", "anglais", "английски", "английск", "англий", "英语", "英文"],
-    it: ["italian", "italien", "италиански", "итальянск", "意大利"],
-    fr: ["french", "français", "francais", "francese", "френски", "французск", "法语", "法文"],
-    bg: ["bulgarian", "българск", "bulgaro", "bulgare", "болгарск", "保加利亚"],
-    ru: ["russian", "русск", "russo", "russe", "руски", "俄语", "俄文"],
-    zh: ["chinese", "mandarin", "cinese", "chinois", "китайск", "中文", "汉语", "普通话", "华语", "中国"]
+    ja: ["japanese", "giapponese", "japonais", "японск", "日本語", "日语", "日文", "nihongo"],
+    en: ["英語", "english", "inglese", "anglais", "английски", "английск", "англий", "英语", "英文"],
+    it: ["イタリア語", "italian", "italien", "италиански", "итальянск", "意大利"],
+    fr: ["フランス語", "french", "français", "francais", "francese", "френски", "французск", "法语", "法文"],
+    bg: ["ブルガリア語", "bulgarian", "българск", "bulgaro", "bulgare", "болгарск", "保加利亚"],
+    ru: ["ロシア語", "russian", "русск", "russo", "russe", "руски", "俄语", "俄文"],
+    zh: ["中国語", "chinese", "mandarin", "cinese", "chinois", "китайск", "中文", "汉语", "普通话", "华语", "中国"]
   };
-  var WHISPER_LANGS = { english: "en", italian: "it", french: "fr", bulgarian: "bg", russian: "ru", chinese: "zh" };
+  var WHISPER_LANGS = { japanese: "ja", english: "en", italian: "it", french: "fr", bulgarian: "bg", russian: "ru", chinese: "zh" };
 
   function matchLanguage(text, detected) {
     var t = String(text || "").toLowerCase();
@@ -653,7 +657,8 @@
                      "changer de langue", "change de langue", "changer la langue", "autre langue",
                      "смени езика", "смяна на езика", "друг език", "смени язык", "сменить язык", "поменяй язык",
                      "другой язык", "换语言", "换一种语言", "切换语言", "更改语言", "改变语言"];
-  var ZH_SWITCH = /(说|讲|切换到|切换成|换成|换到|改成|改用)\s*(中文|汉语|普通话|英语|英文|意大利语|法语|法文|俄语|俄文|保加利亚语)/;
+  var JA_SWITCH = /^(日本語|英語|イタリア語|フランス語|ブルガリア語|ロシア語|中国語)(?:で|に)(?:話して|話してください|答えて|答えてください|切り替えて|切り替えてください|変更して|して)(?:ください)?$/;
+  var ZH_SWITCH = /(说|讲|切换到|切换成|换成|换到|改成|改用)\s*(中文|汉语|普通话|英语|英文|意大利语|法语|法文|俄语|俄文|保加利亚语|日语|日文|日本語)/;
 
   // Other spoken commands; the whole request must be one of these (polite words aside),
   // so "help me write a letter" still goes to the assistant.
@@ -661,10 +666,10 @@
     repeat: ["repeat", "repeat that", "repeat it", "say that again", "say it again", "can you repeat that", "could you repeat that",
              "what did you say", "again", "ripeti", "ripetilo", "puoi ripetere", "ripeti per favore", "come hai detto", "cosa hai detto",
              "répète", "répétez", "tu peux répéter", "vous pouvez répéter", "pardon", "повтори", "повторете", "кажи пак", "кажете пак",
-             "повторите", "ещё раз", "еще раз", "что ты сказал", "再说一遍", "再说一次", "重复", "重复一遍", "没听清"],
+             "повторите", "ещё раз", "еще раз", "что ты сказал", "再说一遍", "再说一次", "重复", "重复一遍", "没听清", "もう一度", "もう一度お願いします", "繰り返して", "繰り返してください", "もう一度言って", "もう一度言ってください", "もう一度話して", "もう一度話してください"],
     help: ["help", "what can i say", "instructions", "how does this work", "aiuto", "cosa posso dire", "istruzioni",
            "aide", "à l'aide", "que puis-je dire", "qu'est-ce que je peux dire", "помощ", "какво мога да кажа", "инструкции",
-           "помощь", "помогите", "что я могу сказать", "инструкция", "帮助", "我能说什么", "我可以说什么", "说明", "怎么用"]
+           "помощь", "помогите", "что я могу сказать", "инструкция", "帮助", "我能说什么", "我可以说什么", "说明", "怎么用", "ヘルプ", "使い方", "操作方法", "使い方を教えて", "使い方を教えてください"]
   };
   var POLITE = /^(ok|okay|please|per favore|s'il te plaît|s'il vous plaît|моля|пожалуйста|请) | (please|per favore|s'il te plaît|s'il vous plaît|моля|пожалуйста)$/g;
 
@@ -673,6 +678,9 @@
     var clean = text.toLowerCase().replace(/[.,!?¡¿;:。，！？«»"“”]/g, " ").replace(/\s+/g, " ").trim();
     var bare = clean.replace(POLITE, "").replace(POLITE, "").replace(/^请|吧$/g, "").trim();
     for (var k in COMMANDS) if (COMMANDS[k].indexOf(bare) !== -1) return k;
+    var japanese = clean.replace(/\s/g, "");
+    if (JA_SWITCH.test(japanese)) return matchLanguage(japanese);
+    if (["言語を変更", "言語を変えて", "言語を変更して", "言語を変更してください", "言語を変えてください"].indexOf(japanese) !== -1) return "ask";
     if (/[一-鿿]/.test(clean)) {
       if (clean.replace(/\s/g, "").length > 12) return null;
       var m = clean.match(ZH_SWITCH);

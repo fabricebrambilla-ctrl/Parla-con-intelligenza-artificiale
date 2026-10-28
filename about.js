@@ -2,6 +2,23 @@
 const I18N = require("./public/i18n.js");
 const CONTACT = { email: "brambillafabrice@gmail.com", phone: "+41 78 335 15 72", tel: "+41783351572" };
 const PAGES = {
+  ja: {
+    "organizationsTitle": "試用と協力について",
+    "generalContactTitle": "お問い合わせ",
+    "generalContact": "このプロジェクトへのご質問は、メールまたは電話でお寄せください。",
+    "title": "Talk with AIについて",
+    "intro": "私はスイスに住む17歳の高校生です。将来は工学を学びたいと思っています。",
+    "storyTitle": "このプロジェクトを始めた理由",
+    "story": "私のおばは生まれつき目が見えず、JAWSを使っています。一般的なAIツールは、特にインターネットで調べものをするときに使いにくいと感じていました。もっと簡単に使えるようにしたいと思い、このプロジェクトを始めました。",
+    "missionTitle": "声で質問し、ウェブで調べる。",
+    "mission": "Talk with AIは、質問やウェブでの調べものに使える無料の音声アシスタントです。話しかけ、回答を聞き、続けて質問できます。JAWSやNVDAなどのスクリーンリーダーを使う方のために開発しています。",
+    "pilotsTitle": "試用中の取り組み",
+    "pilotCountry": "イタリア",
+    "contactTitle": "団体の皆さまへ",
+    "contact": "スクリーンリーダーを使う方を支援している団体の皆さまと、無料の小規模な試用や協力について話し合い、一緒にアプリを改善したいと考えています。短いお話の機会を設けるため、メールまたは電話でご連絡ください。",
+    "emailLabel": "メール",
+    "phoneLabel": "電話"
+  },
   en: {
     organizationsTitle: "Pilots and collaboration", generalContactTitle: "Get in touch", generalContact: "Questions about the project? Email or call me.",
     title: "About Talk with AI", intro: "I'm 17 and a high school student in Switzerland. I'd like to study engineering.",

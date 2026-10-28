@@ -2,11 +2,12 @@
 (function (root) {
   "use strict";
 
-  var LANGS = ["en", "it", "fr", "bg", "ru", "zh"];
+  var LANGS = ["en", "it", "fr", "bg", "ru", "zh", "ja"];
 
   // html: value for <html lang>, speech: BCP-47 tag for speech synthesis,
   // native: language name in its own language, english: name used in prompts.
   var META = {
+    ja: { html: "ja", speech: "ja-JP", native: "日本語", english: "Japanese" },
     en: { html: "en", speech: "en-US", native: "English", english: "English" },
     it: { html: "it", speech: "it-IT", native: "Italiano", english: "Italian" },
     fr: { html: "fr", speech: "fr-FR", native: "Français", english: "French" },
@@ -15,7 +16,7 @@
     zh: { html: "zh-Hans", speech: "zh-CN", native: "中文", english: "Simplified Chinese" }
   };
 
-  // Which of the six languages a piece of text is written in, so each reply is spoken
+  // Which supported language a piece of text is written in, so each reply is spoken
   // by a voice of that language. `fallback` (the conversation's language) wins whenever
   // the text is short or not clearly in another language, so a French reply that
   // quotes an English title stays French.
@@ -32,10 +33,13 @@
   function detectLang(text, fallback) {
     fallback = META[fallback] ? fallback : "en";
     text = String(text || "").toLowerCase();
+    var kana = (text.match(/[\u3041-\u3096\u30a1-\u30fa\u30fc\uff66-\uff9d]/g) || []).length;
     var han = (text.match(/[\u4e00-\u9fff]/g) || []).length;
     var cyr = (text.match(/[\u0400-\u04ff]/g) || []).length;
     var lat = (text.match(/[a-zàâäçéèêëîïôöùûüœæ]/g) || []).length;
-    if (han > (cyr + lat) / 3 && han >= 2) return "zh";
+    if (kana >= 2 && kana * 4 >= han && kana + han > (cyr + lat) / 3) return "ja";
+    // Han-only text is ambiguous between Chinese and Japanese: keep Japanese context.
+    if (han > (cyr + lat) / 3 && han >= 2) return fallback === "ja" && !kana ? "ja" : "zh";
     var words = text.split(/[^a-zàâäçéèêëîïôöùûüœæ'\u0400-\u04ff]+/).filter(Boolean);
     var count = function (code) {
       var n = 0;
@@ -59,6 +63,48 @@
   }
 
   var S = {
+  ja: {
+    "micGuide": "質問を聞き取るために、マイクへのアクセスが必要です。この後、ブラウザーが許可を求めることがあります。「許可」を選んでください。表示言語はブラウザーの設定によって異なります。英語の場合は Allow を選びます。",
+    "micGuideTouch": "タッチ操作のスクリーンリーダーでは、「許可」を探してダブルタップしてください。",
+    "askWeatherPlace": "どの市町村、どの国のことですか。近くの都市名でもかまいません。",
+    "liveInfoUnavailable": "今は最新の情報を確認できません。後でもう一度試すか、最新の情報源で確認してください。",
+    "aiDisclosure": "私はAIアシスタントです。",
+    "title": "AIと話す：ボタンを押して開始",
+    "h1": "AIと話す",
+    "start": "会話を始める",
+    "end": "会話を終了する",
+    "langButton": "言語：日本語。言語を変更する",
+    "help": "ボタンを押して開始します。その後、スペースキーで話し始め、もう一度押すと回答が聞けます。回答中に押すと中断できます。終了するには「さようなら」と言ってください。",
+    "privacy": "会話を始めると、音声とテキストがクラウドサービスで処理されます。プライバシーに関するお知らせをご確認ください。",
+    "greeting": "スペースキーを押して話し、もう一度押して送信します。回答中に押すと中断できます。「さようなら」で終了し、「ヘルプ」で使い方が聞けます。",
+    "farewell": "さようなら。",
+    "langChanged": "わかりました。日本語で話します。",
+    "voiceHelp": "「もう一度」で回答を繰り返し、「言語を変更」で言語を選び、「さようなら」で終了できます。",
+    "shortcutHelp": "ブラウザーとスクリーンリーダーがキー操作を通す場合、ページ内のどこからでも Alt+Shift+T で話すボタンを操作できます。",
+    "micPending": "マイクの許可を待っています。ブラウザーから確認が出たら「許可」を選んでください。これらの操作はウェブページの外にあります。",
+    "errMicDenied": "マイクへのアクセスがブロックされています。ブラウザーでこのサイトのマイクを許可し、もう一度「会話を始める」を押してください。",
+    "errMic": "マイクを使用できません。このサイトのマイクを許可してから、ボタンを押してもう一度試してください。",
+    "errConnection": "問題が発生し、接続が切れました。ページを再読み込みして、もう一度試してください。",
+    "errLimit": "AIの本日の無料利用上限に達しました。明日もう一度お試しください。",
+    "errSupport": "このブラウザーでは録音できません。Chrome、Edge、Firefox、Safariのいずれかをお試しください。",
+    "back": "会話のページに戻る",
+    "notice": "音声とテキストはクラウドサービスに送信されます。個人情報は話さないでください。詳しくはプライバシーに関するお知らせをご確認ください。",
+    "searching": "確認します。少しお待ちください。",
+    "errRetry": "うまく処理できませんでした。スペースキーを押して、もう一度話してください。",
+    "privacyLink": "プライバシーに関するお知らせ",
+    "accessibilityLink": "アクセシビリティ",
+    "aboutLink": "このプロジェクトについて",
+    "askLanguage": "どの言語を使いますか。合図の音の後に言ってください。",
+    "langNotUnderstood": "聞き取れませんでした。使いたい言語をもう一度言ってください。",
+    "notHeard": "声が聞こえませんでした。話すときにスペースキーを押してください。",
+    "talk": "話す",
+    "helpTouch": "ボタンを押して開始します。その後、「話す」を押して話し、もう一度押すと回答が聞けます。回答中に押すと中断できます。終了するには「さようなら」と言ってください。",
+    "greetingTouch": "「話す」を押して話し始め、もう一度押して送信します。回答中に押すと中断できます。「さようなら」で終了し、「ヘルプ」で使い方が聞けます。",
+    "notHeardTouch": "声が聞こえませんでした。話すときに「話す」ボタンを押してください。",
+    "errRetryTouch": "うまく処理できませんでした。「話す」ボタンを押して、もう一度話してください。",
+    "greetingShort": "おかえりなさい。スペースキーを押して話してください。",
+    "greetingShortTouch": "おかえりなさい。「話す」を押して話してください。"
+  },
     en: {
       micGuide: "To hear your question, I need microphone access. Next, your browser may ask permission. Choose Allow. The prompt may use your browser's language.",
       micGuideTouch: "With a touch screen reader, find Allow, then double-tap it.",

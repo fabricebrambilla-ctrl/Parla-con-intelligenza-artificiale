@@ -29,7 +29,7 @@ const retiredSearchModels = new Set(["groq/compound", "groq/compound-mini"]);
 const SEARCH_FALLBACK_MODEL = retiredSearchModels.has(configuredSearchModel) ? "" : configuredSearchModel;
 let searchFallbackBlocked = false;
 // Natural AI voice, tried in this order:
-// 1. Fish Audio (FISH_API_KEY) for all six languages, on its free developer model.
+// 1. Fish Audio (FISH_API_KEY) for all supported languages, on its free developer model.
 // 2. Groq Orpheus for English only.
 // 3. Otherwise the browser uses the best voice on the device.
 const TTS_MODEL = process.env.GROQ_TTS_MODEL || "canopylabs/orpheus-v1-english";
@@ -524,17 +524,17 @@ function liveResearchPlan(history, today = new Date().toISOString().slice(0, 10)
   const latest = String(users.at(-1) || "").toLowerCase();
   let text = latest;
   if (users.length > 1 && latest.length < 100 &&
-      /^(and\b|what about\b|tell me more\b|e\b|invece\b|dimmi di pi|et\b|а\b|и\b|那|那么)/iu.test(latest)) {
+      /^(and\b|what about\b|tell me more\b|e\b|invece\b|dimmi di pi|et\b|а\b|и\b|那|那么|では|それでは|じゃあ|そして)/iu.test(latest)) {
     text = users.slice(-2).join(" ").toLowerCase();
   }
-  const weather = /\b(weather|forecast|meteo|météo|previsioni)\b|погод|времето|天气|天氣/iu.test(text);
-  const sports = /\b(scores?|results?|fixtures?|standings|risultati|classifica|partite|notizie sportive|résultats?|classement|matchs?)\b|результат|резултат|比分|赛果|賽果/iu.test(text);
-  const current = /\b(today|tomorrow|yesterday|latest|current|news|recent|oggi|domani|ieri|ultim[oeia]|attual[ei]|notizie|aujourd'hui|demain|hier|dernier|dernières|actualités)\b|сегодня|завтра|вчера|свеж|последн|новост|днес|утре|новини|最新|今天|明天|新闻|新聞/iu.test(text);
+  const weather = /\b(weather|forecast|meteo|météo|previsioni)\b|погод|времето|天气|天氣|天気|天候|気象/iu.test(text);
+  const sports = /\b(scores?|results?|fixtures?|standings|risultati|classifica|partite|notizie sportive|résultats?|classement|matchs?)\b|результат|резултат|比分|赛果|賽果|スポーツ|試合結果|試合予定|順位|得点|スコア/iu.test(text);
+  const current = /\b(today|tomorrow|yesterday|latest|current|news|recent|oggi|domani|ieri|ultim[oeia]|attual[ei]|notizie|aujourd'hui|demain|hier|dernier|dernières|actualités)\b|сегодня|завтра|вчера|свеж|последн|новост|днес|утре|новини|最新|今天|明天|新闻|新聞|今日|明日|昨日|現在|ニュース|最近/iu.test(text);
   const years = text.match(/\b(?:19|20)\d{2}\b/g) || [];
   const historical = (years.length > 0 && years.every(y => Number(y) < Number(today.slice(0, 4))) && !current) ||
-    /last (?:week|month|year)|scors[oaie]|semaine dernière|mois dernier|прошл|минал|去年|上个月|上個月/iu.test(text);
+    /last (?:week|month|year)|scors[oaie]|semaine dernière|mois dernier|прошл|минал|去年|上个月|上個月|先週|先月|昨年/iu.test(text);
   const vaguePlace = users.length === 1 && weather &&
-    /my (?:town|city|village|area)|mio paese|mia citt|nella mia zona|ma ville|mon village|мо[её]м городе|моя град|我的城市|我这里/iu.test(latest);
+    /my (?:town|city|village|area)|mio paese|mia citt|nella mia zona|ma ville|mon village|мо[её]м городе|моя град|我的城市|我这里|私の町|私の街|私の地域|住んでいる町|地元/iu.test(latest);
   return { required: !historical && (weather || sports || current), vaguePlace,
     timeRange: weather || historical ? undefined : sports ? "week" : "day", today };
 }
@@ -677,7 +677,7 @@ async function selfCheck() {
   }
   console.log("check: research fallback " + (SEARCH_FALLBACK_MODEL || "is disabled; web search needs Tavily"));
   console.log("check: Fish Audio key " + (process.env.FISH_API_KEY
-    ? "is set: natural AI voice in all six languages" + (fishVoice("en") || process.env.FISH_VOICE_IT ? "" : " (no FISH_VOICE chosen, using Fish Audio's default)")
+    ? "is set: natural AI voice in all supported languages" + (fishVoice("en") || process.env.FISH_VOICE_IT ? "" : " (no FISH_VOICE chosen, using Fish Audio's default)")
     : (TTS_ENABLED ? "is missing: natural AI voice in English only (Groq Orpheus), device voice for the other languages" : "is missing: device voice for all languages")));
   if (!process.env.OWNER_NAME || !process.env.OWNER_EMAIL) {
     console.log("check: using the confirmed Fabrice Brambilla privacy contact where an owner override is unset.");

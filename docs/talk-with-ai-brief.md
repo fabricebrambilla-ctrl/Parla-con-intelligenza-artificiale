@@ -29,7 +29,7 @@ A free, voice-only AI assistant that blind people can use **without sighted help
 - The owner's aunt is blind and uses **JAWS** on Windows. She wants to research things like **new inventions and technology for blind people**, which needs **current, real information from the internet**, not answers from the model's memory.
 - Mainstream AI sites are hard for screen-reader users. Blind users on the OpenAI forum report that ChatGPT's web interface has many **unlabeled buttons** (a screen reader just says "button"), that accessibility keeps breaking after updates, and that blind people often need a sighted person to start voice mode at all.
 - So this site does **one thing**: you open it, press one button, and talk. The AI talks back in a natural voice and searches the web when needed.
-- It will be shared in blind communities in **English, Italian, French, Bulgarian, Russian and Chinese** (Simplified).
+- It will be shared in blind communities in **English, Italian, French, Bulgarian, Russian, Chinese (Simplified) and Japanese**.
 - **Must work with JAWS and NVDA equally**, plus VoiceOver on iPhone.
 - **Must work on built-in laptop speakers and microphone.** Never require or assume headphones.
 
@@ -49,7 +49,7 @@ A free, voice-only AI assistant that blind people can use **without sighted help
    - **One small button**: "Language: Italiano. Change language" (shows current language).
    - One short sentence of help *below* the buttons: "Press the button and speak. To finish, press it again or say goodbye." (translated).
    - At most three footer links: About the project, Privacy notice and Accessibility. The separate About page carries the creator story and public contact details and links to a separate Pilots and collaboration page, so the voice screen stays short.
-4. If the user presses "Change language", show a list of 6 buttons, **each written in its own language** with its own `lang` attribute: `English`, `Italiano`, `Français`, `Български`, `Русский`, `中文`. Pressing one reloads the text in that language, saves the choice, and moves focus back to "Start conversation".
+4. If the user presses "Change language", show a list of 7 buttons, **each written in its own language** with its own `lang` attribute: `English`, `Italiano`, `Français`, `Български`, `Русский`, `中文`, `日本語`. Pressing one reloads the text in that language, saves the choice, and moves focus back to "Start conversation".
 5. Language choice is saved in `localStorage` so returning users skip this.
 
 ### 2.2 Starting a conversation
@@ -192,9 +192,9 @@ Consequences:
 ### 4.7 Language and the `lang` attribute
 
 - **JAWS** can switch its speech voice automatically based on the `lang` attribute.
-- **NVDA** has "Automatic language switching (when supported)" in its speech settings; it works when the user's voice/synthesizer has that language installed (NVDA's built-in eSpeak NG voice covers all six target languages).
+- **NVDA** has "Automatic language switching (when supported)" in its speech settings; it works when the user's voice/synthesizer has that language installed (the selected synthesizer must have a suitable voice for the requested language; Japanese voice availability needs device-specific verification).
 - If `lang` is wrong, the screen reader reads Italian text with an English voice and it becomes nonsense.
-- Set `<html lang="it">` (etc.) to match the displayed language. Use simple codes: `en`, `it`, `fr`, `bg`, `ru`, `zh-Hans` (for Chinese, also test plain `zh` — older readers can mishandle region/script subtags).
+- Set `<html lang="it">` (etc.) to match the displayed language. Use simple codes: `en`, `it`, `fr`, `bg`, `ru`, `zh-Hans`, `ja` (for Chinese, also test plain `zh` — older readers can mishandle region/script subtags).
 - In the language list, each language name must carry its own `lang` (e.g. `<button lang="ru">Русский</button>`).
 
 ### 4.8 Other things that make blind users leave
@@ -419,6 +419,8 @@ Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public 
 
 ### Current state of the code (keep this up to date)
 
+- 2026-10-28 Japanese: the seventh supported locale is `ja`, with `ja-JP` speech synthesis, native 日本語 selection, localized home/onboarding/errors/About/organizations/privacy/accessibility pages, Whisper ISO language routing and Japanese answer instructions. Japanese repeat/help/goodbye and explicit language-switch commands work without Latin word boundaries. Kana-based reply detection precedes Han detection, while ambiguous Han-only replies preserve Japanese conversation context. Japanese weather/sports/news use the same live-result guard and vague-place clarification. Fish uses optional `FISH_VOICE_JA` through the existing service; otherwise a matching Japanese device voice is selected where available. No paid account, extra key, tracking or new provider was added. The final focused suite passed twice, 73/73 checks each run, with stand-in transcription, chat and TTS services and no real provider quota. Initial direct-mirror HTTP tests could not start because local dependency loading stalled; an isolated copy using the existing test runtime passed. Automated checks cover routing, not speech quality; real Japanese speaker and assistive-technology retesting remain pending.
+
 - 2026-10-28 latest: remove the named regional pilot listing and its link from `/organizations` in all six languages. Keep the general organization invitation and native contact links. This supersedes the older pilot-list entries below; historical records are retained, but future public copy/outreach must not name that regional pilot.
 - 2026-10-28 tester fixes: the existing pre-microphone spoken disclosure now includes localized permission guidance before the native browser prompt, with touch-reader double-tap guidance on touch devices. Remember guide completion only after successful microphone access. Browser/OS permission-window language remains outside page control. Recognizable weather, sports results and current-news questions require a real web-search result before an answer; unsupported/malformed tools, empty results or unavailable search return a localized limitation instead of a model-memory current answer. News/sports search uses a recency range; weather keeps evergreen forecast pages eligible. Explicit historical questions avoid current-date restrictions. Vague first-turn weather locations ask for town and country, while the prompt handles small towns or possible transcription mistakes without declaring them nonexistent. This is a conservative guard, not universal fact verification or an AI desktop controller. Actual TalkBack feedback said controls and permission were accessible; no reader-overlap defect was established. Automated regressions use mocks with no provider spending: the final focused suite passed twice, 72/72 checks each time, including real local HTTP requests. The initial restricted localhost attempts failed with EPERM and were rerun with local-network permission using an isolated copy and the existing dependency runtime. No test code or dependency changes hide those failures. Real reader/device retesting remains pending.
 
@@ -482,7 +484,7 @@ How a conversation works:
 
 13. **Hidden text API (`agent.js`, updated 2026-10-26):** `/api/agent` describes create/read/message/stop/delete routes. No key is required and it is absent from the voice UI, as requested. Chats are temporary server RAM, capped at 200 and 60 total messages per chat. Idle expiry is checked on every access and every minute; a fully busy store refuses new chats instead of exceeding capacity. The random chat ID is a bearer capability; never expose it. `agent_id` groups the caller's temporary chats only and is not counted as a visitor. Ordinary optional budgets remain off unless configured, preserving the owner's accepted quota-exhaustion risk. JSON replies disclose `ai_generated: true`; this metadata alone is not certified compliance with all synthetic-content marking duties.
 
-Files: `server.js` (Express: pages, API, start-up check that logs whether the Groq key and models work), `about.js` (six-language creator/contact and separate organization pages), `agent.js` (hidden agent API), `limits.js` (limits and counters), `legal.js` (accessibility and legal-page exports), `privacy-notice.js` (privacy texts), `public/i18n.js` (all text in en/it/fr/bg/ru/zh, shared by server and browser), `public/app.js`, `public/capture-worklet.js`, `public/style.css`, `test/server.test.js` (`npm test`).
+Files: `server.js` (Express: pages, API, start-up check that logs whether the Groq key and models work), `about.js` (six-language creator/contact and separate organization pages), `agent.js` (hidden agent API), `limits.js` (limits and counters), `legal.js` (accessibility and legal-page exports), `privacy-notice.js` (privacy texts), `public/i18n.js` (all text in en/it/fr/bg/ru/zh/ja, shared by server and browser), `public/app.js`, `public/capture-worklet.js`, `public/style.css`, `test/server.test.js` (`npm test`).
 
 Environment variables on Render:
 - Required: `GROQ_API_KEY`, `TAVILY_API_KEY`.
@@ -491,7 +493,7 @@ Environment variables on Render:
 - Strongly recommended: `REDIS_URL` (internal URL of a Render Key Value instance) so limits survive restarts.
 - Optional limits, **all off unless set** (values the owner used before 2026-10-24 in brackets): `DAILY_MINUTES_PER_USER` (60), `DAILY_MINUTES_PER_IP` (60), `DAILY_MINUTES_GLOBAL` (600), `DAILY_REQUESTS_PER_USER` (1500), `DAILY_REQUESTS_PER_IP` (1500), `DAILY_REQUESTS_GLOBAL` (15000), `REQUESTS_PER_MINUTE_PER_IP` (60), `DAILY_TAVILY_SEARCHES` (30), `MONTHLY_TAVILY_SEARCHES` (950), `AGENT_DAILY_MESSAGES` (40), `AGENT_DAILY_MESSAGES_PER_IP` (20), `STATS_DEVICES_PER_IP` (10).
 - Optional models: `GROQ_CHAT_MODEL`, `GROQ_FALLBACK_MODEL` (default `openai/gpt-oss-20b`, used when the chat model is rate-limited), `GROQ_SUMMARY_MODEL`, `GROQ_STT_MODEL`, `GROQ_SEARCH_MODEL` (optional research fallback, disabled unless set; `groq/compound` and `groq/compound-mini` are ignored because they were retired), `GROQ_TTS_MODEL`, `GROQ_TTS_VOICE` (Orpheus English voices: autumn, diana, hannah, austin, daniel, troy), `GROQ_TTS=on` to enable the Groq Orpheus English voice (**off by default since 2026-10-24**: the owner does not accept Orpheus's terms on Groq, which made every call fail with `model_terms_required`; if Groq refuses it, it is also switched off until the next restart).
-- Natural voice in all languages: `FISH_API_KEY` (free account at fish.audio), optional `FISH_VOICE_EN`, `FISH_VOICE_IT`, `FISH_VOICE_FR`, `FISH_VOICE_BG`, `FISH_VOICE_RU`, `FISH_VOICE_ZH` or `FISH_VOICE`, `FISH_MODEL` (default `s2.1-pro-free`). Fish Audio's free-tier limits are not published; on any failure the next voice is used.
+- Natural voice in all languages: `FISH_API_KEY` (free account at fish.audio), optional `FISH_VOICE_EN`, `FISH_VOICE_IT`, `FISH_VOICE_FR`, `FISH_VOICE_BG`, `FISH_VOICE_RU`, `FISH_VOICE_ZH`, `FISH_VOICE_JA` or `FISH_VOICE`, `FISH_MODEL` (default `s2.1-pro-free`). Fish Audio's free-tier limits are not published; on any failure the next voice is used.
 - Optional: `LIMITS_SECRET` (key for hashing addresses; defaults to the Groq key).
 - Test only: `GROQ_BASE_URL`, `TAVILY_BASE_URL` (point the server at stand-in services).
 - `GEMINI_API_KEY` is not used (the owner's Gemini project is restricted to paid use).
@@ -508,6 +510,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Change | Files |
 |---|---|---|
+| 2026-10-28 | Add Japanese as the seventh app language, including public pages, spoken controls, transcription/answer language, Japanese voice selection and live-information safeguards. Add offline provider-routing and command regressions. | `public/i18n.js`, `public/app.js`, `public/index.html`, `about.js`, `legal.js`, `privacy-notice.js`, `server.js`, `test/japanese*.test.js`, this brief |
 | 2026-10-28 | Remove public regional pilot reference; improve six-language pre-permission guidance and require live evidence for recognizable current weather/sports/news requests, with honest failures and location clarification. Add offline behavioral/provider-body tests and update the existing page regression. | `about.js`, `server.js`, `public/app.js`, `public/i18n.js`, `test/current-research.test.js`, `test/privacy-onboarding.test.js`, `test/server.test.js`, this brief |
 | 2026-10-28 | Clarify the existing home privacy line in all six languages: starting a conversation uses cloud processing. Preserve the one-button flow, native privacy link, pre-microphone disclosure and no-tracking design; do not claim blanket agreement to the privacy notice. | `public/i18n.js`, this brief |
 | 2026-10-27 | Redesign the home visual surface with a cool-blue canvas, large system typography and tactile microphone control. Keep the existing HTML and behavior; scope styles to the voice page. | `public/style.css`, this brief |
@@ -557,6 +560,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Preference |
 |---|---|
+| 2026-10-28 | Add Japanese as a supported app language after completing the current outreach consolidation and manual reply drafts. Keep the same accessible one-button flow and existing providers; distinguish real device/reader testing from mocked routing checks. |
 | 2026-10-28 | Remove the public regional pilot name/link and never mention it in future outreach. Keep generic organization contact. Preserve historical audit records without implying earlier sent emails were recalled. |
 | 2026-10-28 | Improve the current voice app from Trieste/Vicenza feedback: easier microphone onboarding and current sports/weather research, including small-town clarification. Do not build an AI desktop controller. Browser permission UI language cannot be forced by the page. |
 | 2026-10-28 | Wants privacy information tied to the Start button without an extra checkbox or friction. Explain that a privacy notice informs users and is not blanket consent to optional tracking or sensitive-data processing. Keep a short factual home notice; no new tracking or consent mechanism is activated by this wording change. |
