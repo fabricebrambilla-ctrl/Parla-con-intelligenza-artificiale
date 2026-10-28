@@ -121,10 +121,6 @@ function renderOrganizations(lang) {
     <header class="about-profile">
       <h1>${e(p.organizationsTitle)}</h1>
     </header>
-    <section class="about-section pilot-list-section">
-      <h2>${e(p.pilotsTitle)}</h2>
-      <ul><li><a href="https://uicite.it/" lang="it">UICI Teramo</a>, ${e(p.pilotCountry)}</li></ul>
-    </section>
     <section class="about-section contact-section">
       <h2>${e(p.contactTitle)}</h2>
       <p>${e(p.contact)}</p>

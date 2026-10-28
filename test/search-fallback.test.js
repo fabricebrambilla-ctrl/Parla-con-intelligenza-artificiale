@@ -78,3 +78,10 @@ test('a transient rate limit does not permanently block a custom model', async (
   assert.equal((await f.search('second')).report, 'recovered');
   assert.equal(f.calls.length, 2);
 });
+
+
+test('current-information research never substitutes an unverified custom-model report', async () => {
+  const f = fixture('fixture-supported-research-model');
+  assert.match((await f.search('current fixture', { requireResults: true })).error, /could not search/);
+  assert.equal(f.calls.length, 0);
+});

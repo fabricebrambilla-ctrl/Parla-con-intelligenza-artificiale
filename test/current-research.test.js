@@ -1,0 +1,84 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs'), vm = require('node:vm');
+const I18N = require('../public/i18n.js');
+const source=fs.readFileSync(require.resolve('../server.js'),'utf8');
+const code=source.slice(source.indexOf('function systemPrompt('),source.indexOf('// The answer is streamed as lines of JSON'));
+const searchCall={id:'search',function:{name:'web_search',arguments:JSON.stringify({query:'weather Bassano Italy'})}};
+function fixture({tool=true,error=false,result={results:[{title:'Forecast',content:'Forecast for fixture date.'}]},onSearch=()=>{}}={}) {
+  const calls=[],searches=[];
+  const c={I18N,CHAT_MODEL:'mock',TOOLS:[],qa:{lastModelCall:()=>false},
+    groqAnswer:async body=>{calls.push(structuredClone(body));if(error)throw Object.assign(Error('bad tools'),{status:400});
+      return {choices:[{message:calls.length===1&&tool?{tool_calls:[searchCall]}:{content:'Fixture answer.'}}]};},
+    webSearch:async(...args)=>{searches.push(args);onSearch();return result;}};
+  vm.runInNewContext(code,c);return {c,calls,searches,run:(text,extra={})=>c.runChat({lang:'en',messages:[{role:'user',content:text}],...extra})};
+}
+for(const [lang,text] of Object.entries({en:'Weather in Bassano?',it:'Meteo a Bassano?',fr:'Météo à Bassano ?',bg:'Каква е прогнозата за времето в София?',ru:'Какая погода в Москве?',zh:'北京天气怎么样？'})) {
+  test(`${lang}: recognized weather requires live results before answering`,async()=>{
+    const f=fixture();const answer=await f.run(text,{lang});assert.equal(answer.text,'Fixture answer.');
+    assert.equal(f.calls[0].tool_choice.function.name,'web_search');assert.equal(f.searches.length,1);
+    assert.equal(f.searches[0][1].requireResults,true);
+    assert.equal(f.searches[0][1].timeRange,undefined,'evergreen weather pages must remain eligible');
+  });
+}
+test('current sports search carries current date and recency filter',async()=>{
+  const f=fixture();await f.run('What are the latest football scores?');
+  assert.match(f.searches[0][0],/as of \d{4}-\d{2}-\d{2}/);assert.equal(f.searches[0][1].timeRange,'week');
+});
+test('model ignoring the forced search cannot return an unverified current answer',async()=>{
+  const f=fixture({tool:false});assert.equal((await f.run('Weather in Bassano?')).text,I18N.t('en','liveInfoUnavailable'));
+  assert.equal(f.calls.length,1);
+});
+test('malformed forced tool call cannot fall back to a stale plain completion',async()=>{
+  const f=fixture({error:true});assert.equal((await f.run('Latest sports scores?')).text,I18N.t('en','liveInfoUnavailable'));
+  assert.equal(f.calls.length,1);
+});
+for(const result of [null,{error:'unavailable'},{results:[]},{report:'Unsupported claimed live answer'}]) {
+  test(`unusable research ${JSON.stringify(result)} is disclosed`,async()=>{
+    const f=fixture({result});assert.equal((await f.run('Weather in Bassano?')).text,I18N.t('en','liveInfoUnavailable'));assert.equal(f.calls.length,1);
+  });
+}
+test('vague weather location asks for place and country without spending provider quota',async()=>{
+  const f=fixture();const r=await f.run('Il meteo del mio paese?',{lang:'it'});
+  assert.equal(r.text,I18N.t('it','askWeatherPlace'));assert.equal(f.calls.length,0);
+});
+test('weather follow-up preserves a previously supplied town',async()=>{
+  const f=fixture();await f.run('',{messages:[{role:'user',content:'I live in Bassano, Italy.'},{role:'assistant',content:'Understood.'},{role:'user',content:'Weather in my town?'}]});
+  assert.equal(f.calls.length,2);assert.equal(f.calls[0].messages[1].content,'I live in Bassano, Italy.');
+});
+test('short contextual follow-up still requires research',async()=>{
+  const f=fixture();await f.run('',{messages:[{role:'user',content:'Latest sports scores?'},{role:'assistant',content:'Fixture.'},{role:'user',content:'And Milan?'}]});
+  assert.equal(f.calls[0].tool_choice.function.name,'web_search');
+});
+test('historical requests and stable explanations do not get a current-date search restriction',async()=>{
+  for(const text of ['Who won the 1998 World Cup?','Weather last month in Rome?','Explain how weather forecasts work in 1980.','How does photosynthesis work?']) {
+    const f=fixture({tool:false});await f.run(text);assert.equal(f.calls[0].tool_choice,'auto',text);
+  }
+});
+test('a stopped request cannot answer after research finishes',async()=>{
+  const controller=new AbortController();const f=fixture({onSearch:()=>controller.abort(Error('stopped'))});
+  await assert.rejects(f.run('Weather in Bassano?',{stop:controller.signal}),/stopped/);assert.equal(f.calls.length,1);
+});
+test('QA with no model allowance refuses unverifiable current answers',async()=>{
+  const f=fixture();f.c.qa.lastModelCall=()=>true;
+  assert.equal((await f.run('Weather in Bassano?')).text,I18N.t('en','liveInfoUnavailable'));assert.equal(f.calls.length,0);
+});
+test('ordinary conversation remains a single model call',async()=>{
+  const f=fixture({tool:false});assert.equal((await f.run('Hello, how are you?')).text,'Fixture answer.');assert.equal(f.calls.length,1);
+});
+test('every language has microphone guidance, current-data fallback and location clarification',()=>{
+  for(const lang of I18N.LANGS)for(const key of ['micGuide','micGuideTouch','liveInfoUnavailable','askWeatherPlace'])assert.ok(I18N.S[lang][key],`${lang}/${key}`);
+});
+test('organization pages retain contacts without regional listings or logos',()=>{
+  const about=require('../about.js');for(const lang of I18N.LANGS){
+    const html=about.renderOrganizations(lang);assert.doesNotMatch(html,/Teramo|uicite\.it|pilot-list-section|<img/);
+    assert.match(html,/mailto:brambillafabrice@gmail.com/);assert.equal((html.match(/<h1>/g)||[]).length,1);
+  }
+});
+test('Tavily keeps basic search and applies recency only when requested',async()=>{
+  const bodies=[];const c={process:{env:{TAVILY_API_KEY:'fixture'}},qa:{searchAvailable:()=>true,search(){}},takeTavilySearch:async()=>true,
+    TAVILY_URL:'https://fixture.invalid',AbortSignal,URL,logFailure(){},fetch:async(url,opts)=>{bodies.push(JSON.parse(opts.body));return {ok:true,json:async()=>({results:[]})};}};
+  vm.runInNewContext(source.slice(source.indexOf('async function tavilySearch('),source.indexOf('async function compoundSearch(')),c);
+  await c.tavilySearch('fixture',{timeRange:'week'});await c.tavilySearch('fixture');
+  assert.equal(bodies[0].time_range,'week');assert.equal(bodies[0].search_depth,'basic');assert.equal(bodies[1].time_range,undefined);
+});

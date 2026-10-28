@@ -60,6 +60,10 @@
 
   var S = {
     en: {
+      micGuide: "To hear your question, I need microphone access. Next, your browser may ask permission. Choose Allow. The prompt may use your browser's language.",
+      micGuideTouch: "With a touch screen reader, find Allow, then double-tap it.",
+      askWeatherPlace: "Which town and country do you mean? You can also name a nearby city.",
+      liveInfoUnavailable: "I can't verify current information right now. Please try again later or check an up-to-date source.",
       aiDisclosure: "I'm an AI assistant.",
       title: "Talk with Artificial Intelligence – press the button to start",
       h1: "Talk with Artificial Intelligence",
@@ -98,6 +102,10 @@
       greetingShortTouch: "Welcome back. Press Talk to speak."
     },
     it: {
+      micGuide: "Per sentire la tua domanda, mi serve il microfono. Ora il browser potrebbe chiederti il permesso. Scegli Consenti, oppure Allow se il messaggio è in inglese. La lingua dipende dal browser.",
+      micGuideTouch: "Con un lettore di schermo sul telefono, trova Consenti e fai doppio tocco.",
+      askWeatherPlace: "Quale paese o città intendi, e in quale nazione? Puoi anche indicare una città vicina.",
+      liveInfoUnavailable: "Al momento non riesco a verificare le informazioni aggiornate. Riprova più tardi o consulta una fonte aggiornata.",
       aiDisclosure: "Sono un assistente di intelligenza artificiale.",
       title: "Parla con l'Intelligenza Artificiale – premi il pulsante per iniziare",
       h1: "Parla con l'Intelligenza Artificiale",
@@ -136,6 +144,10 @@
       greetingShortTouch: "Bentornato. Premi Parla per parlare."
     },
     fr: {
+      micGuide: "Pour entendre votre question, j'ai besoin du microphone. Votre navigateur peut maintenant demander votre autorisation. Choisissez Autoriser, ou Allow si le message est en anglais. Sa langue dépend du navigateur.",
+      micGuideTouch: "Avec un lecteur d'écran tactile, trouvez Autoriser, puis touchez deux fois.",
+      askWeatherPlace: "De quelle ville et de quel pays s'agit-il ? Vous pouvez aussi indiquer une ville proche.",
+      liveInfoUnavailable: "Je ne peux pas vérifier les informations actuelles pour le moment. Réessayez plus tard ou consultez une source à jour.",
       aiDisclosure: "Je suis un assistant d’intelligence artificielle.",
       title: "Parler avec l'intelligence artificielle – appuyez sur le bouton pour commencer",
       h1: "Parler avec l'intelligence artificielle",
@@ -174,6 +186,10 @@
       greetingShortTouch: "Rebonjour. Appuyez sur Parler pour parler."
     },
     bg: {
+      micGuide: "За да чуя въпроса ви, ми трябва достъп до микрофона. Браузърът може да поиска разрешение. Изберете Разрешаване, или Allow, ако съобщението е на английски. Езикът зависи от браузъра.",
+      micGuideTouch: "С екранен четец на телефон намерете Разрешаване и докоснете два пъти.",
+      askWeatherPlace: "Кое населено място и коя държава имате предвид? Можете да посочите и близък град.",
+      liveInfoUnavailable: "В момента не мога да проверя актуалната информация. Опитайте по-късно или проверете актуален източник.",
       aiDisclosure: "Аз съм асистент с изкуствен интелект.",
       title: "Говорете с изкуствен интелект – натиснете бутона, за да започнете",
       h1: "Говорете с изкуствен интелект",
@@ -212,6 +228,10 @@
       greetingShortTouch: "Здравейте отново. Натиснете Говори, за да говорите."
     },
     ru: {
+      micGuide: "Чтобы услышать ваш вопрос, мне нужен микрофон. Браузер может запросить разрешение. Выберите Разрешить, или Allow, если сообщение на английском. Язык зависит от браузера.",
+      micGuideTouch: "С экранным диктором на телефоне найдите Разрешить и коснитесь дважды.",
+      askWeatherPlace: "Какой населённый пункт и какую страну вы имеете в виду? Можно назвать ближайший город.",
+      liveInfoUnavailable: "Сейчас я не могу проверить актуальную информацию. Попробуйте позже или обратитесь к свежему источнику.",
       aiDisclosure: "Я помощник с искусственным интеллектом.",
       title: "Поговорите с искусственным интеллектом – нажмите кнопку, чтобы начать",
       h1: "Поговорите с искусственным интеллектом",
@@ -250,6 +270,10 @@
       greetingShortTouch: "С возвращением. Нажмите Говорить, чтобы говорить."
     },
     zh: {
+      micGuide: "为了听到您的问题，我需要使用麦克风。接下来浏览器可能会请求权限。请选择允许。如果提示是英文，请选择 Allow。提示语言由浏览器决定。",
+      micGuideTouch: "使用触屏阅读器时，先找到允许，再点按两次。",
+      askWeatherPlace: "您指的是哪个城市或村镇，在哪个国家？也可以说出附近的城市。",
+      liveInfoUnavailable: "我现在无法核实最新信息。请稍后再试，或查看最新的可靠来源。",
       aiDisclosure: "我是人工智能助手。",
       title: "与人工智能对话 – 按下按钮开始",
       h1: "与人工智能对话",

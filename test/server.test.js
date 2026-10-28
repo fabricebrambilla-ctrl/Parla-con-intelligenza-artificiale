@@ -119,7 +119,7 @@ test("About honours the language header and safely rejects malicious or unsuppor
   assert.equal((await fetch(BASE + "/about.js")).status, 404);
 });
 
-test("organizations page contains the confirmed pilot and invitation in all six languages", async () => {
+test("organizations page keeps the invitation without regional pilot references in all six languages", async () => {
   const about = require("../about.js");
   for (const lang of I18N.LANGS) {
     const r = await fetch(`${BASE}/organizations?lang=${lang}`, { headers: { "Accept-Language": "de" } });
@@ -130,19 +130,15 @@ test("organizations page contains the confirmed pilot and invitation in all six 
     assert.equal((html.match(/<h1>/g) || []).length, 1);
     assert.equal((html.match(/<main\b/g) || []).length, 1);
     assert.ok(html.includes(`<h1>${p.organizationsTitle}</h1>`));
-    assert.ok(html.includes(`<h2>${p.pilotsTitle}</h2>`));
     assert.ok(html.includes(`<h2>${p.contactTitle}</h2>`));
     assert.ok(html.includes(p.contact.replace(/'/g, "&#39;")));
-    const list = html.match(/<ul>([\s\S]*?)<\/ul>/)[1];
-    assert.equal((list.match(/<li>/g) || []).length, 1);
-    assert.match(list, /href="https:\/\/uicite\.it\/" lang="it">UICI Teramo<\/a>/);
-    assert.ok(list.includes(p.pilotCountry));
+    assert.doesNotMatch(html, /pilot-list-section|UICI Teramo|uicite\.it/);
     for (const href of [`/about?lang=${lang}`, `/?lang=${lang}`, `/privacy?lang=${lang}`, `/accessibility?lang=${lang}`, "mailto:brambillafabrice@gmail.com", "tel:+41783351572"]) {
       assert.ok(html.includes(`href="${href}"`), href);
     }
     assert.doesNotMatch(html, /<script\b|<iframe\b|<form\b|<img\b|autofocus|tabindex=|role="alert"|aria-live|fonts\.google|\{\{|[\u2013\u2014]/);
     assert.doesNotMatch(html, /Help shape the next version|Tell me what worked/);
-    assert.equal((html.match(/href="https:\/\//g) || []).length, 1);
+    assert.equal((html.match(/href="https:\/\//g) || []).length, 0);
   }
 });
 

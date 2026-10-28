@@ -5,7 +5,7 @@ const I = require("../public/i18n.js"), privacy = require("../privacy-notice.js"
 const app = fs.readFileSync(path.join(__dirname,"../public/app.js"),"utf8");
 function start(saved={}, cancel=false) {
   const events=[], values={...saved};
-  const c=vm.createContext({active:false,session:0,lang:"en",aiVoiceLangs:[],failures:0,pendingTalk:false,choosing:false,
+  const c=vm.createContext({IS_TOUCH:false,active:false,session:0,lang:"en",aiVoiceLangs:[],failures:0,pendingTalk:false,choosing:false,
     transcript:[],context:"",lastSaid:"",alertBox:{textContent:""},window:{AudioWorkletNode:function(){}},
     navigator:{mediaDevices:{getUserMedia(){}}},ensureContext(){},showConversationControls(){},setState(){},
     get:k=>values[k],set:(k,v)=>{values[k]=v;},tt:k=>I.t("en",k),tk:k=>I.t("en",k),
@@ -51,4 +51,20 @@ test("all six notices name the Swiss operator and distinguish aggregate counts f
   }
   assert.doesNotMatch(app,/localStorage\.setItem\("anonId"|set\("anonId"/);
   assert.doesNotMatch(fs.readFileSync(path.join(__dirname,"../public/index.html"),"utf8"),/src="\/stats.js"/);
+});
+
+test("microphone guide finishes before browser permission, and repeats after a failed request",async()=>{
+  const f=start();await f.c.startConversation();
+  assert.match(f.events[0][1], /browser may ask permission/);
+  assert.equal(f.values.micPermissionGuide,"2026-10-28");
+  const denied=start();denied.c.openMic=async()=>{throw Error("denied");};
+  denied.c.micErrorKey=()=>"errMicDenied";denied.c.announce=()=>{};
+  await denied.c.startConversation();assert.equal(denied.values.micPermissionGuide,undefined);
+});
+test("known guide is not repeated and touch guidance precedes the browser prompt",async()=>{
+  const returning=start({micPermissionGuide:"2026-10-28"});await returning.c.startConversation();
+  assert.doesNotMatch(returning.events[0][1],/browser may ask permission/);
+  const touch=start();touch.c.IS_TOUCH=true;await touch.c.startConversation();
+  assert.match(touch.events[0][1],/double-tap/);
+  const canceled=start({},true);await canceled.c.startConversation();assert.equal(canceled.values.micPermissionGuide,undefined);
 });

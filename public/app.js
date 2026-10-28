@@ -853,7 +853,9 @@
     // microphone access or language recording. A new notice version refreshes
     // the old, incomplete notice without saving conversation content.
     var firstPrivacyNotice = get("privacyNoticeVersion") !== "2026-10-26";
-    var disclosure = tt("aiDisclosure") + (firstPrivacyNotice ? " " + tt("notice") : "");
+    var firstMicGuide = get("micPermissionGuide") !== "2026-10-28";
+    var disclosure = tt("aiDisclosure") + (firstPrivacyNotice ? " " + tt("notice") : "") +
+      (firstMicGuide ? " " + tt("micGuide") + (IS_TOUCH ? " " + tt("micGuideTouch") : "") : "");
     var disclosureInterrupted = await say(disclosure);
     if (my !== session) return;
     if (firstPrivacyNotice && !disclosureInterrupted) set("privacyNoticeVersion", "2026-10-26");
@@ -861,6 +863,7 @@
 
     try {
       await openMic();
+      if (my === session && firstMicGuide && !disclosureInterrupted) set("micPermissionGuide", "2026-10-28");
     } catch (e) {
       if (my === session) giveUp(micErrorKey(e));
       return;
