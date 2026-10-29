@@ -97,7 +97,7 @@ test('organization pages retain contacts without regional listings or logos',()=
   }
 });
 test('Tavily keeps basic search and applies recency only when requested',async()=>{
-  const bodies=[];const c={process:{env:{TAVILY_API_KEY:'fixture'}},qa:{searchAvailable:()=>true,search(){}},takeTavilySearch:async()=>true,
+  const bodies=[];const c={tavilyKeys:new (require('../provider-keys.js').ProviderKeys)(['TAVILY_API_KEY'],{env:{TAVILY_API_KEY:'fixture'}}),qa:{current:()=>null,searchAvailable:()=>true,search(){}},takeTavilySearch:async()=>true,
     TAVILY_URL:'https://fixture.invalid',AbortSignal,URL,logFailure(){},fetch:async(url,opts)=>{bodies.push(JSON.parse(opts.body));return {ok:true,json:async()=>({results:[]})};}};
   vm.runInNewContext(source.slice(source.indexOf('async function tavilySearch('),source.indexOf('async function compoundSearch(')),c);
   await c.tavilySearch('fixture',{timeRange:'week'});await c.tavilySearch('fixture');

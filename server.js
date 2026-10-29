@@ -9,6 +9,9 @@ const ABOUT = require("./about.js");
 const { limit, takeTavilySearch } = require("./limits.js");
 const stats = require("./stats.js");
 const qa = require("./synthetic-qa.js");
+const { ProviderKeys } = require("./provider-keys.js");
+const groqKeys = new ProviderKeys(["GROQ_API_KEY", "GROQ_API_KEY_2", "GROQ_API_KEY_3"]);
+const tavilyKeys = new ProviderKeys(["TAVILY_API_KEY", "TAVILY_API_KEY_3"]);
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC = path.join(__dirname, "public");
@@ -69,7 +72,8 @@ app.use("/api", (req, res, next) => { res.set("Cache-Control", "no-store"); next
 app.use(qa.middleware);
 app.get("/api/qa", (req, res) => res.json({ version: 1, synthetic_only: true,
   primary_model: CHAT_MODEL, fallback_model: FALLBACK_MODEL, speech_model: STT_MODEL,
-  budgets: qa.KEYS, output_voice_budgeted: false }));
+  budgets: qa.KEYS, output_voice_budgeted: false, provider_routing: { groq_keys: groqKeys.size, tavily_keys: tavilyKeys.size,
+    synthetic: "primary-key-only", extra_account_capacity_verified: false } }));
 
 // ---------- pages, rendered in the visitor's language ----------
 const templates = {
@@ -214,18 +218,20 @@ function sendError(res, err, name) {
 
 // ---------- Groq ----------
 async function groqChat(body, timeoutMs = 30000, stop = null) {
-  const key = process.env.GROQ_API_KEY;
-  if (!key) throw new Error("GROQ_API_KEY is not set");
-  const ticket = qa.reserveModel(body, CHAT_MODEL, FALLBACK_MODEL);
   const timeout = AbortSignal.timeout(timeoutMs);
-  const res = await fetch(GROQ_URL + "/chat/completions", {
-    method: "POST",
-    headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal: stop ? AbortSignal.any([timeout, stop]) : timeout,
-  });
-  const data = await res.json().catch(() => null);
-  qa.finishModel(ticket, data, res.status, res.headers.get("x-request-id"));
+  const signal = stop ? AbortSignal.any([timeout, stop]) : timeout;
+  const { response: res, data } = await groqKeys.run("chat:" + body.model, async (key, alias) => {
+    const ticket = qa.reserveModel(body, CHAT_MODEL, FALLBACK_MODEL);
+    if (ticket) ticket.ticket.provider_account = alias;
+    const response = await fetch(GROQ_URL + "/chat/completions", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
+      body: JSON.stringify(body), signal,
+    });
+    const data = await response.json().catch(() => null);
+    qa.finishModel(ticket, data, response.status, response.headers.get("x-request-id"));
+    return { response, data };
+  }, { primaryOnly: !!qa.current(), signal });
   if (!res.ok) throw providerError(res.status, data?.error?.message, "Groq");
   return data;
 }
@@ -267,8 +273,6 @@ app.post(
       const buf = req.body;
       if (buf.length < 2000) return res.json({ text: "" });
 
-      const key = process.env.GROQ_API_KEY;
-      if (!key) throw new Error("GROQ_API_KEY is not set");
       // "auto": the language question, where we don't know the language yet.
       const auto = req.query.lang === "auto";
 
@@ -279,14 +283,14 @@ app.post(
       form.append("response_format", "verbose_json");
       form.append("temperature", "0");
 
-      qa.audio(wavSeconds(buf));
-      const r = await fetch(GROQ_URL + "/audio/transcriptions", {
-        method: "POST",
-        headers: { Authorization: "Bearer " + key },
-        body: form,
-        signal: AbortSignal.timeout(20000),
-      });
-      const data = await r.json().catch(() => null);
+      const signal = AbortSignal.timeout(20000);
+      const { response: r, data } = await groqKeys.run("audio:" + STT_MODEL, async (key) => {
+        qa.audio(wavSeconds(buf));
+        const response = await fetch(GROQ_URL + "/audio/transcriptions", {
+          method: "POST", headers: { Authorization: "Bearer " + key }, body: form, signal,
+        });
+        return { response, data: await response.json().catch(() => null) };
+      }, { primaryOnly: !!qa.current(), signal });
       if (!r.ok) throw providerError(r.status, data?.error?.message, "Groq STT");
 
       const segments = Array.isArray(data.segments) ? data.segments : null;
@@ -358,17 +362,21 @@ app.post("/api/speak", express.json({ limit: "4kb" }), limit({ requests: 1 }), a
 
 // ---------- search: Tavily first, optional configured research fallback ----------
 async function tavilySearch(query, options = {}) {
-  const key = process.env.TAVILY_API_KEY;
-  if (!key || !qa.searchAvailable() || !(await takeTavilySearch())) return null;
-  qa.search();
-  const r = await fetch(TAVILY_URL, {
-    method: "POST",
-    headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
-    body: JSON.stringify({ query, search_depth: "basic", max_results: 5, include_answer: false,
-      ...(options.timeRange ? { time_range: options.timeRange } : {}) }),
-    signal: AbortSignal.timeout(15000),
-  });
-  const data = await r.json().catch(() => null);
+  if (!tavilyKeys.size || !qa.searchAvailable()) return null;
+  const signal = AbortSignal.timeout(15000);
+  const { response: r, data } = await tavilyKeys.run("search", async (key) => {
+    if (!(await takeTavilySearch())) throw Object.assign(new Error("Site search limit reached"), { daily: true });
+    qa.search();
+    const response = await fetch(TAVILY_URL, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
+      body: JSON.stringify({ query, search_depth: "basic", max_results: 5, include_answer: false,
+        ...(options.timeRange ? { time_range: options.timeRange } : {}) }), signal,
+    });
+    return { response, data: await response.json().catch(() => null) };
+  }, { primaryOnly: !!qa.current(), signal,
+    quotaRejection: result => result.response.status === 432 &&
+      /exceeds.*(?:plan|usage)|usage limit/i.test(String(result.data?.detail?.error || "")) });
   if (!r.ok || !data || !Array.isArray(data.results)) {
     logFailure("tavily", { status: r.status });
     return null;
@@ -658,21 +666,25 @@ app.use((err, req, res, next) => {
 
 // ---------- start-up check, so problems show in the Render logs ----------
 async function selfCheck() {
-  if (!process.env.GROQ_API_KEY) return console.error("check: GROQ_API_KEY is missing. Add it in Render > Environment.");
-  try {
-    const r = await fetch(GROQ_URL + "/models", {
-      headers: { Authorization: "Bearer " + process.env.GROQ_API_KEY },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!r.ok) return console.error("check: Groq refused the key (HTTP " + r.status + "). Check GROQ_API_KEY.");
-    const ids = ((await r.json())?.data || []).map((m) => m.id);
-    for (const m of [...new Set([CHAT_MODEL, FALLBACK_MODEL, SUMMARY_MODEL, STT_MODEL, ...(TTS_ENABLED ? [TTS_MODEL] : [])])]) {
-      console.log(`check: Groq model ${m} ${ids.includes(m) ? "is available" : "is NOT available to this key"}`);
-    }
-  } catch (err) {
-    logFailure("check: could not reach Groq", err);
-  }
-  console.log("check: Tavily key " + (process.env.TAVILY_API_KEY ? "is set" : "is missing"));
+  console.log(`check: provider routing ${groqKeys.size} unique Groq keys, ${tavilyKeys.size} unique Tavily keys; synthetic QA stays on primary keys`);
+  await groqKeys.checkEach(async (key, alias) => {
+    try {
+      const r = await fetch(GROQ_URL + "/models", {
+        headers: { Authorization: "Bearer " + key }, signal: AbortSignal.timeout(10000),
+      });
+      if (!r.ok) return console.error(`check: ${alias} refused (HTTP ${r.status})`);
+      const ids = ((await r.json())?.data || []).map(m => m.id);
+      console.log(`check: ${alias} authenticated; required models ${[CHAT_MODEL, FALLBACK_MODEL, STT_MODEL].every(m => ids.includes(m)) ? "available" : "NOT all available"}`);
+    } catch (err) { logFailure("check: " + alias, err); }
+  });
+  const usageUrl = new URL(TAVILY_URL); usageUrl.pathname = "/usage"; usageUrl.search = "";
+  await tavilyKeys.checkEach(async (key, alias) => {
+    try {
+      const r = await fetch(usageUrl, { headers: { Authorization: "Bearer " + key }, signal: AbortSignal.timeout(10000) });
+      console.log(`check: ${alias} usage authentication HTTP ${r.status}`);
+      await r.arrayBuffer(); // Discard account details; never log credentials or private provider payloads.
+    } catch (err) { logFailure("check: " + alias, err); }
+  });
   if (retiredSearchModels.has(configuredSearchModel)) {
     console.warn("check: GROQ_SEARCH_MODEL selects retired Compound; that fallback is disabled.");
   }
