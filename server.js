@@ -491,6 +491,9 @@ function systemPrompt(lang, context, agent = false) {
     `Clearly separate what is confirmed from what is only reported or announced. For health, legal or money questions, ` +
     `give general information and suggest checking with a professional.\n` +
     `Do not simply agree with the user; if the facts differ, correct them politely.\n` +
+    `Capabilities: you can answer questions and search the web, but cannot control the device, download or save files, ` +
+    `send email, or switch the site's voice between male and female. Never claim you performed those actions. ` +
+    `Explain the limitation and offer instructions when useful. Changing the spoken language is supported.\n` +
     `The user's words come from automatic speech recognition and may contain mistakes; if something is unclear, ask briefly. ` +
     `The text may sometimes contain screen reader words such as "button", "heading level 1", "browse mode", "focus mode", ` +
     `"link", or text from the web page. That is the screen reader, not the user: ignore it completely and do not reply to it.\n` +
@@ -533,19 +536,36 @@ function liveResearchPlan(history, today = new Date().toISOString().slice(0, 10)
   let text = latest;
   if (users.length > 1 && latest.length < 100 &&
       /^(and\b|what about\b|tell me more\b|more about\b|e\b|invece\b|dimmi di pi|approfondisci\b|puoi approfondire\b|et\b|en savoir plus\b|а\b|и\b|那|那么|では|それでは|じゃあ|そして)/iu.test(latest)) {
-    text = users.slice(-2).join(" ").toLowerCase();
+    // Carry the actual topic through several short follow-ups, not only the
+    // immediately preceding follow-up (which may itself contain no topic).
+    text = users.slice(-5).join(" ").normalize("NFKC").replace(/[’‘]/g, "'").toLowerCase();
   }
   const weather = /\b(weather|forecast|meteo|météo|previsioni)\b|\b(?:che|com'è|come e|come sarà|com'è stato)\s+(?:il\s+)?tempo\b|погод|времето|天气|天氣|天気|天候|気象/iu.test(text);
-  const sports = /\b(scores?|results?|fixtures?|standings|sports?|sportive?|sportivi|calcio|football|basketball|tennis|risultati|classifica|partite|résultats?|classement|matchs?)\b|результат|резултат|比分|赛果|賽果|スポーツ|試合結果|試合予定|順位|得点|スコア/iu.test(text);
+  const sports = /\b(scores?|results?|fixtures?|standings|sports?|sportive?|sportivi|calcio|football|basketball|tennis|risultat[oi]|campionat[oi]|punteggi[oi]|classifica|partite|résultats?|classement|matchs?)\b|результат|резултат|比分|赛果|賽果|スポーツ|試合結果|試合予定|順位|得点|スコア/iu.test(text);
   const research = /\b(research|studies|inventions?|assistive technology|ricer(?:ca|che)|invenzion[ei]|tecnologi[ae] assistiv[ae]|recherches?|études|inventions?|technologies d'assistance)\b|novità|исследован|изобретени|изследван|изобретени|研究|发明|發明|輔助科技|辅助技术|発明|支援技術/iu.test(text);
   const current = /\b(today|tomorrow|yesterday|latest|current|news|recent|oggi|domani|ieri|ultim[oeia]|attual[ei]|notizie|aujourd'hui|demain|hier|dernier|dernières|actualités)\b|сегодня|завтра|вчера|свеж|последн|новост|днес|утре|новини|最新|今天|明天|新闻|新聞|今日|明日|昨日|現在|ニュース|最近/iu.test(text);
   const years = text.match(/\b(?:19|20)\d{2}\b/g) || [];
   const historical = (years.length > 0 && years.every(y => Number(y) < Number(today.slice(0, 4))) && !current) ||
     /last (?:week|month|year)|scors[oaie]|semaine dernière|mois dernier|прошл|минал|去年|上个月|上個月|先週|先月|昨年/iu.test(text);
-  const vaguePlace = users.length === 1 && weather &&
-    /my (?:town|city|village|area)|mio paese|mia citt|nella mia zona|\b(?:da me|qui)\b|ma ville|mon village|мо[её]м городе|моя град|我的城市|我这里|私の町|私の街|私の地域|住んでいる町|地元/iu.test(latest);
+  const placeReference = /my (?:town|city|village|area)|mio paese|mia citt|nella mia zona|\b(?:da me|qui)\b|ma ville|mon village|мо[её]м городе|моя град|我的城市|我这里|私の町|私の街|私の地域|住んでいる町|地元/iu.test(latest);
+  const vaguePlace = users.length === 1 && weather && placeReference;
+  // The model may broaden a tool query and silently drop a small town/team.
+  // Anchor weather/sports searches in the caller's own wording. Contextual
+  // follow-ups retain the latest explicit topic as well as the newest question.
+  const anchor = users.slice(0, -1).reverse().find(s => /weather|forecast|meteo|météo|tempo|scores?|results?|football|calcio|risultat|campionat|погод|времето|天气|天氣|天気|スポーツ|試合/iu.test(s));
+  const contextual = text !== latest && anchor ? anchor + " " + users.at(-1) : users.at(-1);
   return { required: !historical && (weather || sports || current || research), vaguePlace,
+    query: (weather || sports) && !(weather && placeReference && !anchor) ? String(contextual || "").slice(0, 250) : null,
     timeRange: weather || historical ? undefined : sports ? "week" : research ? undefined : "day", today };
+}
+
+function unsupportedAction(text) {
+  const s = String(text || "").normalize("NFKC").toLowerCase();
+  if (/^(?:please\s+|per favore\s+)?(?:(?:can you|could you|puoi|potresti|peux-tu|pouvez-vous)\s+)?(?:download\b|scarica(?:re|mi)?\b|télécharge(?:r)?\b|скачай\b|изтегли\b|下载|ダウンロード)/iu.test(s.trim())) return "downloadUnavailable";
+  if (/(?:cambia|change|switch|passa|imposta|usa|mets|passe|измени|смени|поменяй|换|切换|変更|変えて)/iu.test(s) &&
+      /voce|voice|voix|голос|глас|声音|声/iu.test(s) &&
+      /maschi|femmin|\bmale\b|\bfemale\b|mascul|fémin|мужск|женск|мъжк|男性|女性|男声|女声/iu.test(s)) return "voiceChangeUnavailable";
+  return null;
 }
 
 // One assistant turn, shared by the voice site and the agent API.
@@ -554,6 +574,8 @@ function liveResearchPlan(history, today = new Date().toISOString().slice(0, 10)
 // `agent` keeps the model's text as written instead of cleaning it for speech.
 async function runChat({ lang, context = "", messages: history, stop = null, onSearching = () => {}, agent = false }) {
   const cleaned = cleanMessages(history).slice(-20);
+  const action = unsupportedAction(cleaned.filter(m => m.role === "user").at(-1)?.content);
+  if (action) return { text: I18N.t(lang, action), end: false };
   const plan = liveResearchPlan(cleaned);
   if (plan.vaguePlace) return { text: I18N.t(lang, "askWeatherPlace"), end: false };
   const messages = [{ role: "system", content: systemPrompt(lang, context, agent) }, ...cleaned];
@@ -595,7 +617,7 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
       } else if (call.function?.name === "web_search") {
         if (!announced) { onSearching(); announced = true; }
         if (stop?.aborted) throw stop.reason || new Error("stopped");
-        let query = String(args.query || "").trim().slice(0, 250);
+        let query = String(plan.query || args.query || "").trim().slice(0, 250);
         if (!query) return { text: I18N.t(lang, "liveInfoUnavailable"), end: false };
         if (plan.required) query += " (as of " + plan.today + ")";
         result = await webSearch(query, plan.required ? { timeRange: plan.timeRange, requireResults: true } : {});

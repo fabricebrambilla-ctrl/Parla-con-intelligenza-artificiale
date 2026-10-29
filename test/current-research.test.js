@@ -87,6 +87,28 @@ test('QA with no model allowance refuses unverifiable current answers',async()=>
 test('ordinary conversation remains a single model call',async()=>{
   const f=fixture({tool:false});assert.equal((await f.run('Hello, how are you?')).text,'Fixture answer.');assert.equal(f.calls.length,1);
 });
+test('Vicenza exact singular result wording and transcription typo must still search',async()=>{
+ const f=fixture({tool:false});
+ const answer=await f.run("Dimmi l'utlimo risultato dell'AC Milan in campionato serie A",{lang:'it'});
+ assert.equal(f.calls[0].tool_choice.function.name,'web_search');
+ assert.equal(answer.text,I18N.t('it','liveInfoUnavailable'));
+});
+test('weather search retains Sandrigo even when the model proposes a different city',async()=>{
+ const f=fixture();await f.run('Dimmi il meteo di oggi a Sandrigo provincia di Vicenza',{lang:'it'});
+ assert.match(f.searches[0][0],/Sandrigo/i);
+});
+test('a third follow-up retains its research topic and the complete dialogue',async()=>{
+ const f=fixture();const messages=[{role:'user',content:'New research for blind people?'},{role:'assistant',content:'A fixture study.'},{role:'user',content:'Tell me more.'},{role:'assistant',content:'Study details.'},{role:'user',content:'And its limitations?'}];
+ await f.run('',{messages});assert.equal(f.calls[0].tool_choice.function.name,'web_search');
+ assert.deepEqual(f.calls[0].messages.slice(1),messages);
+});
+test('voice and automatic-download requests never pretend to execute unsupported controls',async()=>{
+ for(const text of ['Cambia la voce da femminile a maschile','Scarica automaticamente quel file']) {
+  const f=fixture({tool:false});const reply=await f.run(text,{lang:'it'});
+  assert.equal(f.calls.length,0);
+  assert.match(reply.text,/non posso/i);
+ }
+});
 test('every language has microphone guidance, current-data fallback and location clarification',()=>{
   for(const lang of I18N.LANGS)for(const key of ['micGuide','micGuideTouch','liveInfoUnavailable','askWeatherPlace'])assert.ok(I18N.S[lang][key],`${lang}/${key}`);
 });

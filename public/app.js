@@ -326,7 +326,7 @@
   var rec = null;
   var noise = 0.004;   // background noise level, learned while recording
 
-  var micRequest = 0, restoreMicFocus = null;
+  var micRequest = 0, restoreMicFocus = null, micFocusOwner = null;
   function cancelMicFocusRestore() {
     if (restoreMicFocus) window.removeEventListener("focus", restoreMicFocus);
     restoreMicFocus = null;
@@ -334,16 +334,24 @@
   function clearMicPermission() {
     cancelMicFocusRestore();
     micPermission.textContent = "";
-    if (document.activeElement !== micPermission) return;
+    // Firefox may return DOM focus to the document after its permission panel.
+    // Restore only focus we owned; never displace a link/control the user chose.
+    function ownsFocus() {
+      return document.activeElement === micPermission || (micFocusOwner === micRequest &&
+        (document.activeElement === document.body || document.activeElement === document.documentElement));
+    }
+    if (!ownsFocus()) { micFocusOwner = null; return; }
     var my = session, request = micRequest;
     restoreMicFocus = function () {
-      if (my !== session || request !== micRequest || document.activeElement !== micPermission) {
+      if (my !== session || request !== micRequest || !ownsFocus()) {
         cancelMicFocusRestore();
+        micFocusOwner = null;
         return;
       }
       // Browser permission controls may still own focus when the request settles.
       if (!document.hasFocus()) return;
       cancelMicFocusRestore();
+      micFocusOwner = null;
       talkBtn.focus({ preventScroll: true });
     };
     window.addEventListener("focus", restoreMicFocus);
@@ -351,6 +359,7 @@
   }
   async function openMic() {
     cancelMicFocusRestore();
+    micFocusOwner = null;
     var my = session, request = ++micRequest, acquired = null, audioSource = null;
     function current() { return active && my === session && request === micRequest; }
     function cancelled() { var e = new Error("Microphone request cancelled"); e.name = "AbortError"; return e; }
@@ -364,7 +373,10 @@
         micPermission.textContent = tt("micPending");
         // Focus once, before the browser opens its prompt. Never schedule a later
         // focus move that could interrupt the browser's permission controls.
-        if (document.hasFocus()) micPermission.focus({ preventScroll: true });
+        if (document.hasFocus()) {
+          micPermission.focus({ preventScroll: true });
+          if (document.activeElement === micPermission) micFocusOwner = request;
+        }
       }
       acquired = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true,

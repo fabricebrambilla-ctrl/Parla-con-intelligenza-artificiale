@@ -11,7 +11,7 @@ function microphone(permission) {
  const media={getTracks:()=>tracks,getAudioTracks:()=>[{getSettings:()=>({sampleRate:48000})}]};
  const context={createMediaStreamSource:()=>({connect(){},disconnect(){}}),audioWorklet:{addModule:async()=>{}},createGain:()=>({gain:{},connect(){return this;},disconnect(){}}),destination:{}};
  const events=[],focusListeners=new Set();
- const document={activeElement:null,foreground:true,hasFocus(){return this.foreground;}};
+ const document={activeElement:null,body:{},documentElement:{},foreground:true,hasFocus(){return this.foreground;}};
  const talkBtn={focus(){events.push('focus Talk');document.activeElement=this;}};
  const micPermission={textContent:'',focus(){events.push('focus explanation');document.activeElement=this;}};
  document.activeElement=talkBtn;
@@ -38,6 +38,18 @@ test('ending while prompt is pending stops late microphone stream',async()=>{
 });
 test('permission completion preserves an explicit user focus change',async()=>{
  const {c,request,media}=microphone();const done=c.openMic();const link={};c.document.activeElement=link;request.resolve(media);await done;assert.equal(c.document.activeElement,link);
+});
+test('Firefox returning permission focus to the document restores Talk, not an empty guidance node',async()=>{
+ const {c,request,media}=microphone();const done=c.openMic();
+ c.document.activeElement=c.document.body;
+ request.resolve(media);await done;
+ assert.equal(c.document.activeElement,c.talkBtn);
+});
+test('a delayed Firefox document-focus return waits until the browser prompt has closed',async()=>{
+ const {c,request,media,returnToPage}=microphone();const done=c.openMic();
+ c.document.foreground=false;c.document.activeElement=c.document.body;
+ request.resolve(media);await done;assert.equal(c.document.activeElement,c.document.body);
+ returnToPage();assert.equal(c.document.activeElement,c.talkBtn);
 });
 test('focus restoration waits while the browser permission prompt owns focus',async()=>{
  const {c,request,media,events,returnToPage,focusListeners}=microphone();const done=c.openMic();c.document.foreground=false;
