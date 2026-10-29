@@ -25,6 +25,27 @@ test('current sports search carries current date and recency filter',async()=>{
   const f=fixture();await f.run('What are the latest football scores?');
   assert.match(f.searches[0][0],/as of \d{4}-\d{2}-\d{2}/);assert.equal(f.searches[0][1].timeRange,'week');
 });
+for(const text of ['Mi dai informazioni sportive?','Che tempo fa a Thiene?','Novità nella ricerca per la cecità?']) {
+  test(`ordinary Italian research wording cannot return an unsearched answer: ${text}`,async()=>{
+    const searching=fixture();await searching.run(text,{lang:'it'});
+    assert.equal(searching.calls[0].tool_choice.function.name,'web_search');
+    assert.equal(searching.searches[0][1].requireResults,true);
+    const ignoring=fixture({tool:false});
+    assert.equal((await ignoring.run(text,{lang:'it'})).text,I18N.t('it','liveInfoUnavailable'));
+  });
+}
+test('colloquial weather without a location asks instead of guessing',async()=>{
+  const f=fixture();assert.equal((await f.run('Che tempo fa qui?',{lang:'it'})).text,I18N.t('it','askWeatherPlace'));
+  assert.equal(f.calls.length,0);
+});
+for(const [lang,text] of Object.entries({en:'What research could help blind people?',it:'Nuove invenzioni per persone non vedenti?',fr:'Quelles recherches pourraient aider les personnes aveugles ?',bg:'Нови изследвания за незрящи хора?',ru:'Новые исследования для незрячих людей?',zh:'帮助盲人的新研究有哪些？',ja:'視覚障害者のための新しい研究は？'})) {
+  test(`${lang}: research requires actual sources without a one-day publication cutoff`,async()=>{
+    const f=fixture();await f.run(text,{lang});
+    assert.equal(f.calls[0].tool_choice.function.name,'web_search');
+    assert.equal(f.searches[0][1].requireResults,true);
+    assert.equal(f.searches[0][1].timeRange,undefined);
+  });
+}
 test('model ignoring the forced search cannot return an unverified current answer',async()=>{
   const f=fixture({tool:false});assert.equal((await f.run('Weather in Bassano?')).text,I18N.t('en','liveInfoUnavailable'));
   assert.equal(f.calls.length,1);

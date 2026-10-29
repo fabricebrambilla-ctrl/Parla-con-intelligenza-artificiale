@@ -60,8 +60,16 @@ class Ledger:
     A crashed/unknown POST keeps its whole reservation. It is not replayed.
     The lock spans the live run, so concurrent launches cannot double-spend.
     """
-    def __init__(self, folder, clock):
+    def __init__(self, folder, clock, model_calls_per_turn=2, fraction=FRACTION):
+        if type(model_calls_per_turn) is not int or not 1 <= model_calls_per_turn <= 4:
+            raise ValueError("Per-turn model allowance must be between one and four calls.")
         self.folder, self.clock = Path(folder), clock
+        self.model_calls_per_turn = model_calls_per_turn
+        if not math.isfinite(fraction) or not 0 < fraction <= FRACTION:
+            raise ValueError("Budget fraction must be positive and no higher than 75 percent.")
+        self.fraction = fraction
+        self.caps = {k: math.floor(v * fraction) for k,v in DAILY.items()}
+        self.month_search_cap = math.floor(MONTH_SEARCH_CAP * fraction / FRACTION)
         self.path = self.folder / "budget.json"
         self.lock = None
         self.data = None
@@ -86,7 +94,7 @@ class Ledger:
 
     def remaining(self):
         now = self.clock.now()
-        remaining = dict(CAPS)
+        remaining = dict(self.caps)
         monthly_searches = 0
         for event in self.data["events"]:
             at = datetime.fromisoformat(event["at"])
@@ -98,7 +106,7 @@ class Ledger:
                     remaining[k] -= spent[k]
             if at.strftime("%Y-%m") == now.strftime("%Y-%m"):
                 monthly_searches += spent["searches"]
-        remaining["searches"] = min(remaining["searches"], MONTH_SEARCH_CAP - monthly_searches)
+        remaining["searches"] = min(remaining["searches"], self.month_search_cap - monthly_searches)
         return {k: max(0, n) for k, n in remaining.items()}
 
     def reserve(self, path, audio_seconds=None):
@@ -114,7 +122,7 @@ class Ledger:
                 raise StopRun("Synthetic answer-model budget reached.")
             # The backend bounds every hidden model call against this envelope.
             # A network failure conservatively keeps the full allowance.
-            allowed.update(primary_requests=min(2, left["primary_requests"]),
+            allowed.update(primary_requests=min(self.model_calls_per_turn, left["primary_requests"]),
                            primary_tokens=left["primary_tokens"], searches=min(1, left["searches"]))
         else:
             raise StopRun("Unbudgeted paid endpoint.")
@@ -137,32 +145,44 @@ class Ledger:
 
     def snapshot(self):
         left = self.remaining()
-        return {"daily_limits_supplied_by_owner": DAILY, "fraction": FRACTION, "caps": CAPS,
+        return {"daily_limits_supplied_by_owner": DAILY, "fraction": self.fraction, "caps": self.caps,
                 "remaining": left, "accounting_scope": "This runner/shared state only; not other website users.",
                 "window": "rolling 24 hours; monthly searches additionally calendar-month limited",
-                "monthly_search_cap": MONTH_SEARCH_CAP}
+                "monthly_search_cap": self.month_search_cap}
 
-def planned_user_count(remaining):
+def expected_visit_tokens(question_min=QUESTION_MIN, question_max=QUESTION_MAX):
+    mean_questions = (question_min + question_max) / 2
+    # Long contextual visits repeat more history. This is a conservative planning
+    # estimate only; actual provider accounting still controls every dispatch.
+    return EXPECTED_TOKENS_PER_VISIT * mean_questions / EXPECTED_QUESTIONS_PER_VISIT * max(1, mean_questions / EXPECTED_QUESTIONS_PER_VISIT)
+
+def planned_user_count(remaining, question_min=QUESTION_MIN, question_max=QUESTION_MAX):
     # Primary tokens are the expected bottleneck, even though failed fallback
     # calls and tool rounds are separately charged at execution.
+    mean_questions = (question_min + question_max) / 2
+    expected_tokens = expected_visit_tokens(question_min, question_max)
     return max(0, min(100, math.floor(min(
-        remaining["primary_tokens"] / (EXPECTED_TOKENS_PER_VISIT * 1.05),
-        remaining["primary_requests"] / (2 * EXPECTED_QUESTIONS_PER_VISIT * 1.05),
-        remaining["speech_requests"] / (EXPECTED_QUESTIONS_PER_VISIT * 1.05),
-        remaining["audio_seconds"] / (15 * EXPECTED_QUESTIONS_PER_VISIT * 1.05)))))
+        remaining["primary_tokens"] / (expected_tokens * 1.05),
+        remaining["primary_requests"] / (2 * mean_questions * 1.05),
+        remaining["speech_requests"] / (mean_questions * 1.05),
+        remaining["audio_seconds"] / (16 * mean_questions * 1.05)))))
 
-def visit_questions(scenario, rng):
-    # randint uses an unbiased integer draw; each count has probability 1/5.
-    # Do not balance buckets, reject repeats, or cycle through the five counts.
-    count = rng.randint(QUESTION_MIN, QUESTION_MAX)
+def visit_questions(scenario, rng, question_min=QUESTION_MIN, question_max=QUESTION_MAX):
+    # randint is an independent uniform draw over the selected inclusive range.
+    # Do not balance buckets, reject repeats, or cycle through counts.
+    count = rng.randint(question_min, question_max)
     texts = list(scenario["turns"])
     if len(texts) < count:
-        texts += rng.sample(vt.FOLLOW_UPS, count - len(texts))
+        needed = count - len(texts)
+        texts += rng.sample(vt.FOLLOW_UPS, min(needed, len(vt.FOLLOW_UPS)))
+        if len(texts) < count:
+            texts += rng.choices(vt.FOLLOW_UPS, k=count-len(texts))
     short = vt.SHORT_TURNS.get(scenario["name"], [])
     return [{"text": t, "short_text": short[n] if n < len(short) else None}
             for n, t in enumerate(texts[:count])]
 
-def make_daily_plan(start, hours, count, pool, rng, seed, zone):
+def make_daily_plan(start, hours, count, pool, rng, seed, zone,
+                    question_min=QUESTION_MIN, question_max=QUESTION_MAX, batch=False):
     if start.tzinfo is None or hours <= 0 or count < 1:
         raise ValueError("Invalid schedule")
     end = start + timedelta(hours=hours)
@@ -181,9 +201,9 @@ def make_daily_plan(start, hours, count, pool, rng, seed, zone):
     for i, identity in enumerate(identities):
         scenario = rng.choice(vt.SCENARIOS)
         visits.append(dict(agent_id=identity, conversation_id=str(uuid.uuid4()),
-            arrival=(start + timedelta(seconds=rng.uniform(i * span, (i + 1) * span))).isoformat(),
+            arrival=(start if batch else start + timedelta(seconds=rng.uniform(i * span, (i + 1) * span))).isoformat(),
             scenario=scenario["name"], returning=identity in reused,
-            questions=visit_questions(scenario, rng)))
+            questions=visit_questions(scenario, rng, question_min, question_max)))
     # First-ever launch bootstraps returning behaviour within the same day;
     # the returned visit has fresh context and different questions.
     missing = returning_count - len(reused)
@@ -192,11 +212,11 @@ def make_daily_plan(start, hours, count, pool, rng, seed, zone):
         first = datetime.fromisoformat(original["arrival"])
         lower = max(first + timedelta(seconds=min(3600, window * .15)), start + timedelta(seconds=window * .5))
         upper = end - timedelta(seconds=reserve)
-        when = lower + (upper - lower) * rng.random()
+        when = start if batch else lower + (upper - lower) * rng.random()
         scenario = rng.choice(vt.SCENARIOS)
         visits.append(dict(agent_id=original["agent_id"], conversation_id=str(uuid.uuid4()),
             arrival=when.isoformat(), scenario=scenario["name"], returning=True,
-            questions=visit_questions(scenario, rng)))
+            questions=visit_questions(scenario, rng, question_min, question_max)))
     visits.sort(key=lambda x: x["arrival"])
     return {"synthetic": True, "seed": seed, "timezone": zone,
             "start": start.isoformat(), "end": end.isoformat(),
@@ -204,9 +224,10 @@ def make_daily_plan(start, hours, count, pool, rng, seed, zone):
             "local_end": end.astimezone(ZoneInfo(zone)).isoformat(),
             "hours": hours, "unique_identities": count, "new_identities": count - len(reused),
             "returning_identities": returning_count, "retention_fraction_planned": returning_count / count,
-            "visits": visits, "expected_tokens_per_visit": EXPECTED_TOKENS_PER_VISIT,
-            "question_count_distribution": {"minimum": QUESTION_MIN, "maximum": QUESTION_MAX,
-                "probability_each": 1 / (QUESTION_MAX - QUESTION_MIN + 1), "repeats_allowed": True},
+            "visits": visits, "mode": "batch" if batch else "scheduled",
+            "expected_tokens_per_visit": expected_visit_tokens(question_min, question_max),
+            "question_count_distribution": {"minimum": question_min, "maximum": question_max,
+                "probability_each": 1 / (question_max - question_min + 1), "repeats_allowed": True},
             "user_count_is_a_budget_planning_estimate": True}
 
 def started_visits(folder):
@@ -241,7 +262,7 @@ def carry_unstarted_into_plan(plan, sources, output_root, rng):
             if cid in seen or cid in started:
                 excluded.append({"conversation_id": cid, "reason": "already started or duplicate source"})
                 continue
-            if not QUESTION_MIN <= len(visit["questions"]) <= QUESTION_MAX:
+            if not 1 <= len(visit["questions"]) <= 10:
                 raise ValueError("Carryover question count is outside the current range.")
             seen.add(cid)
             row = copy.deepcopy(visit)
@@ -276,16 +297,20 @@ def update_remaining_plan(plan, folder, rng, seed):
     started = started_visits(folder)
     scenarios = {s["name"]: s for s in vt.SCENARIOS}
     changes = []
+    distribution = plan.get("question_count_distribution", {})
+    question_min, question_max = distribution.get("minimum",QUESTION_MIN), distribution.get("maximum",QUESTION_MAX)
+    if not 1 <= question_min <= question_max <= 10:
+        raise StopRun("Invalid saved question range; refusing to change the plan.")
     for visit in plan["visits"]:
         if visit["conversation_id"] in started:
             continue
         old_count = len(visit["questions"])
-        visit["questions"] = visit_questions(scenarios[visit["scenario"]], rng)
+        visit["questions"] = visit_questions(scenarios[visit["scenario"]], rng, question_min, question_max)
         changes.append({"conversation_id": visit["conversation_id"], "before": old_count,
                         "after": len(visit["questions"])})
     plan["seed"] = seed
-    plan["question_count_distribution"] = {"minimum": QUESTION_MIN, "maximum": QUESTION_MAX,
-        "probability_each": 1 / (QUESTION_MAX - QUESTION_MIN + 1), "repeats_allowed": True}
+    plan["question_count_distribution"] = {"minimum": question_min, "maximum": question_max,
+        "probability_each": 1 / (question_max - question_min + 1), "repeats_allowed": True}
     return changes
 
 class DailyJournal(vt.Journal):
@@ -335,8 +360,12 @@ class DailyClient(vt.Client):
                 self.ledger.settle(event, row.get("qa_usage"))
 
 def wait_until(target, deadline, clock):
-    while clock.now() < min(target, deadline):
-        clock.sleep(min(30, (min(target, deadline) - clock.now()).total_seconds()))
+    while True:
+        # Read the clock once: it can cross the target between two reads.
+        remaining = (min(target, deadline) - clock.now()).total_seconds()
+        if remaining <= 0:
+            return
+        clock.sleep(min(30, remaining))
 
 def do_visit(visit, args, client, folder, rng, clock, deadline, pool, pool_path, last_chat):
     identity, cid = visit["agent_id"], visit["conversation_id"]
@@ -409,6 +438,9 @@ def execute(plan, args, folder, ledger, pool, pool_path, clock, journal):
     capability = client.call("/api/qa", agent_id="synthetic-preflight")
     if capability.get("version") != 1 or tuple(capability.get(k) for k in ("primary_model", "fallback_model", "speech_model")) != MODELS:
         raise StopRun("Backend QA guard is missing or models changed. No paid requests sent.")
+    if plan.get("mode") == "batch" and (capability.get("synthetic_only") is not True or
+            set(capability.get("budgets", [])) != set(CAPS)):
+        raise StopRun("Batch requires explicit synthetic-only QA and all budget fields. No provider requests sent.")
     completed, skipped, reason = len(finished), [], None
     last_chat = [clock.now() - timedelta(minutes=1)]
     try:
@@ -441,8 +473,9 @@ def execute(plan, args, folder, ledger, pool, pool_path, clock, journal):
         atomic(folder / "daily-summary.json", dict(synthetic=True, visits_completed=completed, skipped=skipped,
             stop_reason=reason, budget=ledger.snapshot(), planned_end=plan["end"], no_post_retries=True,
             output_voice="Listening time simulated; no unbudgeted Fish/Orpheus requests."))
-    # Honour eight elapsed hours even after the planned traffic/budget is used.
-    wait_until(deadline, deadline, clock)
+    # Batch mode exits on completion/budget stop; scheduled mode keeps its window.
+    if plan.get("mode") != "batch":
+        wait_until(deadline, deadline, clock)
     return completed
 
 def parser():
@@ -451,6 +484,13 @@ def parser():
     p.add_argument("--resume", type=Path, help="resume a saved plan after stopping the old process; keep its deadline and skip started visits")
     p.add_argument("--carry-unstarted", type=Path, nargs="+", help="add never-started visits from expired plans to a fresh schedule; preserve IDs, actual timestamps and shared budgets")
     p.add_argument("--hours", type=float, default=8)
+    p.add_argument("--batch", action="store_true", help="sequential visits now; exit when done instead of spreading arrivals or idling")
+    p.add_argument("--questions-min", type=int, default=QUESTION_MIN)
+    p.add_argument("--questions-max", type=int, default=QUESTION_MAX)
+    p.add_argument("--budget-fraction", type=float, default=FRACTION,
+                   help="shared-ledger fraction; may reduce the existing 75%% ceiling, never reset it")
+    p.add_argument("--model-calls-per-turn", type=int, choices=range(1,5), default=2,
+                   help="reserve up to this many model/tool rounds inside the unchanged shared request/token caps")
     p.add_argument("--users", type=int, help="optional smaller override of the automatic budget plan")
     p.add_argument("--timezone", default="Europe/Zurich")
     p.add_argument("--base-url", default="https://talk-with-ai-8xjh.onrender.com")
@@ -467,10 +507,16 @@ def main(argv=None):
     args = parser().parse_args(argv)
     if args.resume and args.carry_unstarted:
         raise SystemExit("Choose either --resume or --carry-unstarted.")
+    if args.batch and (args.resume or args.carry_unstarted):
+        raise SystemExit("Batch mode starts a fresh plan; no old requests/visits are replayed.")
+    if not 1 <= args.questions_min <= args.questions_max <= 10:
+        raise SystemExit("Question bounds must satisfy 1 <= minimum <= maximum <= 10.")
     saved_plan = None
     if args.resume:
         saved_plan = json.loads(args.resume.resolve().read_text())
         args.base_url, args.timezone = saved_plan["base_url"], saved_plan["timezone"]
+        args.model_calls_per_turn = saved_plan.get("model_calls_per_turn", 2)
+        args.budget_fraction = saved_plan.get("budget",{}).get("fraction",FRACTION)
         if args.users is not None:
             raise SystemExit("--users cannot replace identities in a resumed plan.")
     if not 0 < args.hours <= 8 or args.timeout <= 0 or not 0 <= args.noise <= .02:
@@ -489,7 +535,7 @@ def main(argv=None):
     pool_path = args.state.resolve() / "identities.json"
     pool = json.loads(pool_path.read_text()) if pool_path.exists() else {"users": {}}
     journal = None
-    with Ledger(args.state.resolve(), clock) as ledger:
+    with Ledger(args.state.resolve(), clock, args.model_calls_per_turn, args.budget_fraction) as ledger:
         if saved_plan:
             if datetime.fromisoformat(saved_plan["end"]) <= start:
                 print("The original deadline has passed. No requests sent.")
@@ -507,13 +553,13 @@ def main(argv=None):
                         (folder / (name + ".before-resume-" + backup_id)).write_bytes(original.read_bytes())
                 (folder / "failure.txt").unlink(missing_ok=True)
                 append(folder / "schedule-updates.jsonl", dict(at=start.isoformat(), seed=seed,
-                    reason="Owner requested independent uniform 1–5 questions", changes=changes,
+                    reason="Preserve the saved independent uniform question range", changes=changes,
                     original_deadline=plan["end"], no_started_visits_replayed=True))
         else:
             # A catch-up run retains today's full original daily cohort. The
             # shared rolling ledger still decides whether each POST can run;
             # queueing visits does not create additional provider allowance.
-            count = planned_user_count(CAPS if args.carry_unstarted else ledger.remaining())
+            count = planned_user_count(ledger.caps if args.carry_unstarted else ledger.remaining(), args.questions_min, args.questions_max)
             if args.users is not None:
                 if not 1 <= args.users <= count:
                     raise SystemExit(f"--users must be between 1 and the current estimate ({count}).")
@@ -521,8 +567,10 @@ def main(argv=None):
             if count < 1:
                 print("No budget remains for another planned visit. Shared state was preserved.")
                 return 0
-            plan = make_daily_plan(start, args.hours, count, pool, rng, seed, args.timezone)
+            plan = make_daily_plan(start, args.hours, count, pool, rng, seed, args.timezone,
+                                   args.questions_min, args.questions_max, args.batch)
             plan.update(run_id=run_id, base_url=args.base_url, budget=ledger.snapshot())
+            plan["model_calls_per_turn"] = args.model_calls_per_turn
             if args.carry_unstarted:
                 carry_unstarted_into_plan(plan, args.carry_unstarted, args.out, rng)
                 count = plan["unique_identities"]
@@ -531,8 +579,10 @@ def main(argv=None):
         print(f"Plan: {count} identities, {len(plan['visits'])} visits, "
               f"{sum(len(v['questions']) for v in plan['visits'])} questions; "
               f"{plan['local_start']} to {plan['local_end']}", flush=True)
-        print(f"Budget ceiling: {CAPS}; token usage may end traffic before every visit completes.", flush=True)
+        print(f"Budget ceiling: {ledger.caps}; token usage may end traffic before every visit completes.", flush=True)
         print(f"Results: {folder}", flush=True)
+        if args.batch:
+            print("Sequential synthetic batch: no scheduled arrival delays or end-of-window idle; rate/listening pauses retained. End time is a safety deadline only.", flush=True)
         if args.carry_unstarted:
             print(f"Catch-up: {plan['carried_visits']} never-started visits plus {plan['today_visits']} today's visits. "
                   "Original dates are provenance only. No completed/partial visits replayed; no extra budget.", flush=True)

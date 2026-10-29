@@ -1,5 +1,15 @@
 # Eight-hour synthetic QA runner
 
+## Immediate sequential batch, added 28 October
+
+The owner requested more distinct test identities and fewer questions, without an eight-hour arrival schedule. Run `sh run-batch-now.command` only when no other run is active and after checking today's reservation and remaining provider allowance. The batch uses the same identities, rolling budget, synthetic labels and no-retry rules as the daily runner. It independently samples 1 or 2 questions per visit and plans up to 81 identities with a fresh 75% ledger allowance, including about 5% returning identities. This is a planning estimate, not a completion guarantee or human adoption count.
+
+Visits are processed sequentially as soon as the preceding visit completes. Real audio generation, recording/listening pauses and at least 60 seconds between answer requests remain. There is no randomized multi-hour arrival schedule and no idle wait at the end. The four-hour value is a maximum safety deadline; the process exits earlier when its queue finishes, its budget is exhausted or a provider/accounting error occurs. No old partial visits are replayed. Do not launch another copy while it is running. The normal eight-hour command is unchanged.
+
+The shorter profile estimates tokens per visit in proportion to the expected question count. Actual usage guards still reserve before every request, verify returned accounting and stop on errors. Remote output speech and summaries are excluded. All recorded provider latency, token usage, status, IDs and errors remain actual measurements. No extra accounts, paid fallback or key rotation is used.
+
+On 29 October the immediate batch launcher reserves at most four model calls per answer (`--model-calls-per-turn 4`) to cover search/tool rounds and the backend's existing malformed-tool recovery. The earlier two-call envelope stopped two batches after an extra model call was refused, despite remaining daily allowance. This is a per-answer reservation inside the same 750-request and 150,000-token shared ceilings, not extra daily quota. It clamps to remaining requests, settles only verified usage and never replays a failed POST. Failed/unmeasured usage remains conservatively charged. The ordinary eight-hour runner keeps its two-call default. Restoring a saved plan preserves that plan's allowance. All provider, quota and accounting stops remain in place.
+
 Run this once each morning in Terminal on this Mac:
 
 ```sh
@@ -12,7 +22,7 @@ Or, after downloading the folder elsewhere, open Terminal in that folder and run
 sh run-eight-hours.command
 ```
 
-Requires Python 3.11+, macOS `say`, and `afconvert`. No Python packages or API keys are needed. Keep the Mac powered, its **lid open**, and Terminal running. The launcher prevents idle sleep; the display can turn off. Closing the lid can still suspend execution. Ctrl+C stops the runner. Nothing is scheduled automatically, and this command does not install a background service.
+Requires Python 3.11+, macOS `say`, and `afconvert`. No Python packages or API keys are needed. Keep the Mac powered, its **lid open**, and Terminal running. The launcher prevents idle sleep; the display can turn off. Closing the lid can still suspend execution. Ctrl+C stops a manually launched runner. This command itself does not install a background service. Fabrice’s local Codex automation now checks and launches at most one free-only test each morning at 08:00 Europe/Zurich; it requires this Mac awake, connected and Codex running. See `../app-and-outreach-2026-10-27/daily-tester-setup.md`. Do not manually launch another copy while a scheduled run is active.
 
 ## Daily and weekly volume
 
@@ -113,3 +123,22 @@ After an old plan has expired, `--carry-unstarted /absolute/path/to/old/plan.jso
 Use the same `daily-state` and `daily-results` folders. The new visits and carry-over share the same rolling budget. The 5% return rule applies to each original daily cohort; combining cohorts can change the combined ratio. The larger queue may not finish before the budget or deadline stops it. This mode cannot be combined with `--resume`, cannot use an unexpired plan or a different site, and cannot run beside another copy using the same state.
 
 On 26 October, the authorized catch-up combined 26 never-started visits with 40 visits planned for today. It scheduled 66 visits and 65 distinct UUIDs from 13:27 to 21:27 Europe/Zurich, subject to the remaining budget. Do not launch a second copy while that process is active.
+
+
+## 29 October scheduled outcome review
+
+The owner-requested 02:49 Swiss sequential batch completed five visits and five answers, then stopped at 02:57 on a local `sleep length must be non-negative` error. The wait loop read the clock twice and could cross its target between reads. It now uses one reading per iteration and returns once the wait is due. A deterministic target-crossing regression and the full local stand-in suite passed twice, 19 checks each run, with no real provider requests. Budgets, identity state and original journals are preserved. The 08:00 scheduled review did not launch another run because a run had already occurred on this Zurich calendar date. No failed/partial visit was resumed or replayed.
+
+## 29 October: 70% profile with 3–10 questions
+
+Use `sh run-eight-hours-70.command` only after checking no runner is active and provider eligibility remains free-only. It uses the same identities and rolling ledger as every other run. No quota reset, account rotation, carry-over or POST replay.
+
+Each visit independently samples 3 through 10 questions, each with probability 1/8 (mean 6.5). Real local speech audio independently targets 5–25 seconds. Repeats are allowed. Listening and rate pauses remain real elapsed waits. Visits are spread over eight hours from launch. Approximately 5% returning identities are rounded to whole people and the actual ratio is reported.
+
+At 70% the confirmed single-account ceilings are 700 primary requests / 140,000 primary tokens, 1,400 transcriptions / 20,160 billed audio seconds, 23 searches per rolling day and 700 per calendar month. The backup-model ceiling is also 700/140,000, but normal QA reserves zero backup allowance. Actual usage can stop the plan early; 70% is a ceiling, not a consumption target. Other visitors consume the provider allowance outside this local ledger.
+
+Longer contextual visits cost more tokens: the planner now scales its estimate for repeated history. A fresh single-account budget estimates eight identities; a 29 October preview with retained usage estimated three identities and 17 sampled questions. Counts are planning estimates, not usage or real adoption.
+
+The owner supplied three Groq variable names and two Tavily names. The deployed code does not yet pool them. Three keys do not establish three organization allowances. Groq restricts use intended to avoid fees; Tavily requires permission for third-party key sharing. A hypothetical three-organization total would be 2,100 primary requests / 420,000 primary tokens and 4,200 transcriptions / 60,480 audio seconds at 70%, but those totals are NOT enabled or verified capacity. Two separately eligible Tavily accounts would hypothetically provide 1,400 monthly basic searches at 70%, about 46/day over a 30-day month. Do not use these hypothetical totals to launch traffic.
+
+Official sources: https://console.groq.com/docs/rate-limits ; https://console.groq.com/docs/legal/services-agreement (6.3) ; https://www.tavily.com/terms (2, 3.1) ; https://docs.tavily.com/documentation/api-credits .

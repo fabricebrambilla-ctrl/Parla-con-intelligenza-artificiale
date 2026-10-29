@@ -521,22 +521,23 @@ function cleanMessages(list) {
 // This is a conservative safeguard, not a complete natural-language classifier.
 function liveResearchPlan(history, today = new Date().toISOString().slice(0, 10)) {
   const users = history.filter(m => m.role === "user").map(m => m.content);
-  const latest = String(users.at(-1) || "").toLowerCase();
+  const latest = String(users.at(-1) || "").normalize("NFKC").replace(/[’‘]/g, "'").toLowerCase();
   let text = latest;
   if (users.length > 1 && latest.length < 100 &&
-      /^(and\b|what about\b|tell me more\b|e\b|invece\b|dimmi di pi|et\b|а\b|и\b|那|那么|では|それでは|じゃあ|そして)/iu.test(latest)) {
+      /^(and\b|what about\b|tell me more\b|more about\b|e\b|invece\b|dimmi di pi|approfondisci\b|puoi approfondire\b|et\b|en savoir plus\b|а\b|и\b|那|那么|では|それでは|じゃあ|そして)/iu.test(latest)) {
     text = users.slice(-2).join(" ").toLowerCase();
   }
-  const weather = /\b(weather|forecast|meteo|météo|previsioni)\b|погод|времето|天气|天氣|天気|天候|気象/iu.test(text);
-  const sports = /\b(scores?|results?|fixtures?|standings|risultati|classifica|partite|notizie sportive|résultats?|classement|matchs?)\b|результат|резултат|比分|赛果|賽果|スポーツ|試合結果|試合予定|順位|得点|スコア/iu.test(text);
+  const weather = /\b(weather|forecast|meteo|météo|previsioni)\b|\b(?:che|com'è|come e|come sarà|com'è stato)\s+(?:il\s+)?tempo\b|погод|времето|天气|天氣|天気|天候|気象/iu.test(text);
+  const sports = /\b(scores?|results?|fixtures?|standings|sports?|sportive?|sportivi|calcio|football|basketball|tennis|risultati|classifica|partite|résultats?|classement|matchs?)\b|результат|резултат|比分|赛果|賽果|スポーツ|試合結果|試合予定|順位|得点|スコア/iu.test(text);
+  const research = /\b(research|studies|inventions?|assistive technology|ricer(?:ca|che)|invenzion[ei]|tecnologi[ae] assistiv[ae]|recherches?|études|inventions?|technologies d'assistance)\b|novità|исследован|изобретени|изследван|изобретени|研究|发明|發明|輔助科技|辅助技术|発明|支援技術/iu.test(text);
   const current = /\b(today|tomorrow|yesterday|latest|current|news|recent|oggi|domani|ieri|ultim[oeia]|attual[ei]|notizie|aujourd'hui|demain|hier|dernier|dernières|actualités)\b|сегодня|завтра|вчера|свеж|последн|новост|днес|утре|новини|最新|今天|明天|新闻|新聞|今日|明日|昨日|現在|ニュース|最近/iu.test(text);
   const years = text.match(/\b(?:19|20)\d{2}\b/g) || [];
   const historical = (years.length > 0 && years.every(y => Number(y) < Number(today.slice(0, 4))) && !current) ||
     /last (?:week|month|year)|scors[oaie]|semaine dernière|mois dernier|прошл|минал|去年|上个月|上個月|先週|先月|昨年/iu.test(text);
   const vaguePlace = users.length === 1 && weather &&
-    /my (?:town|city|village|area)|mio paese|mia citt|nella mia zona|ma ville|mon village|мо[её]м городе|моя град|我的城市|我这里|私の町|私の街|私の地域|住んでいる町|地元/iu.test(latest);
-  return { required: !historical && (weather || sports || current), vaguePlace,
-    timeRange: weather || historical ? undefined : sports ? "week" : "day", today };
+    /my (?:town|city|village|area)|mio paese|mia citt|nella mia zona|\b(?:da me|qui)\b|ma ville|mon village|мо[её]м городе|моя град|我的城市|我这里|私の町|私の街|私の地域|住んでいる町|地元/iu.test(latest);
+  return { required: !historical && (weather || sports || current || research), vaguePlace,
+    timeRange: weather || historical ? undefined : sports ? "week" : research ? undefined : "day", today };
 }
 
 // One assistant turn, shared by the voice site and the agent API.
