@@ -826,6 +826,16 @@
     }
   }
 
+  // A remembered guide is not a permission grant. Query again after every Start;
+  // browsers can revoke grants or issue one-visit permissions at any time.
+  async function microphonePermissionState() {
+    if (!navigator.permissions || !navigator.permissions.query) return "unknown";
+    try {
+      var result = await navigator.permissions.query({ name: "microphone" });
+      return result.state;
+    } catch (e) { return "unknown"; }
+  }
+
   async function startConversation(withContext) {
     if (active) return;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.AudioWorkletNode) {
@@ -873,9 +883,13 @@
     // microphone access or language recording. A new notice version refreshes
     // the old, incomplete notice without saving conversation content.
     var firstPrivacyNotice = get("privacyNoticeVersion") !== "2026-10-26";
-    var firstMicGuide = get("micPermissionGuide") !== "2026-10-28";
+    var permissionState = await microphonePermissionState();
+    if (my !== session) return;
+    if (permissionState === "denied") { giveUp("errMicDenied"); return; }
+    var firstMicGuide = permissionState !== "granted" &&
+      (permissionState === "prompt" || get("micPermissionGuide") !== "2026-11-13");
     var disclosure = tt("aiDisclosure") + (firstPrivacyNotice ? " " + tt("notice") : "") +
-      (firstMicGuide ? " " + tt("micGuide") + (IS_TOUCH ? " " + tt("micGuideTouch") : "") : "");
+      (firstMicGuide ? " " + tt("micGuide") + " " + tt("micRemember") + " " + tt(IS_TOUCH ? "micGuideTouch" : "micGuideKeyboard") : "");
     var disclosureInterrupted = await say(disclosure);
     if (my !== session) return;
     if (firstPrivacyNotice && !disclosureInterrupted) set("privacyNoticeVersion", "2026-10-26");
@@ -883,7 +897,7 @@
 
     try {
       await openMic();
-      if (my === session && firstMicGuide && !disclosureInterrupted) set("micPermissionGuide", "2026-10-28");
+      if (my === session && firstMicGuide && !disclosureInterrupted) set("micPermissionGuide", "2026-11-13");
     } catch (e) {
       if (my === session) giveUp(micErrorKey(e));
       return;

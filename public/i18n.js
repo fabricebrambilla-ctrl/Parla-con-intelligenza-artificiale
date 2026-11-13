@@ -66,6 +66,8 @@
   ja: {
     "micGuide": "質問を聞き取るために、マイクへのアクセスが必要です。この後、ブラウザーが許可を求めることがあります。「許可」を選んでください。表示言語はブラウザーの設定によって異なります。英語の場合は Allow を選びます。",
     "micGuideTouch": "タッチ操作のスクリーンリーダーでは、「許可」を探してダブルタップしてください。",
+      micRemember: "次回も使う場合、ブラウザーに許可を記憶する選択肢があれば選んでください。Firefox では「この設定を保存する」を選べます。許可はこのサイトとブラウザーにのみ適用されます。",
+      micGuideKeyboard: "ブラウザーの許可画面では、Tab または Shift+Tab で選択肢を移動し、Enter で決定します。チェックボックスはスペースキーで切り替えます。",
     "askWeatherPlace": "どの市町村、どの国のことですか。近くの都市名でもかまいません。",
     "liveInfoUnavailable": "今は最新の情報を確認できません。後でもう一度試すか、最新の情報源で確認してください。",
     "downloadUnavailable": "このサイトからファイルを自動でダウンロードすることはできません。探し方や保存の手順は説明できます。",
@@ -110,6 +112,8 @@
     en: {
       micGuide: "To hear your question, I need microphone access. Next, your browser may ask permission. Choose Allow. The prompt may use your browser's language.",
       micGuideTouch: "With a touch screen reader, find Allow, then double-tap it.",
+      micRemember: "To avoid being asked on future visits, choose the option to remember or always allow access if your browser offers it. In Firefox, select Remember this decision. This applies only to this site in this browser.",
+      micGuideKeyboard: "In the browser prompt, use Tab or Shift+Tab to move between choices, Enter to activate a button, and Space to toggle a checkbox.",
       askWeatherPlace: "Which town and country do you mean? You can also name a nearby city.",
       liveInfoUnavailable: "I can't verify current information right now. Please try again later or check an up-to-date source.",
       downloadUnavailable: "I can't download files automatically from this site. I can help you find a source and explain how to save it yourself.",
@@ -154,6 +158,8 @@
     it: {
       micGuide: "Per sentire la tua domanda, mi serve il microfono. Ora il browser potrebbe chiederti il permesso. Scegli Consenti, oppure Allow se il messaggio è in inglese. La lingua dipende dal browser.",
       micGuideTouch: "Con un lettore di schermo sul telefono, trova Consenti e fai doppio tocco.",
+      micRemember: "Per non ricevere la richiesta alle prossime visite, scegli di ricordare o consentire sempre, se il browser offre questa opzione. In Firefox seleziona Ricorda questa scelta. Vale solo per questo sito in questo browser.",
+      micGuideKeyboard: "Nella richiesta del browser usa Tab o Maiusc+Tab per spostarti tra le opzioni, Invio per attivare un pulsante e Spazio per selezionare una casella.",
       askWeatherPlace: "Quale paese o città intendi, e in quale nazione? Puoi anche indicare una città vicina.",
       liveInfoUnavailable: "Al momento non riesco a verificare le informazioni aggiornate. Riprova più tardi o consulta una fonte aggiornata.",
       downloadUnavailable: "Non posso scaricare automaticamente file da questo sito. Posso aiutarti a trovare una fonte e spiegarti come salvarla sul tuo dispositivo.",
@@ -198,6 +204,8 @@
     fr: {
       micGuide: "Pour entendre votre question, j'ai besoin du microphone. Votre navigateur peut maintenant demander votre autorisation. Choisissez Autoriser, ou Allow si le message est en anglais. Sa langue dépend du navigateur.",
       micGuideTouch: "Avec un lecteur d'écran tactile, trouvez Autoriser, puis touchez deux fois.",
+      micRemember: "Pour éviter cette demande aux prochaines visites, choisissez de mémoriser ou de toujours autoriser si le navigateur le propose. Dans Firefox, cochez Se souvenir de cette décision. Cela concerne uniquement ce site dans ce navigateur.",
+      micGuideKeyboard: "Dans la demande du navigateur, utilisez Tab ou Maj+Tab pour parcourir les choix, Entrée pour activer un bouton et Espace pour cocher une case.",
       askWeatherPlace: "De quelle ville et de quel pays s'agit-il ? Vous pouvez aussi indiquer une ville proche.",
       liveInfoUnavailable: "Je ne peux pas vérifier les informations actuelles pour le moment. Réessayez plus tard ou consultez une source à jour.",
       downloadUnavailable: "Je ne peux pas télécharger automatiquement de fichiers depuis ce site. Je peux vous aider à trouver une source et expliquer comment l’enregistrer sur votre appareil.",
@@ -242,6 +250,8 @@
     bg: {
       micGuide: "За да чуя въпроса ви, ми трябва достъп до микрофона. Браузърът може да поиска разрешение. Изберете Разрешаване, или Allow, ако съобщението е на английски. Езикът зависи от браузъра.",
       micGuideTouch: "С екранен четец на телефон намерете Разрешаване и докоснете два пъти.",
+      micRemember: "За да не бъдете питани при следващи посещения, изберете запомняне или постоянно разрешаване, ако браузърът предлага това. Във Firefox отметнете Запомняне на това решение. Това важи само за този сайт в този браузър.",
+      micGuideKeyboard: "В прозореца на браузъра използвайте Tab или Shift+Tab за преминаване между опциите, Enter за бутон и интервал за отметка.",
       askWeatherPlace: "Кое населено място и коя държава имате предвид? Можете да посочите и близък град.",
       liveInfoUnavailable: "В момента не мога да проверя актуалната информация. Опитайте по-късно или проверете актуален източник.",
       downloadUnavailable: "Не мога автоматично да изтеглям файлове от този сайт. Мога да помогна да намерите източник и да обясня как да го запазите на устройството си.",
@@ -286,6 +296,8 @@
     ru: {
       micGuide: "Чтобы услышать ваш вопрос, мне нужен микрофон. Браузер может запросить разрешение. Выберите Разрешить, или Allow, если сообщение на английском. Язык зависит от браузера.",
       micGuideTouch: "С экранным диктором на телефоне найдите Разрешить и коснитесь дважды.",
+      micRemember: "Чтобы не получать запрос при следующих посещениях, выберите запоминание или постоянное разрешение, если браузер предлагает такую возможность. В Firefox отметьте Запомнить это решение. Это действует только для этого сайта в этом браузере.",
+      micGuideKeyboard: "В запросе браузера используйте Tab или Shift+Tab для перехода между вариантами, Enter для нажатия кнопки и пробел для переключения флажка.",
       askWeatherPlace: "Какой населённый пункт и какую страну вы имеете в виду? Можно назвать ближайший город.",
       liveInfoUnavailable: "Сейчас я не могу проверить актуальную информацию. Попробуйте позже или обратитесь к свежему источнику.",
       downloadUnavailable: "Я не могу автоматически скачивать файлы с этого сайта. Я могу помочь найти источник и объяснить, как сохранить его на вашем устройстве.",
@@ -330,6 +342,8 @@
     zh: {
       micGuide: "为了听到您的问题，我需要使用麦克风。接下来浏览器可能会请求权限。请选择允许。如果提示是英文，请选择 Allow。提示语言由浏览器决定。",
       micGuideTouch: "使用触屏阅读器时，先找到允许，再点按两次。",
+      micRemember: "如果浏览器提供记住选择或始终允许的选项，可以选择它以避免下次再次询问。在 Firefox 中，勾选记住此决定。这只适用于此浏览器中的这个网站。",
+      micGuideKeyboard: "在浏览器的权限提示中，用 Tab 或 Shift+Tab 在选项间移动，按 Enter 激活按钮，按空格键切换复选框。",
       askWeatherPlace: "您指的是哪个城市或村镇，在哪个国家？也可以说出附近的城市。",
       liveInfoUnavailable: "我现在无法核实最新信息。请稍后再试，或查看最新的可靠来源。",
       downloadUnavailable: "我无法通过这个网站自动下载文件。我可以帮你寻找来源，并说明如何在设备上保存。",

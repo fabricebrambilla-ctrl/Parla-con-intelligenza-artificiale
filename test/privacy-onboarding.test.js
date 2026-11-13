@@ -7,7 +7,7 @@ function start(saved={}, cancel=false) {
   const events=[], values={...saved};
   const c=vm.createContext({IS_TOUCH:false,active:false,session:0,lang:"en",aiVoiceLangs:[],failures:0,pendingTalk:false,choosing:false,
     transcript:[],context:"",lastSaid:"",alertBox:{textContent:""},window:{AudioWorkletNode:function(){}},
-    navigator:{mediaDevices:{getUserMedia(){}}},ensureContext(){},showConversationControls(){},setState(){},
+    microphonePermissionState:async()=>"unknown",navigator:{mediaDevices:{getUserMedia(){}}},ensureContext(){},showConversationControls(){},setState(){},
     get:k=>values[k],set:(k,v)=>{values[k]=v;},tt:k=>I.t("en",k),tk:k=>I.t("en",k),
     api:async()=>({aiVoice:[]}),say:async text=>{events.push(["say",text]);if(cancel)c.session++;return false;},
     openMic:async()=>events.push(["microphone"]),chooseLanguage:async()=>events.push(["language recording"]),
@@ -56,15 +56,45 @@ test("all six notices name the Swiss operator and distinguish aggregate counts f
 test("microphone guide finishes before browser permission, and repeats after a failed request",async()=>{
   const f=start();await f.c.startConversation();
   assert.match(f.events[0][1], /browser may ask permission/);
-  assert.equal(f.values.micPermissionGuide,"2026-10-28");
+  assert.equal(f.values.micPermissionGuide,"2026-11-13");
   const denied=start();denied.c.openMic=async()=>{throw Error("denied");};
   denied.c.micErrorKey=()=>"errMicDenied";denied.c.announce=()=>{};
   await denied.c.startConversation();assert.equal(denied.values.micPermissionGuide,undefined);
 });
 test("known guide is not repeated and touch guidance precedes the browser prompt",async()=>{
-  const returning=start({micPermissionGuide:"2026-10-28"});await returning.c.startConversation();
+  const returning=start({micPermissionGuide:"2026-11-13"});await returning.c.startConversation();
   assert.doesNotMatch(returning.events[0][1],/browser may ask permission/);
   const touch=start();touch.c.IS_TOUCH=true;await touch.c.startConversation();
   assert.match(touch.events[0][1],/double-tap/);
   const canceled=start({},true);await canceled.c.startConversation();assert.equal(canceled.values.micPermissionGuide,undefined);
+});
+
+for (const state of ["granted", "prompt", "denied", "unknown"]) {
+  test(`return visit respects actual ${state} permission, not the stored guide`, async () => {
+    const f = start({micPermissionGuide:"2026-11-13",langChosen:"1"});
+    f.c.microphonePermissionState = async () => state;
+    const errors=[];f.c.announce = key => errors.push(key);
+    await f.c.startConversation();
+    assert.equal(f.events.some(e=>e[0]==="microphone"), state !== "denied");
+    if(state==="denied") assert.deepEqual(errors,["errMicDenied"]);
+    else assert.equal(f.events[0][1].includes("Remember this decision"),state==="prompt");
+  });
+}
+test("granted permission skips guide even on a fresh visit",async()=>{
+ const f=start();f.c.microphonePermissionState=async()=>"granted";
+ await f.c.startConversation();assert.doesNotMatch(f.events[0][1],/Remember this decision/);
+ assert.match(f.events[0][1],/cloud services/);
+});
+test("ending while permission is checked does not speak or capture",async()=>{
+ const f=start();f.c.microphonePermissionState=async()=>{f.c.session++;return "prompt";};
+ await f.c.startConversation();assert.deepEqual(f.events,[]);
+});
+test("permission query rejection and missing support fall back safely",async()=>{
+ const c=vm.createContext({navigator:{}});
+ vm.runInContext(app.slice(app.indexOf("  async function microphonePermissionState"),app.indexOf("  async function startConversation")),c);
+ assert.equal(await c.microphonePermissionState(),"unknown");
+ c.navigator.permissions={query:async()=>{throw TypeError("unsupported");}};
+ assert.equal(await c.microphonePermissionState(),"unknown");
+ c.navigator.permissions.query=async()=>({state:"granted"});
+ assert.equal(await c.microphonePermissionState(),"granted");
 });

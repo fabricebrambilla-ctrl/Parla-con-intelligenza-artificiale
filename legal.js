@@ -3,7 +3,7 @@
 // filled in from the OWNER_NAME and OWNER_EMAIL environment variables.
 // Have a person who knows EU law check these texts before a public launch.
 
-const UPDATED = "2026-10-29";
+const UPDATED = "2026-11-13";
 
 const PRIVACY = require("./privacy-notice.js");
 
@@ -158,6 +158,13 @@ const ACCESSIBILITY = {
     back: "返回对话页面",
   },
 };
+
+// Keep microphone help available to read again without starting capture.
+const microphoneText = require("./public/i18n.js");
+for (const lang of Object.keys(ACCESSIBILITY)) {
+  ACCESSIBILITY[lang].sections[0][1] += " " + microphoneText.t(lang, "micRemember") +
+    " " + microphoneText.t(lang, "micGuideKeyboard");
+}
 
 const POLICY_LINKS = [
   ["Groq", "https://groq.com/privacy-policy"],
