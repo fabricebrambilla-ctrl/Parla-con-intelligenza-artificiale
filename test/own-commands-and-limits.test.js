@@ -79,3 +79,19 @@ test("questions about changing the language open the language list, in more word
     "怎么换语言？", "言語を変えるにはどうすればいいですか"]) assert.equal(c.voiceCommand(p), "ask", p);
   assert.equal(c.voiceCommand("What languages do you speak?"), null, "a question about languages is answered, not a command");
 });
+
+test("the spoken help names every page command, in every language, and each named phrase works", () => {
+  const c = vm.createContext({ lang: "en" });
+  vm.runInContext(app.slice(app.indexOf("  var LANG_WORDS = {"), app.indexOf("  async function runCommand")), c);
+  const said = { en: ["repeat", "change language", "show the last answer", "change microphone"], it: ["ripeti", "cambia lingua", "mostra l'ultima risposta", "cambia microfono"],
+    fr: ["répète", "changer de langue", "affiche la dernière réponse", "changer de microphone"], bg: ["повтори", "смени езика", "покажи последния отговор", "смени микрофона"],
+    ru: ["повтори", "смени язык", "покажи последний ответ", "сменить микрофон"], zh: ["再说一遍", "换语言", "显示上一个回答", "换麦克风"],
+    ja: ["もう一度", "言語を変更", "最後の回答を表示", "マイクを変更"] };
+  for (const lang of I18N.LANGS) {
+    const help = I18N.t(lang, "voiceHelp");
+    for (const phrase of said[lang]) {
+      assert.ok(help.includes(phrase), `${lang}: help names "${phrase}"`);
+      assert.ok(c.voiceCommand(phrase), `${lang}: "${phrase}" is a command`);
+    }
+  }
+});
