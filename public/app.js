@@ -48,6 +48,7 @@
     // Keep the chosen language on the other pages too.
     $("aboutLink").href = "/about?lang=" + lang;
     $("privacyLink").href = "/privacy?lang=" + lang;
+    $("termsLink").href = "/terms?lang=" + lang;
     $("accessibilityLink").href = "/accessibility?lang=" + lang;
     var opts = langsBox.querySelectorAll("[data-set-lang]");
     for (var i = 0; i < opts.length; i++) {
@@ -718,7 +719,7 @@
   function showConversationControls(on) {
     if (!on) { talkLabel = false; talkBtn.textContent = tt("start"); }
     if (on) { talkBtn.setAttribute("data-active", "true"); talkBtn.removeAttribute("aria-describedby"); }
-    else { talkBtn.removeAttribute("data-active"); talkBtn.setAttribute("aria-describedby", "helpText"); }
+    else { talkBtn.removeAttribute("data-active"); talkBtn.setAttribute("aria-describedby", "agree helpText"); }
     // Never leave focus on a button that disappears.
     if (!on && document.activeElement === endBtn) talkBtn.focus();
     endBtn.hidden = !on;
@@ -1023,10 +1024,12 @@
     }
     if (my !== session) return;
 
-    // Give the AI disclosure and first-layer privacy information before any
-    // microphone access or language recording. A new notice version refreshes
-    // the old, incomplete notice without saving conversation content.
-    var firstPrivacyNotice = get("privacyNoticeVersion") !== "2026-10-26";
+    // Agreement by pressing Start (the line with the Privacy Policy and Terms links sits
+    // before the button). The agreed version is saved at the press; one short sentence
+    // is spoken with the AI disclosure, before any microphone access, until it was heard.
+    var AGREEMENT_VERSION = "2026-11-15";
+    set("agreedVersion", AGREEMENT_VERSION);
+    var firstPrivacyNotice = get("agreementHeard") !== AGREEMENT_VERSION;
     var permissionState = await microphonePermissionState();
     if (my !== session) return;
     if (permissionState === "denied") {
@@ -1041,10 +1044,10 @@
     var firstMicGuide = micAsk && get("micPermissionGuide") !== "2026-11-15";
     var micWords = !micAsk ? "" : !firstMicGuide ? tt("micShort" + micBrowser()) :
       tt("micGuide") + " " + tt("micChoice" + micBrowser()) + " " + tt(IS_TOUCH ? "micGuideTouch" : "micGuideKeyboard");
-    var disclosure = tt("aiDisclosure") + (firstPrivacyNotice ? " " + tt("notice") : "") + (micWords ? " " + micWords : "");
+    var disclosure = tt("aiDisclosure") + (firstPrivacyNotice ? " " + tt("agreeSpoken") : "") + (micWords ? " " + micWords : "");
     var disclosureInterrupted = await say(disclosure);
     if (my !== session) return;
-    if (firstPrivacyNotice && !disclosureInterrupted) set("privacyNoticeVersion", "2026-10-26");
+    if (firstPrivacyNotice && !disclosureInterrupted) set("agreementHeard", AGREEMENT_VERSION);
     setState("processing");
 
     micFallbackSaid = false;

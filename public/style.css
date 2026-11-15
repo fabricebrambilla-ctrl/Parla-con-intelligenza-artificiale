@@ -113,7 +113,7 @@ footer {
 }
 
 .help { color: var(--muted); max-width: 32rem; margin: 0; }
-.help .privacy { display: block; margin-top: 0.5rem; }
+.agree { color: var(--muted); max-width: 32rem; margin: 0; }
 a { color: inherit; }
 
 .history { align-items: stretch; text-align: left; }
@@ -158,7 +158,7 @@ a { color: inherit; }
 .voice-panel #lang { border: 2px solid currentColor; border-radius: 2rem; padding: 0.65rem 1.25rem; font-size: 1.05rem; }
 .voice-panel #langs:not([hidden]) { margin-top: 1rem; }
 .voice-panel .help { max-width: 41rem; margin-top: 1.75rem; font-size: 1.1rem; line-height: 1.6; }
-.voice-panel .privacy { font-size: 1rem; margin-top: 0.75rem; }
+.voice-panel .agree { max-width: 41rem; font-size: 1rem; line-height: 1.6; margin-bottom: 1.25rem; }
 .voice-panel #micPermission:not(:empty), .voice-panel #alert:not(:empty) { margin-top: 1.25rem; max-width: 38rem; }
 .voice-page footer { margin-top: auto; gap: 0.5rem 1.75rem; padding: 1.5rem 1.25rem; }
 footer a { padding: 0.5rem 0; text-underline-offset: 0.2em; }

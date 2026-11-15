@@ -3,9 +3,10 @@
 // filled in from the OWNER_NAME and OWNER_EMAIL environment variables.
 // Have a person who knows EU law check these texts before a public launch.
 
-const UPDATED = "2026-11-13";
+const UPDATED = "2026-11-15";
 
 const PRIVACY = require("./privacy-notice.js");
+const TERMS = require("./terms.js");
 
 const ACCESSIBILITY = {
   ja: {
@@ -173,5 +174,5 @@ const POLICY_LINKS = [
   ["Fish Audio", "https://fish.audio/privacy"],
 ];
 
-module.exports = { PRIVACY, ACCESSIBILITY, POLICY_LINKS, UPDATED };
+module.exports = { PRIVACY, TERMS, ACCESSIBILITY, POLICY_LINKS, UPDATED };
 

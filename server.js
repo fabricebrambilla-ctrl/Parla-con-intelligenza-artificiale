@@ -145,7 +145,7 @@ function renderLegal(pages) {
   <main class="history">
     <h1>${escapeHtml(page.h1)}</h1>
     <p><a href="/?lang=${lang}">${escapeHtml(page.back)}</a></p>
-${body}
+${body}${pages === LEGAL.TERMS ? `\n    <p><a href="/privacy?lang=${lang}">${escapeHtml(I18N.t(lang, "privacyLink"))}</a></p>` : ""}
     <p>${escapeHtml(page.updated)} ${LEGAL.UPDATED}</p>
   </main>
 </body>
@@ -161,6 +161,7 @@ app.get("/", renderPage("index"));
 // History is no longer saved; old links go to the main page.
 app.get("/history", (req, res) => res.redirect(301, I18N.LANGS.includes(req.query.lang) ? "/?lang=" + req.query.lang : "/"));
 app.get("/privacy", renderLegal(LEGAL.PRIVACY));
+app.get("/terms", renderLegal(LEGAL.TERMS));
 app.get("/accessibility", renderLegal(LEGAL.ACCESSIBILITY));
 app.get("/about", (req, res) => {
   const lang = requestLang(req);

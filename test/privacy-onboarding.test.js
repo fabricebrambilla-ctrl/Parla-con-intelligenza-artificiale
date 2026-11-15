@@ -19,19 +19,19 @@ function start(saved={}, cancel=false) {
 test("first AI and privacy disclosure precede microphone and language recording",async()=>{
   const f=start();await f.c.startConversation();
   const mic=f.events.findIndex(e=>e[0]==="microphone"),language=f.events.findIndex(e=>e[0]==="language recording");
-  assert.ok(mic>0&&language>mic);assert.match(f.events[0][1],/AI assistant.*cloud services/);
+  assert.ok(mic>0&&language>mic);assert.match(f.events[0][1],/AI assistant.*outside services/);
   const spoken=f.events.filter(e=>e[0]==="say").map(e=>e[1]).join(" ");
   assert.equal(spoken.match(/AI assistant/g).length,1);
-  assert.ok(f.values.privacyNoticeVersion);
+  assert.ok(f.values.agreementHeard);
 });
 test("return greeting keeps one AI disclosure without repeating the full privacy notice",async()=>{
-  const f=start({introHeard:"1",privacyNoticeVersion:"2026-10-26",langChosen:"1"});await f.c.startConversation();
+  const f=start({introHeard:"1",agreementHeard:"2026-11-15",langChosen:"1"});await f.c.startConversation();
   const spoken=f.events.filter(e=>e[0]==="say").map(e=>e[1]).join(" ");
-  assert.equal(spoken.match(/AI assistant/g).length,1);assert.doesNotMatch(spoken,/cloud services/);
+  assert.equal(spoken.match(/AI assistant/g).length,1);assert.doesNotMatch(spoken,/outside services/);
 });
 test("ending during disclosure never opens the microphone",async()=>{
   const f=start({},true);await f.c.startConversation();
-  assert.equal(f.events.filter(e=>e[0]==="microphone").length,0);assert.equal(f.values.privacyNoticeVersion,undefined);
+  assert.equal(f.events.filter(e=>e[0]==="microphone").length,0);assert.equal(f.values.agreementHeard,undefined);
 });
 test("ending clears conversation memory; finishing a recording preserves existing context",()=>{
   const c=vm.createContext({refreshMics:async()=>[],renderMics(){},active:true,session:1,choosing:false,pendingTalk:false,stopThinking(){},stopSpeaking:null,
@@ -85,7 +85,7 @@ for (const state of ["granted", "prompt", "denied", "unknown"]) {
 test("granted permission skips guide even on a fresh visit",async()=>{
  const f=start();f.c.microphonePermissionState=async()=>"granted";
  await f.c.startConversation();assert.doesNotMatch(f.events[0][1],/Remember this decision/);
- assert.match(f.events[0][1],/cloud services/);
+ assert.match(f.events[0][1],/outside services/);
 });
 test("ending while permission is checked does not speak or capture",async()=>{
  const f=start();f.c.microphonePermissionState=async()=>{f.c.session++;return "prompt";};

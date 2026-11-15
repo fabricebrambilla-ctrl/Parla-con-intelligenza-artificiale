@@ -140,3 +140,20 @@ module.exports = {
     ], updated: "最后更新：", back: "返回对话页面"
   }
 };
+
+// Additions that must stay true to what the page really stores and sends.
+// 2026-11-15: the browser also remembers the chosen microphone and the agreed version.
+const REMEMBERED = {
+  en: " It also remembers which microphone you chose (its technical ID and name), that you heard the microphone guide, and the version of the privacy policy and terms you agreed to by pressing Start.",
+  it: " Ricorda anche il microfono che hai scelto (ID tecnico e nome), che hai ascoltato la guida al microfono e la versione dell'informativa sulla privacy e dei termini che hai accettato premendo Avvia.",
+  fr: " Il retient aussi le microphone choisi (identifiant technique et nom), le fait que vous avez entendu le guide du microphone et la version de la politique de confidentialité et des conditions acceptée en appuyant sur Démarrer.",
+  bg: " Той помни също избрания микрофон (технически идентификатор и име), че сте чули указанията за микрофона и версията на политиката за поверителност и условията, които сте приели с натискането на Започни.",
+  ru: " Он также запоминает выбранный микрофон (технический идентификатор и название), то, что вы прослушали инструкцию о микрофоне, и версию политики конфиденциальности и условий, принятую нажатием «Начать».",
+  zh: "它还会记住您选择的麦克风（技术标识和名称）、您已听过麦克风说明，以及您按下“开始”时同意的隐私政策和使用条款的版本。",
+  ja: "また、選択したマイク（技術的な ID と名前）、マイクの案内を聞いたこと、「開始」を押して同意したプライバシーポリシーと利用規約の版も記憶します。",
+};
+for (const lang of Object.keys(REMEMBERED)) {
+  const prefs = module.exports[lang].sections[3];
+  // Before the sentence about removing the preferences, so that sentence covers these too.
+  prefs[1] += REMEMBERED[lang];
+}
