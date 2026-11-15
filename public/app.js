@@ -33,7 +33,8 @@
   var tk = function (key) { return IS_TOUCH && I.S[lang][key + "Touch"] ? tt(key + "Touch") : tt(key); };
 
   var talkBtn = $("talk"), endBtn = $("endConv"), langBtn = $("lang"),
-      langsBox = $("langs"), alertBox = $("alert"), micPermission = $("micPermission");
+      langsBox = $("langs"), alertBox = $("alert"), micPermission = $("micPermission"),
+      micBtn = $("micBtn"), micsBox = $("mics");
 
   if (IS_TOUCH) $("helpText").setAttribute("data-i18n", "helpTouch");
 
@@ -43,6 +44,7 @@
     if (micPermission.textContent) micPermission.textContent = tt("micPending");
     talkBtn.textContent = talkLabel ? tt("talk") : tt("start");
     endBtn.textContent = tt("end");
+    micBtn.textContent = tt("micButton");
     // Keep the chosen language on the other pages too.
     $("aboutLink").href = "/about?lang=" + lang;
     $("privacyLink").href = "/privacy?lang=" + lang;
@@ -326,6 +328,116 @@
   var rec = null;
   var noise = 0.004;   // background noise level, learned while recording
 
+  // ---------- remembered microphone ----------
+  // The device ID and name of the microphone are readable only after permission.
+  // They are kept in this browser so the same microphone is requested next time.
+  var mics = [];                  // [{id, label}], built after the first grant
+  var micFallbackNotice = false;  // the saved microphone was missing on the last request
+  var micFallbackSaid = false;    // ...and the user was told, once per conversation
+  var micDefaultId = "";          // the real device behind Chrome's "default" entry
+  function micConstraints(id) {
+    var audio = { echoCancellation: true, noiseSuppression: true, autoGainControl: true,
+      voiceIsolation: { ideal: true }, channelCount: 1 };
+    if (id) audio.deviceId = { exact: id };
+    return { audio: audio };
+  }
+  function micTrackInfo(s) {
+    var track = s && s.getAudioTracks ? s.getAudioTracks()[0] : null;
+    var settings = track && track.getSettings ? track.getSettings() : {};
+    return { id: settings.deviceId || "", label: (track && track.label) || "" };
+  }
+  async function refreshMics() {
+    var list = [], seen = {};
+    try { list = await navigator.mediaDevices.enumerateDevices(); } catch (e) {}
+    // Chrome reports the system default as a copy named "default"; find the real device behind it.
+    micDefaultId = "";
+    (list || []).forEach(function (d) {
+      if (d.kind !== "audioinput" || d.deviceId !== "default" || !d.groupId) return;
+      (list || []).forEach(function (x) {
+        if (x.kind === "audioinput" && x.groupId === d.groupId && x.deviceId && x.deviceId !== "default" && x.deviceId !== "communications") micDefaultId = x.deviceId;
+      });
+    });
+    mics = (list || []).filter(function (d) {
+      // "default" and "communications" are Chrome's duplicates of a real device.
+      if (d.kind !== "audioinput" || !d.label || !d.deviceId || d.deviceId === "default" || d.deviceId === "communications") return false;
+      if (seen[d.deviceId]) return false;
+      seen[d.deviceId] = true;
+      return true;
+    }).map(function (d) { return { id: d.deviceId, label: d.label }; });
+    return mics;
+  }
+  function missingDevice(e) { return !!e && (e.name === "OverconstrainedError" || e.name === "NotFoundError"); }
+  // The saved microphone exactly; if it is unplugged, the default one (the caller says so by voice).
+  async function requestMicStream() {
+    micFallbackNotice = false;
+    var md = navigator.mediaDevices, saved = get("micDeviceId"), label = get("micDeviceLabel");
+    if (saved) {
+      try { return await md.getUserMedia(micConstraints(saved)); }
+      catch (e) { if (!missingDevice(e)) throw e; }
+    }
+    var got = await md.getUserMedia(micConstraints(null)), info = micTrackInfo(got);
+    if (!saved) {
+      if (info.id === "default" || info.id === "communications") {
+        await refreshMics();
+        var real = mics.filter(function (m) { return m.id === micDefaultId; })[0];
+        if (real) info = real;
+      }
+      if (info.id) { set("micDeviceId", info.id); set("micDeviceLabel", info.label); }
+      return got;
+    }
+    // Some browsers give devices new IDs in a new session: the same microphone under
+    // a new ID is not a missing microphone.
+    if (label && info.label === label) { if (info.id) set("micDeviceId", info.id); return got; }
+    var same = label ? (await refreshMics()).filter(function (m) { return m.label === label; })[0] : null;
+    if (same) {
+      try {
+        var again = await md.getUserMedia(micConstraints(same.id));
+        got.getTracks().forEach(function (t) { t.stop(); });
+        set("micDeviceId", same.id);
+        return again;
+      } catch (e2) {}
+    }
+    micFallbackNotice = true;
+    return got;
+  }
+  function currentMicId() {
+    var saved = get("micDeviceId");
+    if (mics.some(function (m) { return m.id === saved; })) return saved;
+    var open = micTrackInfo(stream).id;
+    if (mics.some(function (m) { return m.id === open; })) return open;
+    return mics.length ? mics[0].id : "";
+  }
+  // Saves the choice and releases the open microphone; the next turn opens the new one.
+  function chooseMic(m) {
+    set("micDeviceId", m.id);
+    set("micDeviceLabel", m.label);
+    micFallbackSaid = false;
+    if (rec && rec.auto) finishRecording();
+    else if (rec) rec = null;
+    var wasListening = state === "listening";
+    closeMic();
+    if (active && wasListening) goReady();
+  }
+  // "Change microphone": the next one in the list. Null when there is only one.
+  async function nextMicrophone() {
+    await refreshMics();
+    if (mics.length < 2) return null;
+    var cur = currentMicId(), at = 0;
+    for (var i = 0; i < mics.length; i++) if (mics[i].id === cur) at = i;
+    var next = mics[(at + 1) % mics.length];
+    chooseMic(next);
+    return next;
+  }
+  // Opens the microphone and, once per conversation, says that the default one is in use.
+  async function ensureMic() {
+    for (var attempt = 0; attempt < 2 && !stream; attempt++) {
+      await openMic();
+      if (!micFallbackNotice || micFallbackSaid) return;
+      micFallbackSaid = true;
+      await say(tt("micFallback"));   // on iPhone, speaking releases the microphone: open it again
+    }
+  }
+
   var micRequest = 0, restoreMicFocus = null, micFocusOwner = null;
   function cancelMicFocusRestore() {
     if (restoreMicFocus) window.removeEventListener("focus", restoreMicFocus);
@@ -378,11 +490,9 @@
           if (document.activeElement === micPermission) micFocusOwner = request;
         }
       }
-      acquired = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true,
-          voiceIsolation: { ideal: true }, channelCount: 1 }
-      });
+      acquired = await requestMicStream();
       if (!current()) throw cancelled();
+      refreshMics();
       clearMicPermission();
       try {
         audioSource = ctx.createMediaStreamSource(acquired);
@@ -598,7 +708,7 @@
     var my = session;
     if (!stream) {
       setState("processing");
-      try { await openMic(); } catch (e) { if (my === session) fail(micErrorKey(e)); return; }
+      try { await ensureMic(); } catch (e) { if (my === session) fail(micErrorKey(e)); return; }
       if (!active || my !== session) return;
     }
     rec = { auto: auto, frames: [], elapsed: 0, voiced: 0, silence: 0, speechFrames: 0, speechStarted: false };
@@ -675,6 +785,12 @@
   // Other spoken commands; the whole request must be one of these (polite words aside),
   // so "help me write a letter" still goes to the assistant.
   var COMMANDS = {
+    mic: ["change microphone", "change the microphone", "change my microphone", "switch microphone", "switch the microphone",
+          "another microphone", "next microphone", "cambia microfono", "cambia il microfono", "cambiare microfono", "altro microfono",
+          "changer de microphone", "change de microphone", "changer le microphone", "change le microphone", "autre microphone",
+          "смени микрофона", "смяна на микрофона", "друг микрофон", "сменить микрофон", "смени микрофон", "поменяй микрофон",
+          "другой микрофон", "换麦克风", "更换麦克风", "切换麦克风", "换一个麦克风",
+          "マイクを変更", "マイクを変更して", "マイクを変更してください", "マイクを変えて", "マイクを変えてください", "マイクを切り替えて"],
     repeat: ["repeat", "repeat that", "repeat it", "say that again", "say it again", "can you repeat that", "could you repeat that",
              "what did you say", "again", "ripeti", "ripetilo", "puoi ripetere", "ripeti per favore", "come hai detto", "cosa hai detto",
              "répète", "répétez", "tu peux répéter", "vous pouvez répéter", "pardon", "повтори", "повторете", "кажи пак", "кажете пак",
@@ -714,6 +830,11 @@
     var my = session, reply;
     if (cmd === "repeat") { if (lastSaid) { await say(lastSaid, lastSaidLang); if (my === session) goReady(); return; } reply = tt("voiceHelp"); }
     else if (cmd === "help") reply = tt("voiceHelp");
+    else if (cmd === "mic") {
+      var next = await nextMicrophone();
+      if (my !== session) return;
+      reply = next ? tt("micNow") + " " + next.label + "." : tt("micOnlyOne");
+    }
     else {
       if (cmd === "ask") await chooseLanguage(my);
       else { lang = cmd; set("lang", lang); set("langChosen", "1"); renderTexts(); }
@@ -895,8 +1016,9 @@
     if (firstPrivacyNotice && !disclosureInterrupted) set("privacyNoticeVersion", "2026-10-26");
     setState("processing");
 
+    micFallbackSaid = false;
     try {
-      await openMic();
+      await ensureMic();
       if (my === session && firstMicGuide && !disclosureInterrupted) set("micPermissionGuide", "2026-11-13");
     } catch (e) {
       if (my === session) giveUp(micErrorKey(e));
@@ -942,6 +1064,7 @@
     setState("idle");
     showConversationControls(false);
     if (!silent) sounds.end();
+    refreshMics().then(renderMics);
   }
 
   function fail(code) {
@@ -1010,6 +1133,61 @@
     renderTexts();
     talkBtn.focus();
   });
+
+  // ---------- microphone button ----------
+  // Shown only when there are two or more microphones to choose from, and never
+  // re-drawn during a conversation (the page stays still while the assistant talks).
+  function closeMicList() { micsBox.hidden = true; micBtn.setAttribute("aria-expanded", "false"); }
+  function renderMics() {
+    if (active) return;
+    var show = mics.length >= 2, cur = currentMicId();
+    if (!show) {
+      var hadFocus = document.activeElement === micBtn || micsBox.contains(document.activeElement);
+      closeMicList();
+      micBtn.hidden = true;
+      if (hadFocus) talkBtn.focus();
+    } else micBtn.hidden = false;
+    micsBox.textContent = "";
+    mics.forEach(function (m) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = m.label;
+      b.setAttribute("data-mic", m.id);
+      if (m.id === cur) b.setAttribute("aria-current", "true");
+      micsBox.appendChild(b);
+    });
+  }
+  micBtn.addEventListener("click", function () {
+    var open = micsBox.hidden;
+    micsBox.hidden = !open;
+    micBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) { var cur = micsBox.querySelector('[aria-current]') || micsBox.querySelector("button"); if (cur) cur.focus(); }
+  });
+  micsBox.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    e.stopPropagation();
+    closeMicList();
+    micBtn.focus();
+  });
+  micsBox.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-mic]");
+    if (!b) return;
+    var id = b.getAttribute("data-mic");
+    var chosen = mics.filter(function (m) { return m.id === id; })[0];
+    if (chosen) chooseMic(chosen);
+    var all = micsBox.querySelectorAll("[data-mic]");
+    for (var i = 0; i < all.length; i++) {
+      if (all[i] === b) all[i].setAttribute("aria-current", "true"); else all[i].removeAttribute("aria-current");
+    }
+    closeMicList();
+    talkBtn.focus();
+  });
+  if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+    refreshMics().then(renderMics);
+    if (navigator.mediaDevices.addEventListener) {
+      navigator.mediaDevices.addEventListener("devicechange", function () { refreshMics().then(renderMics); });
+    }
+  }
 
   // ---------- start-up ----------
   renderTexts();

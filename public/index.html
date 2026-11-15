@@ -24,6 +24,9 @@
       <button type="button" lang="zh-Hans" data-set-lang="zh">中文</button>
       <button type="button" lang="ja" data-set-lang="ja">日本語</button>
     </div>
+    <!-- Shown only when two or more microphones exist; names are readable only after permission. -->
+    <button id="micBtn" type="button" aria-expanded="false" data-i18n="micButton" hidden>{{micButton}}</button>
+    <div id="mics" role="group" aria-labelledby="micBtn" hidden></div>
     <!-- The help is read as the Talk button's description; hidden here so screen readers don't read it twice.
          No space between the spans: a lone space becomes an empty stop for VoiceOver swipes. -->
     <p class="help"><span id="helpText" data-i18n="help" aria-hidden="true">{{help}}</span><span class="privacy" data-i18n="privacy">{{privacy}}</span></p>

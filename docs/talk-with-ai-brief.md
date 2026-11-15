@@ -419,6 +419,10 @@ Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public 
 
 ### Current state of the code (keep this up to date)
 
+- **Status wording rule (owner, 2026-11-14):** nothing in this file, code comments, docs or emails may be called "fixed" until a real blind user has confirmed it. Entries below marked *implemented, awaiting real-user confirmation* passed automated checks only.
+
+- 2026-11-15 A1 remembered microphone (*implemented, awaiting real-user confirmation*): after the first successful permission the microphone's device ID and name are saved in `localStorage` (`micDeviceId`, `micDeviceLabel`) and that exact microphone is requested next time. If it is missing, the default microphone is used and the assistant says so once per conversation; the saved choice is kept for when it is plugged in again. A browser that only gave the same microphone a new ID (matched by name) is not announced as missing. The list of microphones is built with `enumerateDevices` only after permission (names are empty before). Spoken command "change microphone" (seven languages, `COMMANDS.mic`) moves to the next microphone and says its name; a "Change microphone" button with a list (same pattern as the language list) is shown only when two or more microphones exist and is not re-drawn during a conversation. Known limits: Chrome reports the system default as ID `default`; when the real device behind it cannot be identified, `default` is what is saved. Firefox without a remembered permission may rotate IDs each session. Checked with 8 new regression tests (all failed before the change) and one Chromium run with fake devices; no real screen reader or real second microphone was used.
+
 - 2026-11-13: Start checks actual browser microphone permission before onboarding. Granted access skips microphone instructions even without saved onboarding; prompt repeats the guide despite a saved preference; denied access gives recovery without opening capture. Unsupported permission queries use the remembered guide only as an onboarding preference. Seven-language guidance explains optional persistent permission and native Tab/Shift+Tab/Enter/Space navigation, also available on Accessibility. No added dialog, automatic recording, permission bypass, provider change or tracking. Existing cancellation and browser/user-focus ownership safeguards remain. See docs/microphone-access-2026-11-13.md for research and validation.
 
 
@@ -520,6 +524,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Change | Files |
 |---|---|---|
+| 2026-11-15 | A1: remember the chosen microphone, fall back to the default with a spoken notice, "change microphone" spoken command and button. Implemented, awaiting real-user confirmation. | `public/app.js`, `public/index.html`, `public/i18n.js`, `test/microphone-memory.test.js`, existing onboarding tests, this brief |
 | 2026-11-13 | Respect real microphone permission on return visits and add localized remember-choice and keyboard help. | `public/app.js`, `public/i18n.js`, `legal.js`, onboarding tests, microphone-access report, this brief |
 | 2026-10-29 | Address exact Milan/Sandrigo research cases, multi-step follow-up research, Firefox document-focus return after microphone permission, B navigation help and truthful voice/download capabilities. Add reproduced regressions and distinguish unresolved real-reader cases. | `server.js`, `public/app.js`, `public/i18n.js`, feedback/research tests, `docs/tester-feedback-2026-10-29.md`, this brief |
 | 2026-10-29 | Connect three owner-authorized Groq and two Tavily keys for ordinary traffic with deduplication, operation-specific 429 cooldowns, safe retry boundaries and primary-only QA. Validate each key at startup without inference and correct all seven retention notices for unverified additional account settings. | `provider-keys.js`, `server.js`, `privacy-notice.js`, provider routing tests, this brief |
@@ -571,6 +576,10 @@ Deviations from this brief (decided with the owner, see §13):
 ---
 
 ## 13. User preferences (newest first; these override the rest of the brief)
+
+2026-11-15: Portuguese is **European Portuguese (pt-PT)**. Changes from the 2026-11-14 work list go to `main` as well as the working branch (owner confirmed again). **No speaking-speed control yet**: wait for a real iPhone test before adding "faster/slower" (the 2026-10-11 preference stays).
+
+2026-11-14: Owner's rules for every change: a screen reader must work for it and native keys/focus must not break; the assistant never claims an ability it lacks; **never write that an issue is fixed until a real blind user confirms it** (use "implemented, awaiting real-user confirmation"); do not invent features, ask when a decision is needed; a regression test for each change, shown failing first; count new provider calls in `limits.js`; no keys in the client. Work list A to H (microphone, research with page reading, optional text of the last answer, the assistant knowing its own commands and limits, copyright refusal, Dutch and Portuguese, phones, simpler first-use instructions).
 
 2026-11-13: Owner requests remembered microphone permission and smoother initial access for NVDA/JAWS. Respect browser ownership of grants; improve accurate guidance and returning-user behavior without extra consent dialogs or automatic capture.
 

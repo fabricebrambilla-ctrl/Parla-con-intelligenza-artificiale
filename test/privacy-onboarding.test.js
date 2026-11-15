@@ -10,7 +10,7 @@ function start(saved={}, cancel=false) {
     microphonePermissionState:async()=>"unknown",navigator:{mediaDevices:{getUserMedia(){}}},ensureContext(){},showConversationControls(){},setState(){},
     get:k=>values[k],set:(k,v)=>{values[k]=v;},tt:k=>I.t("en",k),tk:k=>I.t("en",k),
     api:async()=>({aiVoice:[]}),say:async text=>{events.push(["say",text]);if(cancel)c.session++;return false;},
-    openMic:async()=>events.push(["microphone"]),chooseLanguage:async()=>events.push(["language recording"]),
+    ensureMic:async()=>events.push(["microphone"]),chooseLanguage:async()=>events.push(["language recording"]),
     sounds:{start(){}},setTimeout:f=>f(),goReady:()=>events.push(["ready"]),
     closeMic(){},announce(){throw Error("unexpected failure");},fail(){throw Error("unexpected failure");}});
   vm.runInContext(app.slice(app.indexOf("  async function startConversation"),app.indexOf("  function endConversation")),c);
@@ -34,7 +34,7 @@ test("ending during disclosure never opens the microphone",async()=>{
   assert.equal(f.events.filter(e=>e[0]==="microphone").length,0);assert.equal(f.values.privacyNoticeVersion,undefined);
 });
 test("ending clears conversation memory; finishing a recording preserves existing context",()=>{
-  const c=vm.createContext({active:true,session:1,choosing:false,pendingTalk:false,stopThinking(){},stopSpeaking:null,
+  const c=vm.createContext({refreshMics:async()=>[],renderMics(){},active:true,session:1,choosing:false,pendingTalk:false,stopThinking(){},stopSpeaking:null,
     closeMic(){},rec:{},recResolve:null,transcript:[{content:"private fixture"}],context:"private fixture",lastSaid:"private fixture",lastSaidLang:"en",
     setState(){},showConversationControls(){},sounds:{end(){}}});
   vm.runInContext(app.slice(app.indexOf("  function endConversation"),app.indexOf("  function fail(")),c);
@@ -57,7 +57,7 @@ test("microphone guide finishes before browser permission, and repeats after a f
   const f=start();await f.c.startConversation();
   assert.match(f.events[0][1], /browser may ask permission/);
   assert.equal(f.values.micPermissionGuide,"2026-11-13");
-  const denied=start();denied.c.openMic=async()=>{throw Error("denied");};
+  const denied=start();denied.c.ensureMic=async()=>{throw Error("denied");};
   denied.c.micErrorKey=()=>"errMicDenied";denied.c.announce=()=>{};
   await denied.c.startConversation();assert.equal(denied.values.micPermissionGuide,undefined);
 });

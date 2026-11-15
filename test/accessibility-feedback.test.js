@@ -17,7 +17,7 @@ function microphone(permission) {
  document.activeElement=talkBtn;
  const window={addEventListener(type,fn){assert.equal(type,'focus');focusListeners.add(fn);},removeEventListener(type,fn){assert.equal(type,'focus');focusListeners.delete(fn);}};
  function returnToPage(){document.foreground=true;for(const fn of [...focusListeners])fn();}
- const c=vm.createContext({active:true,session:1,ctx:context,micPermission,talkBtn,document,tt:key=>I.t('en',key),navigator:{mediaDevices:{getUserMedia(){events.push('request microphone');return request.promise;}},...(permission?{permissions:{query:async()=>({state:permission})}}:{})},window,AudioWorkletNode:function(){this.port={};this.connect=()=>this;this.disconnect=()=>{};},onFrame(){}});
+ const c=vm.createContext({get:()=>null,set(){},say:async()=>false,state:'ready',rec:null,active:true,session:1,ctx:context,micPermission,talkBtn,document,tt:key=>I.t('en',key),navigator:{mediaDevices:{getUserMedia(){events.push('request microphone');return request.promise;}},...(permission?{permissions:{query:async()=>({state:permission})}}:{})},window,AudioWorkletNode:function(){this.port={};this.connect=()=>this;this.disconnect=()=>{};},onFrame(){}});
  vm.runInContext(app.slice(app.indexOf('  var stream = null'),app.indexOf('  // Frames are 20 ms.')),c);
  return {c,request,media,tracks,events,returnToPage,focusListeners};
 }
@@ -106,7 +106,7 @@ test('all languages and HTML expose permission guidance and shortcut',()=>{
 
 test('changing the page language keeps About and legal links in that language',()=>{
  const elements=Object.fromEntries(['helpText','privacyLink','accessibilityLink','aboutLink'].map(id=>[id,{}]));
- const c=vm.createContext({I:{applyPage(){}},lang:'fr',tk:()=>'',tt:key=>key,IS_TOUCH:false,
+ const c=vm.createContext({micBtn:{},I:{applyPage(){}},lang:'fr',tk:()=>'',tt:key=>key,IS_TOUCH:false,
   micPermission:{textContent:''},talkBtn:{},talkLabel:false,endBtn:{},langsBox:{querySelectorAll:()=>[]},
   $:id=>elements[id]});
  vm.runInContext(app.slice(app.indexOf('  function renderTexts()'),app.indexOf('  // ---------- state ----------')),c);

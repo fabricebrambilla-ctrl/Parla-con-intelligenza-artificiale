@@ -64,6 +64,10 @@
 
   var S = {
   ja: {
+      micButton: "マイクを変更する",
+      micFallback: "前回使ったマイクが見つからないため、既定のマイクを使います。",
+      micNow: "これからこのマイクを使います：",
+      micOnlyOne: "マイクが一つしか見つからないため、変更できません。",
     "micGuide": "質問を聞き取るために、マイクへのアクセスが必要です。この後、ブラウザーが許可を求めることがあります。「許可」を選んでください。表示言語はブラウザーの設定によって異なります。英語の場合は Allow を選びます。",
     "micGuideTouch": "タッチ操作のスクリーンリーダーでは、「許可」を探してダブルタップしてください。",
       micRemember: "次回も使う場合、ブラウザーに許可を記憶する選択肢があれば選んでください。Firefox では「この設定を保存する」を選べます。許可はこのサイトとブラウザーにのみ適用されます。",
@@ -110,6 +114,10 @@
     "greetingShortTouch": "おかえりなさい。「話す」を押して話してください。"
   },
     en: {
+      micButton: "Change microphone",
+      micFallback: "I can't find the microphone you used before, so I'm using the default microphone.",
+      micNow: "I will now use this microphone:",
+      micOnlyOne: "I can find only one microphone, so there is nothing to change.",
       micGuide: "To hear your question, I need microphone access. Next, your browser may ask permission. Choose Allow. The prompt may use your browser's language.",
       micGuideTouch: "With a touch screen reader, find Allow, then double-tap it.",
       micRemember: "To avoid being asked on future visits, choose the option to remember or always allow access if your browser offers it. In Firefox, select Remember this decision. This applies only to this site in this browser.",
@@ -156,6 +164,10 @@
       greetingShortTouch: "Welcome back. Press Talk to speak."
     },
     it: {
+      micButton: "Cambia microfono",
+      micFallback: "Non trovo il microfono che usavi prima, quindi uso il microfono predefinito.",
+      micNow: "Ora userò questo microfono:",
+      micOnlyOne: "Trovo un solo microfono, quindi non c'è niente da cambiare.",
       micGuide: "Per sentire la tua domanda, mi serve il microfono. Ora il browser potrebbe chiederti il permesso. Scegli Consenti, oppure Allow se il messaggio è in inglese. La lingua dipende dal browser.",
       micGuideTouch: "Con un lettore di schermo sul telefono, trova Consenti e fai doppio tocco.",
       micRemember: "Per non ricevere la richiesta alle prossime visite, scegli di ricordare o consentire sempre, se il browser offre questa opzione. In Firefox seleziona Ricorda questa scelta. Vale solo per questo sito in questo browser.",
@@ -202,6 +214,10 @@
       greetingShortTouch: "Bentornato. Premi Parla per parlare."
     },
     fr: {
+      micButton: "Changer de microphone",
+      micFallback: "Je ne trouve pas le microphone utilisé la dernière fois, j'utilise donc le microphone par défaut.",
+      micNow: "J'utiliserai maintenant ce microphone :",
+      micOnlyOne: "Je ne trouve qu'un seul microphone, il n'y a donc rien à changer.",
       micGuide: "Pour entendre votre question, j'ai besoin du microphone. Votre navigateur peut maintenant demander votre autorisation. Choisissez Autoriser, ou Allow si le message est en anglais. Sa langue dépend du navigateur.",
       micGuideTouch: "Avec un lecteur d'écran tactile, trouvez Autoriser, puis touchez deux fois.",
       micRemember: "Pour éviter cette demande aux prochaines visites, choisissez de mémoriser ou de toujours autoriser si le navigateur le propose. Dans Firefox, cochez Se souvenir de cette décision. Cela concerne uniquement ce site dans ce navigateur.",
@@ -248,6 +264,10 @@
       greetingShortTouch: "Rebonjour. Appuyez sur Parler pour parler."
     },
     bg: {
+      micButton: "Смяна на микрофона",
+      micFallback: "Не намирам микрофона, който използвахте преди, затова използвам микрофона по подразбиране.",
+      micNow: "Вече ще използвам този микрофон:",
+      micOnlyOne: "Намирам само един микрофон, така че няма какво да се смени.",
       micGuide: "За да чуя въпроса ви, ми трябва достъп до микрофона. Браузърът може да поиска разрешение. Изберете Разрешаване, или Allow, ако съобщението е на английски. Езикът зависи от браузъра.",
       micGuideTouch: "С екранен четец на телефон намерете Разрешаване и докоснете два пъти.",
       micRemember: "За да не бъдете питани при следващи посещения, изберете запомняне или постоянно разрешаване, ако браузърът предлага това. Във Firefox отметнете Запомняне на това решение. Това важи само за този сайт в този браузър.",
@@ -294,6 +314,10 @@
       greetingShortTouch: "Здравейте отново. Натиснете Говори, за да говорите."
     },
     ru: {
+      micButton: "Сменить микрофон",
+      micFallback: "Я не нахожу микрофон, который вы использовали раньше, поэтому использую микрофон по умолчанию.",
+      micNow: "Теперь я буду использовать этот микрофон:",
+      micOnlyOne: "Я нахожу только один микрофон, поэтому менять нечего.",
       micGuide: "Чтобы услышать ваш вопрос, мне нужен микрофон. Браузер может запросить разрешение. Выберите Разрешить, или Allow, если сообщение на английском. Язык зависит от браузера.",
       micGuideTouch: "С экранным диктором на телефоне найдите Разрешить и коснитесь дважды.",
       micRemember: "Чтобы не получать запрос при следующих посещениях, выберите запоминание или постоянное разрешение, если браузер предлагает такую возможность. В Firefox отметьте Запомнить это решение. Это действует только для этого сайта в этом браузере.",
@@ -340,6 +364,10 @@
       greetingShortTouch: "С возвращением. Нажмите Говорить, чтобы говорить."
     },
     zh: {
+      micButton: "更换麦克风",
+      micFallback: "找不到您上次使用的麦克风，所以我现在使用默认麦克风。",
+      micNow: "现在我将使用这个麦克风：",
+      micOnlyOne: "我只找到一个麦克风，所以无法更换。",
       micGuide: "为了听到您的问题，我需要使用麦克风。接下来浏览器可能会请求权限。请选择允许。如果提示是英文，请选择 Allow。提示语言由浏览器决定。",
       micGuideTouch: "使用触屏阅读器时，先找到允许，再点按两次。",
       micRemember: "如果浏览器提供记住选择或始终允许的选项，可以选择它以避免下次再次询问。在 Firefox 中，勾选记住此决定。这只适用于此浏览器中的这个网站。",
