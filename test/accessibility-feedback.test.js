@@ -106,8 +106,8 @@ test('all languages and HTML expose permission guidance and shortcut',()=>{
 });
 
 test('changing the page language keeps About and legal links in that language',()=>{
- const elements=Object.fromEntries(['helpText','privacyLink','termsLink','accessibilityLink','aboutLink'].map(id=>[id,{}]));
- const c=vm.createContext({micBtn:{},I:{applyPage(){}},lang:'fr',tk:()=>'',tt:key=>key,IS_TOUCH:false,
+ const elements=Object.fromEntries(['helpText','privacyLink','termsLink','accessibilityLink','aboutLink','lastHeading'].map(id=>[id,{}]));
+ const c=vm.createContext({micBtn:{},lastBtn:{},copyBtn:{},I:{applyPage(){}},lang:'fr',tk:()=>'',tt:key=>key,IS_TOUCH:false,
   micPermission:{textContent:''},talkBtn:{},talkLabel:false,endBtn:{},langsBox:{querySelectorAll:()=>[]},
   $:id=>elements[id]});
  vm.runInContext(app.slice(app.indexOf('  function renderTexts()'),app.indexOf('  // ---------- state ----------')),c);

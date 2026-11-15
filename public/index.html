@@ -30,6 +30,15 @@
     <!-- Shown only when two or more microphones exist; names are readable only after permission. -->
     <button id="micBtn" type="button" aria-expanded="false" data-i18n="micButton" hidden>{{micButton}}</button>
     <div id="mics" role="group" aria-labelledby="micBtn" hidden></div>
+    <!-- Off by default: appears once the user says "show the last answer", or when the assistant
+         puts long content (steps, code, a list) here instead of reading it all out. -->
+    <button id="lastBtn" type="button" aria-expanded="false" aria-controls="lastBox" data-i18n="lastButton" hidden>{{lastButton}}</button>
+    <section id="lastBox" class="last" aria-labelledby="lastHeading" hidden>
+      <h2 id="lastHeading" data-i18n="lastHeading">{{lastHeading}}</h2>
+      <div id="lastText" class="last-text"></div>
+      <button id="copyBtn" type="button" data-i18n="copyButton">{{copyButton}}</button>
+      <p id="copyStatus" role="status"></p>
+    </section>
     <!-- The help is read as the Talk button's description; hidden here so screen readers don't read it twice. -->
     <p class="help"><span id="helpText" data-i18n="help" aria-hidden="true">{{help}}</span></p>
     <!-- Focus announces this explanation once, before the browser permission prompt. -->

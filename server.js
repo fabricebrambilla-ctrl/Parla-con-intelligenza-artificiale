@@ -568,6 +568,21 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "put_in_text_box",
+      description:
+        "Put long content (step-by-step instructions, code, a list, a recipe, a table of times) as plain text on the page, " +
+        "under the heading \"Last answer\", after the Talk button, where a screen reader can read it line by line and copy it. " +
+        "Then say in one or two sentences what it contains and where it is. Never say you put something there without calling this.",
+      parameters: {
+        type: "object",
+        properties: { text: { type: "string", description: "The full content as plain text, one step or item per line. No markdown symbols." } },
+        required: ["text"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "end_conversation",
       description: "End the conversation when the user says goodbye, stop, or that they are finished.",
       parameters: {
@@ -609,6 +624,9 @@ function systemPrompt(lang, context, agent = false) {
     `Capabilities: you can answer questions and search the web, but cannot control the device, download or save files, ` +
     `send email, or switch the site's voice between male and female. Never claim you performed those actions. ` +
     `Explain the limitation and offer instructions when useful. Changing the spoken language is supported.\n` +
+    `Long content (step-by-step guides, code, lists, recipes): do not read it all out. Call put_in_text_box with the full ` +
+    `text, then say in one or two sentences what it holds and that it is on the page as text under the heading "Last answer", ` +
+    `with a Copy button. If the user would rather listen, read it a few steps at a time and ask whether to go on.\n` +
     `The user's words come from automatic speech recognition and may contain mistakes; if something is unclear, ask briefly. ` +
     `The text may sometimes contain screen reader words such as "button", "heading level 1", "browse mode", "focus mode", ` +
     `"link", or text from the web page. That is the screen reader, not the user: ignore it completely and do not reply to it.\n` +
@@ -764,6 +782,9 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
   const ROUNDS = 6;
   let end = false;
   let farewell = "";
+  let box = "";           // long content for the text box on the page
+  // The voice site shows the box on the page; an agent gets the content after the reply text.
+  const withBox = (reply) => !box ? reply : agent ? { ...reply, text: (reply.text ? reply.text + "\n\n" : "") + box } : { ...reply, box };
   let announced = false;
   let researched = false;
   let found = 0;          // search results with an address that could be read
@@ -816,7 +837,7 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
         messages.push({ role: "assistant", content: msg.content || "" }, { role: "system", content: READ_NUDGE });
         continue;
       }
-      return { text: text || (end ? farewell : ""), end, reading: readingOut };
+      return withBox({ text: text || (end ? farewell : ""), end, reading: readingOut });
     }
 
     messages.push({ role: "assistant", content: msg.content || "", tool_calls: calls });
@@ -829,6 +850,10 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
         end = true;
         farewell = clean(args.farewell) || I18N.t(lang, "farewell");
         result = { ok: true };
+      } else if (call.function?.name === "put_in_text_box") {
+        const text = String(args.text || "").trim().slice(0, 20000);
+        if (text) { box = text; result = { ok: true, shown: "The text is now on the page under the heading Last answer, with a Copy button." }; }
+        else result = { error: "The text was empty." };
       } else if (call.function?.name === "web_search") {
         if (!announced) { onSearching(); announced = true; }
         if (stop?.aborted) throw stop.reason || new Error("stopped");
@@ -891,9 +916,9 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
       messages.push(toolMessage);
     }
     messages.push(...afterTools);
-    if (end) return { text: clean(msg.content) || farewell, end: true };
+    if (end) return withBox({ text: clean(msg.content) || farewell, end: true });
   }
-  return { text: "", end, reading: readingOut };
+  return withBox({ text: "", end, reading: readingOut });
 }
 
 // The answer is streamed as lines of JSON so the browser can say
@@ -920,7 +945,7 @@ app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), 
   const send = (obj) => res.write(JSON.stringify(qa.decorate(obj)) + "\n");
   try {
     const lang = pickLang(req.body?.lang);
-    const { text, end, reading } = await runChat({
+    const { text, end, reading, box } = await runChat({
       lang,
       context: String(req.body?.context || "").slice(0, 2000),
       messages: history,
@@ -930,7 +955,8 @@ app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), 
     // The language the reply is actually written in, so the browser speaks it with a voice of
     // that language (the user may have asked for an answer in another language).
     // `reading`: the page being read aloud in parts; the browser sends it back with the next question.
-    send({ type: "reply", text, end, lang: I18N.detectLang(text, lang), ai_generated: true, ...(reading ? { reading } : {}) });
+    // `box`: long content to show as text on the page instead of reading it all out.
+    send({ type: "reply", text, end, lang: I18N.detectLang(text, lang), ai_generated: true, ...(reading ? { reading } : {}), ...(box ? { box } : {}) });
     res.end();
   } catch (err) {
     logFailure("chat", err);

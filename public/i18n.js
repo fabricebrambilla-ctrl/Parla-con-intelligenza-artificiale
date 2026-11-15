@@ -64,6 +64,14 @@
 
   var S = {
   ja: {
+      lastButton: "最後の回答を表示",
+      lastHeading: "最後の回答",
+      copyButton: "コピー",
+      copied: "コピーしました。",
+      copyFailed: "コピーできませんでした。キーボードで文字を選択してコピーしてください。",
+      lastShown: "最後の回答は、ページの「最後の回答」という見出しの下に文字で表示されています。コピーボタンもあります。",
+      lastNone: "表示できる回答はまだありません。",
+      lastHidden: "回答の文字表示をオフにしました。",
       agreeBefore: "「開始」を押すと、",
       agreePrivacy: "プライバシーポリシー",
       agreeAnd: "と",
@@ -123,6 +131,14 @@
     "greetingShortTouch": "おかえりなさい。「話す」を押して話してください。"
   },
     en: {
+      lastButton: "Show last answer",
+      lastHeading: "Last answer",
+      copyButton: "Copy",
+      copied: "Copied.",
+      copyFailed: "Could not copy. Select the text with the keyboard and copy it.",
+      lastShown: "The last answer is on the page as text, under the heading Last answer, with a Copy button.",
+      lastNone: "There is no answer to show yet.",
+      lastHidden: "The text of answers is turned off.",
       agreeBefore: "By pressing Start you agree to the ",
       agreePrivacy: "Privacy Policy",
       agreeAnd: " and ",
@@ -182,6 +198,14 @@
       greetingShortTouch: "Welcome back. Press Talk to speak."
     },
     it: {
+      lastButton: "Mostra l'ultima risposta",
+      lastHeading: "Ultima risposta",
+      copyButton: "Copia",
+      copied: "Copiato.",
+      copyFailed: "Non è stato possibile copiare. Seleziona il testo con la tastiera e copialo.",
+      lastShown: "L'ultima risposta è nella pagina come testo, sotto il titolo Ultima risposta, con un pulsante Copia.",
+      lastNone: "Non c'è ancora una risposta da mostrare.",
+      lastHidden: "Il testo delle risposte è disattivato.",
       agreeBefore: "Premendo Avvia accetti ",
       agreePrivacy: "l'Informativa sulla privacy",
       agreeAnd: " e ",
@@ -241,6 +265,14 @@
       greetingShortTouch: "Bentornato. Premi Parla per parlare."
     },
     fr: {
+      lastButton: "Afficher la dernière réponse",
+      lastHeading: "Dernière réponse",
+      copyButton: "Copier",
+      copied: "Copié.",
+      copyFailed: "Impossible de copier. Sélectionnez le texte au clavier et copiez-le.",
+      lastShown: "La dernière réponse est sur la page en texte, sous le titre Dernière réponse, avec un bouton Copier.",
+      lastNone: "Il n'y a pas encore de réponse à afficher.",
+      lastHidden: "Le texte des réponses est désactivé.",
       agreeBefore: "En appuyant sur Démarrer, vous acceptez ",
       agreePrivacy: "la Politique de confidentialité",
       agreeAnd: " et ",
@@ -300,6 +332,14 @@
       greetingShortTouch: "Rebonjour. Appuyez sur Parler pour parler."
     },
     bg: {
+      lastButton: "Покажи последния отговор",
+      lastHeading: "Последен отговор",
+      copyButton: "Копирай",
+      copied: "Копирано.",
+      copyFailed: "Копирането не успя. Маркирайте текста с клавиатурата и го копирайте.",
+      lastShown: "Последният отговор е на страницата като текст, под заглавието Последен отговор, с бутон Копирай.",
+      lastNone: "Все още няма отговор за показване.",
+      lastHidden: "Текстът на отговорите е изключен.",
       agreeBefore: "С натискането на Започни приемате ",
       agreePrivacy: "Политиката за поверителност",
       agreeAnd: " и ",
@@ -359,6 +399,14 @@
       greetingShortTouch: "Здравейте отново. Натиснете Говори, за да говорите."
     },
     ru: {
+      lastButton: "Показать последний ответ",
+      lastHeading: "Последний ответ",
+      copyButton: "Копировать",
+      copied: "Скопировано.",
+      copyFailed: "Не удалось скопировать. Выделите текст с клавиатуры и скопируйте его.",
+      lastShown: "Последний ответ есть на странице в виде текста, под заголовком Последний ответ, с кнопкой Копировать.",
+      lastNone: "Пока нет ответа, который можно показать.",
+      lastHidden: "Текст ответов выключен.",
       agreeBefore: "Нажимая «Начать», вы принимаете ",
       agreePrivacy: "Политику конфиденциальности",
       agreeAnd: " и ",
@@ -418,6 +466,14 @@
       greetingShortTouch: "С возвращением. Нажмите Говорить, чтобы говорить."
     },
     zh: {
+      lastButton: "显示上一个回答",
+      lastHeading: "上一个回答",
+      copyButton: "复制",
+      copied: "已复制。",
+      copyFailed: "无法复制。请用键盘选中文字后复制。",
+      lastShown: "上一个回答已作为文字显示在页面上，在“上一个回答”标题下，旁边有“复制”按钮。",
+      lastNone: "还没有可以显示的回答。",
+      lastHidden: "回答文字已关闭。",
       agreeBefore: "按下“开始”即表示您同意",
       agreePrivacy: "隐私政策",
       agreeAnd: "和",

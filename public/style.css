@@ -222,3 +222,8 @@ footer a { padding: 0.5rem 0; text-underline-offset: 0.2em; }
   * { animation: none !important; }
 }
 
+
+/* The last answer as text (off by default). Plain, wraps, keeps line breaks of steps and code. */
+.last { max-width: 41rem; margin-top: 1.5rem; text-align: left; }
+.last h2 { font-size: 1.25rem; margin: 0 0 0.5rem; }
+.last-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.1rem; line-height: 1.6; margin-bottom: 0.75rem; }

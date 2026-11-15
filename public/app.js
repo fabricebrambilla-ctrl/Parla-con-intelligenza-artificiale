@@ -34,7 +34,8 @@
 
   var talkBtn = $("talk"), endBtn = $("endConv"), langBtn = $("lang"),
       langsBox = $("langs"), alertBox = $("alert"), micPermission = $("micPermission"),
-      micBtn = $("micBtn"), micsBox = $("mics");
+      micBtn = $("micBtn"), micsBox = $("mics"),
+      lastBtn = $("lastBtn"), lastBox = $("lastBox"), lastText = $("lastText"), copyBtn = $("copyBtn"), copyStatus = $("copyStatus");
 
   if (IS_TOUCH) $("helpText").setAttribute("data-i18n", "helpTouch");
 
@@ -45,6 +46,9 @@
     talkBtn.textContent = talkLabel ? tt("talk") : tt("start");
     endBtn.textContent = tt("end");
     micBtn.textContent = tt("micButton");
+    lastBtn.textContent = tt("lastButton");
+    copyBtn.textContent = tt("copyButton");
+    $("lastHeading").textContent = tt("lastHeading");
     // Keep the chosen language on the other pages too.
     $("aboutLink").href = "/about?lang=" + lang;
     $("privacyLink").href = "/privacy?lang=" + lang;
@@ -69,6 +73,7 @@
   var pendingTalk = false; // the space bar interrupted the assistant: start recording when it has stopped
   var aiVoiceLangs = [];   // languages with the natural AI voice (from the server)
   var readingPage = null;  // the page being read aloud in parts ({url, part, parts}), in memory only
+  var lastAnswer = "";     // text of the last answer (or the long content the assistant put in the box), in memory only
 
   function setState(s) {
     state = s;
@@ -824,6 +829,14 @@
           "смени микрофона", "смяна на микрофона", "друг микрофон", "сменить микрофон", "смени микрофон", "поменяй микрофон",
           "другой микрофон", "换麦克风", "更换麦克风", "切换麦克风", "换一个麦克风",
           "マイクを変更", "マイクを変更して", "マイクを変更してください", "マイクを変えて", "マイクを変えてください", "マイクを切り替えて"],
+    show: ["show the last answer", "show last answer", "show me the last answer", "show the answer", "show me the answer", "show answers",
+           "mostra l'ultima risposta", "mostrami l'ultima risposta", "mostra la risposta", "mostrami la risposta",
+           "affiche la dernière réponse", "montre la dernière réponse", "montre-moi la dernière réponse", "affiche la réponse", "montre la réponse",
+           "покажи последния отговор", "покажи отговора", "покажи последний ответ", "покажи ответ", "покажите ответ",
+           "显示上一个回答", "显示最后的回答", "显示回答", "显示答案", "最後の回答を表示", "最後の回答を表示して", "回答を表示", "回答を表示して", "回答を見せて"],
+    hide: ["hide the last answer", "hide the answer", "hide answers", "hide the answers", "nascondi l'ultima risposta", "nascondi la risposta", "nascondi le risposte",
+           "masque la réponse", "cache la réponse", "masque les réponses", "скрий отговора", "скрий отговорите", "скрой ответ", "скрыть ответ", "скрой ответы",
+           "隐藏回答", "隐藏答案", "回答を隠して", "回答を非表示", "回答を非表示にして"],
     repeat: ["repeat", "repeat that", "repeat it", "say that again", "say it again", "can you repeat that", "could you repeat that",
              "what did you say", "again", "ripeti", "ripetilo", "puoi ripetere", "ripeti per favore", "come hai detto", "cosa hai detto",
              "répète", "répétez", "tu peux répéter", "vous pouvez répéter", "pardon", "повтори", "повторете", "кажи пак", "кажете пак",
@@ -863,6 +876,8 @@
     var my = session, reply;
     if (cmd === "repeat") { if (lastSaid) { await say(lastSaid, lastSaidLang); if (my === session) goReady(); return; } reply = tt("voiceHelp"); }
     else if (cmd === "help") reply = tt("voiceHelp");
+    else if (cmd === "show") reply = showLast() ? tt("lastShown") : tt("lastNone");
+    else if (cmd === "hide") { hideLast(true); reply = tt("lastHidden"); }
     else if (cmd === "mic") {
       var next = await nextMicrophone();
       if (my !== session) return;
@@ -962,6 +977,9 @@
       failures = 0;
       readingPage = r2.reading || null;
       var reply = String(r2.text || "");
+      // Long content the assistant put in the text box is shown at once; it said so in its reply.
+      if (r2.box) { rememberAnswer(String(r2.box)); showLast(); }
+      else if (reply) rememberAnswer(reply);
       // Spoken by a voice of the language the reply is written in, not always the page's language.
       var replyLang = I.LANGS.indexOf(r2.lang) !== -1 ? r2.lang : lang;
       if (reply) { transcript.push({ role: "assistant", content: reply }); lastSaid = reply; lastSaidLang = replyLang; }
@@ -1225,6 +1243,45 @@
       navigator.mediaDevices.addEventListener("devicechange", function () { refreshMics().then(renderMics); });
     }
   }
+
+  // ---------- the last answer as text (off by default) ----------
+  // Plain text a screen reader reads line by line, with a Copy button. Nothing moves focus here:
+  // during a conversation focus stays on the Talk button.
+  function rememberAnswer(text) {
+    lastAnswer = text;
+    if (!lastBox.hidden) lastText.textContent = text;
+  }
+  // Returns false when there is nothing to show yet.
+  function showLast() {
+    if (!lastAnswer) return false;
+    set("showLast", "1");
+    lastText.textContent = lastAnswer;
+    copyStatus.textContent = "";
+    lastBtn.hidden = false;
+    lastBox.hidden = false;
+    lastBtn.setAttribute("aria-expanded", "true");
+    return true;
+  }
+  // `forget`: the button goes away too (the feature is off again).
+  function hideLast(forget) {
+    lastBox.hidden = true;
+    lastBtn.setAttribute("aria-expanded", "false");
+    if (forget) { set("showLast", ""); lastBtn.hidden = true; }
+    if (lastBox.contains(document.activeElement) || (forget && document.activeElement === lastBtn)) talkBtn.focus();
+  }
+  async function copyLast() {
+    if (!lastAnswer) { copyStatus.textContent = tt("lastNone"); return false; }
+    var ok = false;
+    try { await navigator.clipboard.writeText(lastAnswer); ok = true; } catch (e) {}
+    copyStatus.textContent = ok ? tt("copied") : tt("copyFailed");
+    return ok;
+  }
+  lastBtn.addEventListener("click", function () {
+    if (lastBox.hidden) { if (!showLast()) { copyStatus.textContent = ""; lastText.textContent = tt("lastNone"); lastBox.hidden = false; lastBtn.setAttribute("aria-expanded", "true"); } }
+    else hideLast(false);
+  });
+  copyBtn.addEventListener("click", copyLast);
+  lastBtn.hidden = get("showLast") !== "1";
 
   // ---------- start-up ----------
   renderTexts();

@@ -169,3 +169,15 @@ const READ_PAGES = {
   ja: "ウェブページの内容から答えるため、そのページのアドレス（通常は検索で見つかったもの）もTavilyに送信され、Tavilyがページの本文を返します。アプリは読んだページの本文（あなたの言葉は含みません）を最大20分間メモリに保持し、記事を分けて読み上げるときに再取得しないようにします。",
 };
 for (const lang of Object.keys(READ_PAGES)) module.exports[lang].sections[2][1] += READ_PAGES[lang];
+
+// 2026-11-15: the "Show last answer" button, once turned on, stays on (the answers themselves are never stored).
+const SHOW_LAST = {
+  en: " If you turn on the text of answers, it remembers that choice; the answers themselves stay only in the open page.",
+  it: " Se attivi il testo delle risposte, ricorda questa scelta; le risposte restano solo nella pagina aperta.",
+  fr: " Si vous activez le texte des réponses, il retient ce choix ; les réponses elles-mêmes restent seulement dans la page ouverte.",
+  bg: " Ако включите текста на отговорите, той помни този избор; самите отговори остават само в отворената страница.",
+  ru: " Если вы включите текст ответов, он запомнит этот выбор; сами ответы остаются только на открытой странице.",
+  zh: "如果您打开了回答文字，它会记住这个选择；回答本身只保留在打开的页面中。",
+  ja: "回答の文字表示をオンにすると、その選択を記憶します。回答そのものは開いているページの中にだけ残ります。",
+};
+for (const lang of Object.keys(SHOW_LAST)) module.exports[lang].sections[3][1] += SHOW_LAST[lang];
