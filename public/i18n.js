@@ -2,7 +2,19 @@
 (function (root) {
   "use strict";
 
-  var LANGS = ["en", "it", "fr", "bg", "ru", "zh", "ja"];
+  var ALL_LANGS = ["en", "it", "fr", "bg", "ru", "zh", "ja", "nl", "pt"];
+  // Dutch and Portuguese (Portugal) are offered only once the owner has listened to their speech
+  // recognition and voice: NEW_LANGUAGES=nl,pt on the server, which passes it to the page as
+  // <body data-new-langs="nl pt">. Until then they are not offered anywhere.
+  var GATED = ["nl", "pt"];
+  function enabledLangs() {
+    var on = "";
+    if (typeof document !== "undefined" && document.body) on = document.body.getAttribute("data-new-langs") || "";
+    else if (typeof process !== "undefined" && process.env) on = process.env.NEW_LANGUAGES || "";
+    var list = String(on).toLowerCase().split(/[\s,]+/);
+    return ALL_LANGS.filter(function (l) { return GATED.indexOf(l) === -1 || list.indexOf(l) !== -1; });
+  }
+  var LANGS = enabledLangs();
 
   // html: value for <html lang>, speech: BCP-47 tag for speech synthesis,
   // native: language name in its own language, english: name used in prompts.
@@ -13,7 +25,9 @@
     fr: { html: "fr", speech: "fr-FR", native: "Français", english: "French" },
     bg: { html: "bg", speech: "bg-BG", native: "Български", english: "Bulgarian" },
     ru: { html: "ru", speech: "ru-RU", native: "Русский", english: "Russian" },
-    zh: { html: "zh-Hans", speech: "zh-CN", native: "中文", english: "Simplified Chinese" }
+    zh: { html: "zh-Hans", speech: "zh-CN", native: "中文", english: "Simplified Chinese" },
+    nl: { html: "nl", speech: "nl-NL", native: "Nederlands", english: "Dutch" },
+    pt: { html: "pt-PT", speech: "pt-PT", native: "Português", english: "European Portuguese (Portugal)" }
   };
 
   // Which supported language a piece of text is written in, so each reply is spoken
@@ -25,7 +39,9 @@
     it: "il lo la gli le di che è e un una per non sono del della con mi ti si ci questo questa anche come più ho hai ma",
     fr: "le la les des est et un une pour pas que qui dans du je vous il elle ce cette sur au avec sont mais c'est j'ai",
     bg: "и на е да се за не с от че по това как са ще ли ми те си беше може като ни",
-    ru: "и в не на что я с он как это по но из у за от так же вы мы есть был все она"
+    ru: "и в не на что я с он как это по но из у за от так же вы мы есть был все она",
+    nl: "de het een en van ik je jij is dat niet op te zijn met voor maar ook als er wat wordt kan dit naar bij heb",
+    pt: "o os as um uma do da dos das que não é em para com por mais se ao você eu está são também isso muito já"
   };
   var WORD_SETS = {};
   for (var w in WORDS) WORD_SETS[w] = WORDS[w].split(" ");
@@ -36,11 +52,11 @@
     var kana = (text.match(/[\u3041-\u3096\u30a1-\u30fa\u30fc\uff66-\uff9d]/g) || []).length;
     var han = (text.match(/[\u4e00-\u9fff]/g) || []).length;
     var cyr = (text.match(/[\u0400-\u04ff]/g) || []).length;
-    var lat = (text.match(/[a-zàâäçéèêëîïôöùûüœæ]/g) || []).length;
+    var lat = (text.match(/[a-zàâäçéèêëîïôöùûüœæáíóúãõ]/g) || []).length;
     if (kana >= 2 && kana * 4 >= han && kana + han > (cyr + lat) / 3) return "ja";
     // Han-only text is ambiguous between Chinese and Japanese: keep Japanese context.
     if (han > (cyr + lat) / 3 && han >= 2) return fallback === "ja" && !kana ? "ja" : "zh";
-    var words = text.split(/[^a-zàâäçéèêëîïôöùûüœæ'\u0400-\u04ff]+/).filter(Boolean);
+    var words = text.split(/[^a-zàâäçéèêëîïôöùûüœæáíóúãõ'\u0400-\u04ff]+/).filter(Boolean);
     var count = function (code) {
       var n = 0;
       for (var i = 0; i < words.length; i++) if (WORD_SETS[code].indexOf(words[i]) !== -1) n++;
@@ -59,7 +75,7 @@
       return pickBest(["bg", "ru"]);
     }
     if (lat === 0) return fallback;
-    return pickBest(["en", "it", "fr"]);
+    return pickBest(["en", "it", "fr", "nl", "pt"]);
   }
 
   var S = {
@@ -531,6 +547,140 @@
       errRetryTouch: "抱歉，出了点问题。请按“说话”按钮再说一遍。",
       greetingShort: "欢迎回来。按空格键说话。",
       greetingShortTouch: "欢迎回来。按“说话”按钮开始。"
+    },
+    nl: {
+      "lastButton": "Laatste antwoord tonen",
+      "lastHeading": "Laatste antwoord",
+      "copyButton": "Kopiëren",
+      "copied": "Gekopieerd.",
+      "copyFailed": "Kopiëren is niet gelukt. Selecteer de tekst met het toetsenbord en kopieer hem.",
+      "lastShown": "Het laatste antwoord staat als tekst op de pagina, onder de kop Laatste antwoord, met een knop Kopiëren.",
+      "lastNone": "Er is nog geen antwoord om te tonen.",
+      "lastHidden": "De tekst van de antwoorden staat uit.",
+      "agreeBefore": "Door op Starten te drukken ga je akkoord met het ",
+      "agreePrivacy": "privacybeleid",
+      "agreeAnd": " en de ",
+      "agreeTerms": "voorwaarden",
+      "agreeAfter": ".",
+      "agreeSpoken": "Door te starten ga je akkoord met het privacybeleid en de voorwaarden; je stem en tekst gaan naar externe diensten.",
+      "termsLink": "Voorwaarden",
+      "micGuide": "Om je te horen heb ik de microfoon nodig. Je browser vraagt nu om toestemming.",
+      "micChoice": "Kies Toestaan.",
+      "micChoiceChrome": "Kies de knop die toegang geeft bij elk bezoek aan de site. In het Engels heet die \"Allow while visiting the site\"; in oudere versies van Chrome \"Allow on every visit\". Alleen deze keer, in het Engels \"Allow this time\", werkt ook, maar dan vraagt Chrome het later opnieuw.",
+      "micChoiceFirefox": "Kies Toestaan. Als je het selectievakje \"Deze beslissing onthouden\" hoort, in het Engels \"Remember this decision\", vink het dan eerst aan, zodat Firefox het niet opnieuw vraagt.",
+      "micShort": "De browser vraagt nu om de microfoon. Kies Toestaan.",
+      "micShortChrome": "De browser vraagt nu om de microfoon. Kies de knop die toegang geeft bij elk bezoek.",
+      "micShortFirefox": "De browser vraagt nu om de microfoon. Vink Deze beslissing onthouden aan als het er is, en kies dan Toestaan.",
+      "errMicDenied": "De microfoon is geblokkeerd voor deze site. Om hem toe te staan, open je de knop met site-informatie, het slotje naast het adres. Met het toetsenbord ga je naar de adresbalk en druk je op Shift+Tab tot je er bent. Kies dan Microfoon en daarna Toestaan. Druk daarna opnieuw op Gesprek starten.",
+      "micButton": "Microfoon wijzigen",
+      "micFallback": "Ik vind de microfoon die je eerder gebruikte niet, dus ik gebruik de standaardmicrofoon.",
+      "micNow": "Ik gebruik nu deze microfoon:",
+      "micOnlyOne": "Ik vind maar één microfoon, dus er valt niets te wijzigen.",
+      "micGuideTouch": "Met een schermlezer op een aanraakscherm zoek je Toestaan en tik je er twee keer op.",
+      "micGuideKeyboard": "Gebruik in de vraag van de browser Tab of Shift+Tab om tussen de keuzes te gaan, Enter om een knop te activeren en Spatie om een selectievakje aan of uit te zetten.",
+      "askWeatherPlace": "Welke plaats en welk land bedoel je? Je kunt ook een stad in de buurt noemen.",
+      "liveInfoUnavailable": "Ik kan actuele informatie nu niet controleren. Probeer het later opnieuw of raadpleeg een actuele bron.",
+      "downloadUnavailable": "Ik kan op deze site geen bestanden automatisch downloaden. Ik kan je helpen een bron te vinden en uitleggen hoe je het zelf opslaat.",
+      "voiceChangeUnavailable": "Ik kan op deze site nog niet wisselen tussen een mannen- en een vrouwenstem. De stem hangt af van je apparaat en de beschikbare spraakdienst.",
+      "aiDisclosure": "Ik ben een AI-assistent.",
+      "title": "Praat met Kunstmatige Intelligentie – druk op de knop om te beginnen",
+      "h1": "Praat met Kunstmatige Intelligentie",
+      "start": "Gesprek starten",
+      "end": "Gesprek beëindigen",
+      "langButton": "Taal: Nederlands. Taal wijzigen",
+      "help": "Druk om te beginnen. Druk daarna op de spatiebalk om te praten, en nog een keer om het antwoord te krijgen; druk op elk moment om te onderbreken. Zeg tot ziens om te stoppen.",
+      "greeting": "Druk op de spatiebalk om te praten, en nog een keer om te versturen. Druk terwijl ik praat om me te onderbreken. Zeg tot ziens om te stoppen, of help voor uitleg.",
+      "farewell": "Tot ziens!",
+      "langChanged": "Oké, ik spreek Nederlands.",
+      "voiceHelp": "Je kunt zeggen: herhaal, taal wijzigen, laatste antwoord tonen, microfoon wijzigen, of tot ziens.",
+      "shortcutHelp": "Met NVDA of JAWS druk je op B om de knop te vinden, en dan op Spatie of Enter. Alt+Shift+T bedient Praten ook vanaf elke plek op deze pagina, als je browser en schermlezer de sneltoets doorlaten.",
+      "errMic": "Ik kan de microfoon niet gebruiken. Sta microfoontoegang toe voor deze site en druk dan op de knop om het opnieuw te proberen.",
+      "errConnection": "Er ging iets mis en de verbinding is verbroken. Laad de pagina opnieuw en probeer het nog eens.",
+      "errLimit": "De AI heeft de gratis limiet voor vandaag bereikt. Probeer het morgen opnieuw.",
+      "errSupport": "Deze browser kan geen geluid opnemen. Probeer Chrome, Edge, Firefox of Safari.",
+      "back": "Terug naar de gesprekspagina",
+      "searching": "Even opzoeken.",
+      "errRetry": "Sorry, er ging iets mis. Druk op de spatiebalk en zeg het nog een keer.",
+      "privacyLink": "Privacyverklaring",
+      "accessibilityLink": "Toegankelijkheid",
+      "aboutLink": "Over het project",
+      "askLanguage": "Welke taal wil je gebruiken? Zeg het na de toon.",
+      "langNotUnderstood": "Sorry, dat verstond ik niet. Zeg de naam van je taal nog een keer.",
+      "notHeard": "Ik hoorde niets. Druk op de spatiebalk als je wilt praten.",
+      "talk": "Praten",
+      "helpTouch": "Druk om te beginnen. Druk daarna op Praten om te praten, en nog een keer om het antwoord te krijgen; druk op elk moment om te onderbreken. Zeg tot ziens om te stoppen.",
+      "greetingTouch": "Druk op Praten om te spreken, en nog een keer om te versturen. Druk terwijl ik praat om me te onderbreken. Zeg tot ziens om te stoppen, of help voor uitleg.",
+      "notHeardTouch": "Ik hoorde niets. Druk op de knop Praten als je wilt praten.",
+      "errRetryTouch": "Sorry, er ging iets mis. Druk op de knop Praten en zeg het nog een keer.",
+      "greetingShort": "Welkom terug. Druk op de spatiebalk om te praten.",
+      "greetingShortTouch": "Welkom terug. Druk op Praten om te spreken."
+    },
+    pt: {
+      "lastButton": "Mostrar a última resposta",
+      "lastHeading": "Última resposta",
+      "copyButton": "Copiar",
+      "copied": "Copiado.",
+      "copyFailed": "Não foi possível copiar. Selecione o texto com o teclado e copie-o.",
+      "lastShown": "A última resposta está na página como texto, sob o título Última resposta, com um botão Copiar.",
+      "lastNone": "Ainda não há nenhuma resposta para mostrar.",
+      "lastHidden": "O texto das respostas está desligado.",
+      "agreeBefore": "Ao premir Iniciar, aceita a ",
+      "agreePrivacy": "Política de Privacidade",
+      "agreeAnd": " e os ",
+      "agreeTerms": "Termos",
+      "agreeAfter": ".",
+      "agreeSpoken": "Ao iniciar, aceita a política de privacidade e os termos; a sua voz e o texto vão para serviços externos.",
+      "termsLink": "Termos",
+      "micGuide": "Para o ouvir, preciso do microfone. O navegador vai agora pedir autorização.",
+      "micChoice": "Escolha Permitir.",
+      "micChoiceChrome": "Escolha o botão que dá acesso em cada visita ao site. Em inglês chama-se \"Allow while visiting the site\"; nas versões mais antigas do Chrome, \"Allow on every visit\". Só desta vez, em inglês \"Allow this time\", também funciona, mas depois o Chrome volta a perguntar.",
+      "micChoiceFirefox": "Escolha Permitir. Se ouvir a caixa de verificação \"Memorizar esta decisão\", em inglês \"Remember this decision\", marque-a primeiro, para o Firefox não voltar a perguntar.",
+      "micShort": "O navegador está agora a pedir o microfone. Escolha Permitir.",
+      "micShortChrome": "O navegador está agora a pedir o microfone. Escolha o botão que dá acesso em cada visita.",
+      "micShortFirefox": "O navegador está agora a pedir o microfone. Marque Memorizar esta decisão, se aparecer, e depois escolha Permitir.",
+      "errMicDenied": "O microfone está bloqueado para este site. Para o permitir, abra o botão de informações do site, o ícone do cadeado ao lado do endereço. Com o teclado, vá à barra de endereço e prima Shift+Tab até lá chegar. Depois escolha Microfone e a seguir Permitir. Por fim, prima de novo Iniciar conversa.",
+      "micButton": "Mudar de microfone",
+      "micFallback": "Não encontro o microfone que usou antes, por isso estou a usar o microfone predefinido.",
+      "micNow": "Vou usar agora este microfone:",
+      "micOnlyOne": "Só encontro um microfone, por isso não há nada para mudar.",
+      "micGuideTouch": "Com um leitor de ecrã tátil, encontre Permitir e toque duas vezes.",
+      "micGuideKeyboard": "No pedido do navegador, use Tab ou Shift+Tab para passar entre as opções, Enter para ativar um botão e Espaço para marcar ou desmarcar uma caixa.",
+      "askWeatherPlace": "Que localidade e que país quer dizer? Também pode indicar uma cidade próxima.",
+      "liveInfoUnavailable": "Não consigo confirmar informações atuais neste momento. Tente mais tarde ou consulte uma fonte atualizada.",
+      "downloadUnavailable": "Não consigo descarregar ficheiros automaticamente neste site. Posso ajudar a encontrar uma fonte e explicar como guardar o ficheiro.",
+      "voiceChangeUnavailable": "Ainda não consigo mudar entre voz masculina e feminina neste site. A voz depende do seu dispositivo e do serviço de voz disponível.",
+      "aiDisclosure": "Sou um assistente de inteligência artificial.",
+      "title": "Fale com a Inteligência Artificial – prima o botão para começar",
+      "h1": "Fale com a Inteligência Artificial",
+      "start": "Iniciar conversa",
+      "end": "Terminar conversa",
+      "langButton": "Língua: português. Mudar de língua",
+      "help": "Prima para começar. Depois prima a barra de espaços para falar e outra vez para ouvir a resposta; prima a qualquer momento para interromper. Para terminar, diga adeus.",
+      "greeting": "Prima a barra de espaços para falar e outra vez para enviar. Prima-a enquanto eu falo para me interromper. Diga adeus para terminar, ou ajuda para ouvir as instruções.",
+      "farewell": "Adeus!",
+      "langChanged": "Está bem, vou falar português.",
+      "voiceHelp": "Pode dizer: repete, mudar de língua, mostra a última resposta, mudar de microfone, ou adeus.",
+      "shortcutHelp": "Com o NVDA ou o JAWS, prima B para encontrar o botão e depois Espaço ou Enter. Alt+Shift+T também aciona Falar a partir de qualquer ponto desta página, se o navegador e o leitor de ecrã deixarem passar o atalho.",
+      "errMic": "Não consigo usar o microfone. Permita o acesso ao microfone para este site e depois prima o botão para tentar de novo.",
+      "errConnection": "Algo correu mal e a ligação perdeu-se. Recarregue a página e tente de novo.",
+      "errLimit": "A inteligência artificial atingiu o limite gratuito de hoje. Tente de novo amanhã.",
+      "errSupport": "Este navegador não consegue gravar som. Experimente o Chrome, o Edge, o Firefox ou o Safari.",
+      "back": "Voltar à página da conversa",
+      "searching": "Vou procurar.",
+      "errRetry": "Desculpe, algo correu mal. Prima a barra de espaços e diga outra vez.",
+      "privacyLink": "Aviso de privacidade",
+      "accessibilityLink": "Acessibilidade",
+      "aboutLink": "Sobre o projeto",
+      "askLanguage": "Que língua quer usar? Diga-a depois do sinal.",
+      "langNotUnderstood": "Desculpe, não percebi. Diga outra vez o nome da sua língua.",
+      "notHeard": "Não ouvi nada. Prima a barra de espaços quando quiser falar.",
+      "talk": "Falar",
+      "helpTouch": "Prima para começar. Depois prima Falar para falar e outra vez para ouvir a resposta; prima a qualquer momento para interromper. Para terminar, diga adeus.",
+      "greetingTouch": "Prima Falar para falar e outra vez para enviar. Prima enquanto eu falo para me interromper. Diga adeus para terminar, ou ajuda para ouvir as instruções.",
+      "notHeardTouch": "Não ouvi nada. Prima o botão Falar quando quiser falar.",
+      "errRetryTouch": "Desculpe, algo correu mal. Prima o botão Falar e diga outra vez.",
+      "greetingShort": "Olá de novo. Prima a barra de espaços para falar.",
+      "greetingShortTouch": "Olá de novo. Prima Falar para falar."
     }
   };
 
@@ -554,7 +704,7 @@
     for (var i = 0; i < els.length; i++) els[i].textContent = t(lang, els[i].getAttribute("data-i18n"));
   }
 
-  var api = { LANGS: LANGS, META: META, S: S, pick: pick, t: t, applyPage: applyPage, detectLang: detectLang };
+  var api = { LANGS: LANGS, ALL_LANGS: ALL_LANGS, GATED: GATED, META: META, S: S, pick: pick, t: t, applyPage: applyPage, detectLang: detectLang };
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.I18N = api;
 })(this);

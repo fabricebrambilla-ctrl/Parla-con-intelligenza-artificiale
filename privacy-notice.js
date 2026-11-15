@@ -141,6 +141,104 @@ module.exports = {
   }
 };
 
+// Dutch and Portuguese (Portugal), 2026-11-15. Offered only when NEW_LANGUAGES switches them on.
+module.exports.nl = {
+  "title": "Privacyverklaring: Praat met Kunstmatige Intelligentie",
+  "h1": "Privacyverklaring",
+  "sections": [
+    [
+      "Wie verantwoordelijk is",
+      "Fabrice Brambilla beheert dit persoonlijke project vanuit Zwitserland. Contact: brambillafabrice@gmail.com."
+    ],
+    [
+      "Je stem en je vragen",
+      "Als je kiest om op te nemen, legt je browser het geluid vast en stuurt het naar onze server en naar Groq om een transcriptie en een antwoord te maken. Eerdere berichten in het huidige gesprek geven context. We schrijven geen spraakopnames of transcripties van spraakgesprekken naar de database van de app. Als je het gesprek beëindigt, wordt de tekst uit het geheugen van de pagina gewist. De antwoorden worden uitgesproken met de stem van je browser of apparaat; als een optionele cloudstem is ingeschakeld, gaat de tekst van het antwoord naar Fish Audio of Groq. Een apparaatstem kan zelf de clouddienst van de fabrikant van het apparaat gebruiken."
+    ],
+    [
+      "Zoeken op het web",
+      "Voor actuele informatie kan een korte tekstvraag naar Tavily worden gestuurd. Die kan details uit je vraag bevatten. Je geluid wordt niet naar de zoekdienst gestuurd. Tavily kan volgens zijn gepubliceerde beleid andere zoekindexen gebruiken. Zet geen persoonlijke of vertrouwelijke informatie in je vragen."
+    ],
+    [
+      "Voorkeuren in de browser",
+      "De browser onthoudt de gekozen taal en of de introductie en de privacy-informatie al zijn gegeven. Je kunt deze voorkeuren verwijderen met de instellingen voor sitegegevens van je browser. Er zijn geen advertentiecookies of blijvende bezoekers-ID's. Oudere bezoekers-ID's worden verwijderd wanneer de bijgewerkte pagina laadt."
+    ],
+    [
+      "Wat de app bewaart",
+      "Gebruiksstatistieken bevatten alleen een datum, het totale aantal keren dat de pagina is geopend en het totale aantal ingediende spraakvragen, en worden bewaard voor de laatste zeven kalenderdagen in de tijdzone Europe/Zurich. Een geldige spraakvraag wordt geteld bij het indienen, ook als het antwoord daarna mislukt. Gemarkeerde synthetische tests en de aparte tekst-API tellen niet mee. Er staan geen bezoekers-ID's, IP-adressen, geluid, gesprekstekst of tijdstippen van afzonderlijke verzoeken in deze statistieken. Herladen, herhaalde inzendingen en niet-gemarkeerde automatisering kunnen de totalen verhogen; ze identificeren geen unieke personen en bevestigen geen menselijk gebruik. De aparte tekst-API bewaart chat-ID's en berichten in het geheugen van de server tot verwijdering, herstart, ruimtegebrek of ongeveer 24 uur na het laatste bericht; het verlopen wordt gecontroleerd bij gebruik en bij periodieke opschoning. Iedereen met een chat-ID heeft toegang tot die chat, dus houd het privé."
+    ],
+    [
+      "Dienstverleners en landen",
+      "De server van de app wordt gehost door Render in Frankfurt, Duitsland. Groq verwerkt de verzoeken in de Verenigde Staten. Groq kan ingezonden inhoud bewaren volgens de gegevensinstellingen van het account en zijn gepubliceerde beleid; gebruiksmetadata worden bewaard. Of geen enkele inhoud wordt bewaard, is niet voor elk account van deze app gecontroleerd. Tavily en optionele spraakdiensten kunnen gegevens verwerken in de Verenigde Staten en in andere landen die in hun beleid en informatie over subverwerkers worden genoemd. Render en andere dienstverleners kunnen technische en beveiligingsinformatie bewaren volgens hun eigen regels. De voorwaarden voor verwerking en internationale doorgifte van de dienstverleners blijven gelden; dat de app niets vastlegt, betekent niet dat geen enkele dienstverlener gegevens verwerkt. Informatie van de dienstverleners:"
+    ],
+    [
+      "Doel en gevoelige informatie",
+      "Gewone gespreksgegevens worden verwerkt om de dienst te leveren die je vraagt. Technische verwerking beschermt ook de werking en de beveiliging. Waar de AVG van toepassing is, zijn de grondslagen voor de gewone verwerking en voor de beveiliging artikel 6, lid 1, onder b, en artikel 6, lid 1, onder f. De dienst vraagt je niet om een handicap, medische geschiedenis, financiële informatie of identiteitsbewijzen te delen. Deel geen gevoelige of vertrouwelijke persoonsgegevens. Een gesprek starten of microfoontoegang geven is geen algemene uitdrukkelijke toestemming voor de verwerking van bijzondere categorieën van gegevens volgens artikel 9 van de AVG."
+    ],
+    [
+      "Je keuzes en rechten",
+      "Er wordt pas opgenomen nadat je kiest om te spreken en de browser toegang tot de microfoon geeft. Beëindig het gesprek om verdere opnames te stoppen; wat al is verzonden, kan daarmee niet worden teruggehaald. Je kunt contact opnemen met Fabrice om inzage, correctie, verwijdering of beperking te vragen, of om bezwaar te maken, volgens de toepasselijke wet. We kunnen informatie nodig hebben om de betreffende gegevens te vinden; een account is niet nodig. Je kunt een klacht indienen bij de Zwitserse Federale Toezichthouder voor gegevensbescherming en openbaarheid (FDPIC) of bij de bevoegde autoriteit waar je woont. Logboeken van dienstverleners en de opslag van de API-chats staan los van de totale bezoekcijfers."
+    ],
+    [
+      "AI en beperkingen",
+      "Je praat met een AI-assistent, niet met een mens. Antwoorden kunnen onjuist zijn. Controleer belangrijke informatie zelf. Dit is een project voor algemene informatie, geen medische, nood-, financiële of juridische dienst. Het beslist niet over rechten, stelt geen diagnoses en neemt geen beslissingen over jou."
+    ],
+    [
+      "Feedback en professioneel contact",
+      "Als je ons mailt, worden je bericht en contactgegevens gebruikt om te antwoorden en het project te verbeteren. Voor een uitnodiging voor professionele feedback komen de contactgegevens uit de gepubliceerde professionele contactgegevens van de organisatie. We bewaren alleen de correspondentie en het verzend- of niet-contacteren-overzicht die nodig zijn om het gesprek af te handelen en herhaalde uitnodigingen te voorkomen. Je kunt bezwaar maken door te antwoorden of te mailen naar het adres hierboven. We verkopen geen contactlijsten en sturen niet automatisch vervolguitnodigingen."
+    ]
+  ],
+  "updated": "Laatst bijgewerkt:",
+  "back": "Terug naar de gesprekspagina"
+};
+module.exports.pt = {
+  "title": "Aviso de privacidade: Fale com a Inteligência Artificial",
+  "h1": "Aviso de privacidade",
+  "sections": [
+    [
+      "Quem é responsável",
+      "Fabrice Brambilla gere este projeto pessoal a partir da Suíça. Contacto: brambillafabrice@gmail.com."
+    ],
+    [
+      "A sua voz e as suas perguntas",
+      "Quando escolhe gravar, o navegador capta o som e envia-o para o nosso servidor e para a Groq, para produzir uma transcrição e uma resposta. As mensagens anteriores da conversa atual dão contexto. Não escrevemos gravações de voz nem transcrições de conversas de voz na base de dados da aplicação. Terminar a conversa apaga o texto da memória da página. As respostas são lidas com a voz do seu navegador ou dispositivo; se uma voz na nuvem opcional estiver ativada, o texto da resposta é enviado para a Fish Audio ou para a Groq. Uma voz do dispositivo pode, por sua vez, usar o serviço na nuvem do fabricante do dispositivo."
+    ],
+    [
+      "Pesquisas na web",
+      "Para obter informações atuais, pode ser enviada à Tavily uma curta pergunta em texto. Pode conter pormenores da sua pergunta. O seu som não é enviado ao serviço de pesquisa. A Tavily pode usar outros índices de pesquisa, segundo a política que publica. Evite pôr informações pessoais ou confidenciais nas perguntas."
+    ],
+    [
+      "Preferências do navegador",
+      "O navegador lembra-se da língua escolhida e de se já apresentou a introdução e as informações de privacidade. Pode apagar estas preferências nas definições de dados de sites do navegador. Não há cookies de publicidade nem identificadores persistentes de visitantes. Os identificadores de visitantes mais antigos são removidos quando a página atualizada é carregada."
+    ],
+    [
+      "O que a aplicação guarda",
+      "As estatísticas de utilização contêm apenas uma data, o total de aberturas da página e o total de perguntas de voz enviadas, e são guardadas para os últimos sete dias de calendário, no fuso horário Europe/Zurich. Uma pergunta de voz válida é contada quando é enviada, mesmo que a resposta falhe depois. Os testes sintéticos assinalados e a API de texto separada não entram nos totais. Estas estatísticas não têm identificadores de visitantes, endereços IP, som, texto das conversas nem a hora de cada pedido. Recarregamentos, envios repetidos e automatização não assinalada podem aumentar os totais; não identificam pessoas nem confirmam uso humano. A API de texto separada guarda os identificadores de chat e as mensagens na memória do servidor até serem apagados, até um reinício, por falta de espaço ou cerca de 24 horas depois da última mensagem; a expiração é verificada no acesso e numa limpeza periódica. Quem tiver o identificador de um chat pode aceder a esse chat, por isso mantenha-o privado."
+    ],
+    [
+      "Fornecedores e países",
+      "O servidor da aplicação está alojado na Render, em Frankfurt, na Alemanha. A Groq processa os pedidos nos Estados Unidos. A Groq pode guardar o conteúdo enviado segundo as definições de dados da conta e a sua política publicada; os metadados de utilização são guardados. Não foi verificado, para todas as contas usadas por esta aplicação, que nenhum conteúdo é guardado. A Tavily e os serviços de voz opcionais podem tratar dados nos Estados Unidos e noutros países indicados nas suas políticas e nas informações sobre subcontratantes. A Render e outros fornecedores podem guardar informações técnicas e de segurança segundo as suas próprias regras. Continuam a aplicar-se as condições de tratamento e de transferência internacional dos fornecedores; o facto de a aplicação não gravar nada não significa que nenhum fornecedor trate dados. Informações dos fornecedores:"
+    ],
+    [
+      "Finalidade e informações sensíveis",
+      "Os dados normais da conversa são tratados para prestar o serviço que pede. O tratamento técnico protege também o funcionamento e a segurança. Quando o RGPD se aplica, os fundamentos para o tratamento normal do serviço e para a segurança são, respetivamente, o artigo 6.º, n.º 1, alínea b), e o artigo 6.º, n.º 1, alínea f). O serviço não lhe pede que revele uma deficiência, historial de saúde, informações financeiras ou documentos de identificação. Não partilhe dados pessoais sensíveis ou confidenciais. Iniciar uma conversa ou autorizar o microfone não é um consentimento explícito geral para o tratamento de categorias especiais de dados, nos termos do artigo 9.º do RGPD."
+    ],
+    [
+      "As suas escolhas e direitos",
+      "A gravação só começa depois de escolher falar e de autorizar o microfone no navegador. Termine a conversa para parar novas gravações; isso não recupera informação já enviada. Pode contactar o Fabrice para pedir acesso, retificação, apagamento ou limitação, ou para se opor, nos termos da lei aplicável. Podemos precisar de informações para identificar os registos em causa; não é necessária uma conta. Pode apresentar queixa ao Comissário Federal Suíço para a Proteção de Dados e a Transparência (FDPIC) ou à autoridade competente do país onde vive. Os registos dos fornecedores e o armazenamento dos chats da API são independentes das contagens totais de visitas."
+    ],
+    [
+      "IA e limitações",
+      "Está a falar com um assistente de inteligência artificial, não com uma pessoa. As respostas podem estar erradas. Confirme as informações importantes por si. Este é um projeto de informação geral, não um serviço médico, de emergência, financeiro ou jurídico. Não decide sobre direitos, não faz diagnósticos nem toma decisões sobre si."
+    ],
+    [
+      "Comentários e contacto profissional",
+      "Se nos enviar um e-mail, a sua mensagem e os seus contactos são usados para responder e melhorar o projeto. Para um convite de feedback profissional, os contactos vêm das informações de contacto profissional publicadas pela organização. Guardamos apenas a correspondência e o registo de envio ou de não contactar necessários para tratar a conversa e evitar convites repetidos. Pode opor-se respondendo ou escrevendo para o contacto acima. Não vendemos listas de contactos nem enviamos convites de seguimento automaticamente."
+    ]
+  ],
+  "updated": "Última atualização:",
+  "back": "Voltar à página da conversa"
+};
+
 // Additions that must stay true to what the page really stores and sends.
 // 2026-11-15: the browser also remembers the chosen microphone and the agreed version.
 const REMEMBERED = {
@@ -151,6 +249,8 @@ const REMEMBERED = {
   ru: " Он также запоминает выбранный микрофон (технический идентификатор и название), то, что вы прослушали инструкцию о микрофоне, и версию политики конфиденциальности и условий, принятую нажатием «Начать».",
   zh: "它还会记住您选择的麦克风（技术标识和名称）、您已听过麦克风说明，以及您按下“开始”时同意的隐私政策和使用条款的版本。",
   ja: "また、選択したマイク（技術的な ID と名前）、マイクの案内を聞いたこと、「開始」を押して同意したプライバシーポリシーと利用規約の版も記憶します。",
+  nl: " Hij onthoudt ook welke microfoon je koos (de technische ID en de naam), dat je de uitleg over de microfoon hebt gehoord, en de versie van het privacybeleid en de voorwaarden waarmee je akkoord ging door op Starten te drukken.",
+  pt: " Lembra-se também do microfone que escolheu (o identificador técnico e o nome), de que ouviu as instruções sobre o microfone e da versão da política de privacidade e dos termos que aceitou ao premir Iniciar.",
 };
 for (const lang of Object.keys(REMEMBERED)) {
   const prefs = module.exports[lang].sections[3];
@@ -167,6 +267,8 @@ const READ_PAGES = {
   ru: " Чтобы ответить по веб-странице, адрес этой страницы (обычно найденной поиском) также отправляется в Tavily, который возвращает её текст. Приложение хранит в памяти текст прочитанных страниц, но не ваши слова, не дольше 20 минут, чтобы статью, которую читают по частям, не загружать заново.",
   zh: "为了根据网页内容回答，该网页的地址（通常是搜索找到的）也会发送给 Tavily，由其返回网页文字。应用会把已读网页的文字（绝不包括您说的话）在内存中保留最多 20 分钟，以便分段朗读文章时无需重新获取。",
   ja: "ウェブページの内容から答えるため、そのページのアドレス（通常は検索で見つかったもの）もTavilyに送信され、Tavilyがページの本文を返します。アプリは読んだページの本文（あなたの言葉は含みません）を最大20分間メモリに保持し、記事を分けて読み上げるときに再取得しないようにします。",
+  nl: " Om te antwoorden op basis van een webpagina wordt ook het adres van die pagina (meestal gevonden met de zoekopdracht) naar Tavily gestuurd, dat de tekst van de pagina teruggeeft. De app bewaart de tekst van gelezen pagina's, nooit je woorden, tot 20 minuten in het geheugen, zodat een artikel dat in delen wordt voorgelezen niet opnieuw wordt opgehaald.",
+  pt: " Para responder a partir de uma página web, o endereço dessa página (normalmente encontrada pela pesquisa) também é enviado à Tavily, que devolve o texto da página. A aplicação guarda na memória o texto das páginas lidas, nunca as suas palavras, durante até 20 minutos, para que um artigo lido por partes não seja descarregado de novo.",
 };
 for (const lang of Object.keys(READ_PAGES)) module.exports[lang].sections[2][1] += READ_PAGES[lang];
 
@@ -179,5 +281,7 @@ const SHOW_LAST = {
   ru: " Если вы включите текст ответов, он запомнит этот выбор; сами ответы остаются только на открытой странице.",
   zh: "如果您打开了回答文字，它会记住这个选择；回答本身只保留在打开的页面中。",
   ja: "回答の文字表示をオンにすると、その選択を記憶します。回答そのものは開いているページの中にだけ残ります。",
+  nl: " Als je de tekst van de antwoorden aanzet, onthoudt hij die keuze; de antwoorden zelf blijven alleen in de geopende pagina.",
+  pt: " Se ligar o texto das respostas, lembra-se dessa escolha; as respostas em si ficam apenas na página aberta.",
 };
 for (const lang of Object.keys(SHOW_LAST)) module.exports[lang].sections[3][1] += SHOW_LAST[lang];

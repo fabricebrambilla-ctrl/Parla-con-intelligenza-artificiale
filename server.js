@@ -118,7 +118,8 @@ function renderPage(name) {
   return (req, res) => {
     const lang = requestLang(req);
     const html = templates[name].replace(/\{\{(\w+)\}\}/g, (_, key) =>
-      key === "htmlLang" ? I18N.META[lang].html : key === "pageLang" ? lang : escapeHtml(I18N.t(lang, key))
+      key === "htmlLang" ? I18N.META[lang].html : key === "pageLang" ? lang :
+      key === "newLangs" ? I18N.GATED.filter(l => I18N.LANGS.includes(l)).join(" ") : escapeHtml(I18N.t(lang, key))
     );
     if (name === "index" && req.method === "GET") stats.recordVisit();
     sendHtml(res, lang, html);
@@ -634,6 +635,8 @@ function systemPrompt(lang, context, agent = false) {
     `This interface is designed for spoken replies and screen-reader access; everything you write is read aloud. Today's date is ${date}.\n` +
     `Do not infer the user's health, disability, age or other personal attributes from their use of this service.\n` +
     `Language: reply in ${I18N.META[lang].english} unless the user clearly switches language; then reply in their language.\n` +
+    (lang === "pt" ? `Write Portugal's Portuguese, not Brazilian: "ecrã", "telemóvel", "utilizador", "autocarro", "comboio", ` +
+      `"está a fazer" (not "está fazendo"), and the polite "o senhor" or a form without "você".\n` : "") +
     `How to talk: like a kind, knowledgeable friend on the phone. Use natural, everyday spoken language, short sentences and ` +
     `contractions where the language has them. Answer in 2 to 4 sentences, then, when useful, offer to say more or ask one short ` +
     `follow-up question. Exact times from a timetable and a page you are reading aloud may be longer. Remember what was said earlier in the conversation. Don't start with filler like "Great question" or ` +
@@ -740,36 +743,36 @@ function liveResearchPlan(history, today = new Date().toISOString().slice(0, 10)
   const latest = String(users.at(-1) || "").normalize("NFKC").replace(/[’‘]/g, "'").toLowerCase();
   let text = latest;
   if (users.length > 1 && latest.length < 100 &&
-      /^(and\b|what about\b|tell me more\b|more about\b|e\b|invece\b|dimmi di pi|approfondisci\b|puoi approfondire\b|et\b|en savoir plus\b|а\b|и\b|那|那么|では|それでは|じゃあ|そして)/iu.test(latest)) {
+      /^(and\b|what about\b|tell me more\b|more about\b|e\b|invece\b|dimmi di pi|approfondisci\b|puoi approfondire\b|et\b|en savoir plus\b|а\b|и\b|那|那么|では|それでは|じゃあ|そして|en\b|en wat\b|vertel meer|meer over|e quanto|diz-me mais|conta-me mais|mais sobre)/iu.test(latest)) {
     // Carry the actual topic through several short follow-ups, not only the
     // immediately preceding follow-up (which may itself contain no topic).
     text = users.slice(-5).join(" ").normalize("NFKC").replace(/[’‘]/g, "'").toLowerCase();
   }
-  const weather = /\b(weather|forecast|meteo|météo|previsioni)\b|\b(?:che|com'è|come e|come sarà|com'è stato)\s+(?:il\s+)?tempo\b|погод|времето|天气|天氣|天気|天候|気象/iu.test(text);
-  const sports = /\b(scores?|results?|fixtures?|standings|sports?|sportive?|sportivi|calcio|football|basketball|tennis|risultat[oi]|campionat[oi]|punteggi[oi]|classifica|partite|résultats?|classement|matchs?)\b|результат|резултат|比分|赛果|賽果|スポーツ|試合結果|試合予定|順位|得点|スコア/iu.test(text);
+  const weather = /\b(weather|forecast|meteo|météo|previsioni)\b|\b(?:che|com'è|come e|come sarà|com'è stato)\s+(?:il\s+)?tempo\b|погод|времето|天气|天氣|天気|天候|気象|\b(het weer|weerbericht|weersverwachting|weer (?:in|voor|morgen|vandaag|deze week))\b|\b(?:que|como está o|como vai estar o|como estará o)\s+tempo\b|(?<!\p{L})previsão do tempo|\bmeteorologia\b/iu.test(text);
+  const sports = /\b(scores?|results?|fixtures?|standings|sports?|sportive?|sportivi|calcio|football|basketball|tennis|risultat[oi]|campionat[oi]|punteggi[oi]|classifica|partite|résultats?|classement|matchs?)\b|результат|резултат|比分|赛果|賽果|スポーツ|試合結果|試合予定|順位|得点|スコア|\b(uitslag(?:en)?|wedstrijd(?:en)?|voetbal|competitie|resultados?|futebol|jogos?|campeonato)\b|(?<!\p{L})classificação/iu.test(text);
   // Timetables and prices: the answer is on a page, so the page must be read, not only found.
-  const timetable = /\b(timetables?|schedules?|departures?|orari[o]?|partenze|horaires?|fahrplan)\b|расписани|разписани|时刻表|時刻表/iu.test(text) ||
-    (/\b(trains?|bus|buses|coach|metro|subway|tram|ferry|flights?|tren[oi]|autobus|pullman|corriera|traghett[oi]|vol[oi]|cars?|vols?)\b|поезд|электричк|автобус|влак|火车|列车|高铁|公交|地铁|電車|列車|バス|新幹線/iu.test(text) &&
-     /\b(what time|when|next|first|last|times?|a che ora|quando|prossim[oa]|primo|ultimo|à quelle heure|quand|prochain|premier|dernier)\b|во сколько|когда|в колко|кога|几点|什么时候|何時|いつ/iu.test(text)) ||
+  const timetable = /\b(timetables?|schedules?|departures?|orari[o]?|partenze|horaires?|fahrplan)\b|расписани|разписани|时刻表|時刻表|\b(dienstregeling|vertrektijden?|horários?|partidas)\b/iu.test(text) ||
+    (/\b(trains?|bus|buses|coach|metro|subway|tram|ferry|flights?|tren[oi]|autobus|pullman|corriera|traghett[oi]|vol[oi]|cars?|vols?|trein(?:en)?|bussen|veerboot|vlucht(?:en)?|comboios?|autocarros?|barco|voos?)\b|(?<!\p{L})elétrico|поезд|электричк|автобус|влак|火车|列车|高铁|公交|地铁|電車|列車|バス|新幹線/iu.test(text) &&
+     /\b(what time|when|next|first|last|times?|a che ora|quando|prossim[oa]|primo|ultimo|à quelle heure|quand|prochain|premier|dernier|hoe laat|wanneer|eerste|laatste|volgende|a que horas|primeiro|próximo)\b|(?<!\p{L})últim[oa]|во сколько|когда|в колко|кога|几点|什么时候|何時|いつ/iu.test(text)) ||
     // "What time does the Pacific Surfliner leave …": a named service with no word for train or bus.
-    /\b(what time|a che ora|à quelle heure)\b.*\b(leaves?|departs?|arrives?|parte|partono|arriva|arrivano|part|partent|arrivent)\b/iu.test(text);
-  const price = /\b(prices?|how much|costs?|fares?|prezz[oi]|quanto costa|costa|tariff[ae]|prix|combien co[uû]te|tarifs?)\b|сколько стоит|цена|колко струва|多少钱|价格|票价|いくら|値段|料金|運賃/iu.test(text);
-  const research = /\b(research|studies|inventions?|assistive technology|ricer(?:ca|che)|invenzion[ei]|tecnologi[ae] assistiv[ae]|recherches?|études|inventions?|technologies d'assistance)\b|novità|исследован|изобретени|изследван|изобретени|研究|发明|發明|輔助科技|辅助技术|発明|支援技術/iu.test(text);
-  const current = /\b(today|tomorrow|yesterday|latest|current|news|recent|oggi|domani|ieri|ultim[oeia]|attual[ei]|notizie|aujourd'hui|demain|hier|dernier|dernières|actualités)\b|сегодня|завтра|вчера|свеж|последн|новост|днес|утре|новини|最新|今天|明天|新闻|新聞|今日|明日|昨日|現在|ニュース|最近/iu.test(text);
+    /\b(what time|a che ora|à quelle heure|hoe laat|a que horas)\b.*\b(leaves?|departs?|arrives?|parte|partono|arriva|arrivano|part|partent|arrivent|vertrekt|vertrekken|komt|aankomt|sai|saem|chega|chegam)\b/iu.test(text);
+  const price = /\b(prices?|how much|costs?|fares?|prezz[oi]|quanto costa|costa|tariff[ae]|prix|combien co[uû]te|tarifs?)\b|сколько стоит|цена|колко струва|多少钱|价格|票价|いくら|値段|料金|運賃|\b(prijs|prijzen|hoeveel kost|wat kost|kosten|tarieven|quanto custa|tarifas?|bilhetes?)\b|(?<!\p{L})preços?(?!\p{L})/iu.test(text);
+  const research = /\b(research|studies|inventions?|assistive technology|ricer(?:ca|che)|invenzion[ei]|tecnologi[ae] assistiv[ae]|recherches?|études|inventions?|technologies d'assistance)\b|novità|исследован|изобретени|изследван|изобретени|研究|发明|發明|輔助科技|辅助技术|発明|支援技術|\b(onderzoek(?:en)?|uitvinding(?:en)?|hulpmiddelen|pesquisa|tecnologias? de apoio)\b|(?<!\p{L})investigação|(?<!\p{L})invenç(?:ão|ões)/iu.test(text);
+  const current = /\b(today|tomorrow|yesterday|latest|current|news|recent|oggi|domani|ieri|ultim[oeia]|attual[ei]|notizie|aujourd'hui|demain|hier|dernier|dernières|actualités)\b|сегодня|завтра|вчера|свеж|последн|новост|днес|утре|новини|最新|今天|明天|新闻|新聞|今日|明日|昨日|現在|ニュース|最近|\b(vandaag|morgen|gisteren|nieuws|actueel|actuele|hoje|ontem|atual|atuais|recente)\b|(?<!\p{L})(?:amanhã|notícias|últimas)(?!\p{L})/iu.test(text);
   const years = text.match(/\b(?:19|20)\d{2}\b/g) || [];
   const historical = (years.length > 0 && years.every(y => Number(y) < Number(today.slice(0, 4))) && !current) ||
-    /last (?:week|month|year)|scors[oaie]|semaine dernière|mois dernier|прошл|минал|去年|上个月|上個月|先週|先月|昨年/iu.test(text);
-  const placeReference = /my (?:town|city|village|area)|mio paese|mia citt|nella mia zona|\b(?:da me|qui)\b|ma ville|mon village|мо[её]м городе|моя град|我的城市|我这里|私の町|私の街|私の地域|住んでいる町|地元/iu.test(latest);
+    /last (?:week|month|year)|scors[oaie]|semaine dernière|mois dernier|прошл|минал|去年|上个月|上個月|先週|先月|昨年|vorige (?:week|maand)|vorig jaar|semana passada|(?<!\p{L})mês passado|ano passado/iu.test(text);
+  const placeReference = /my (?:town|city|village|area)|mio paese|mia citt|nella mia zona|\b(?:da me|qui)\b|ma ville|mon village|мо[её]м городе|моя град|我的城市|我这里|私の町|私の街|私の地域|住んでいる町|地元|mijn (?:stad|dorp|buurt)|hier bij mij|minha (?:cidade|terra|zona)|\baqui\b/iu.test(latest);
   const vaguePlace = users.length === 1 && weather && placeReference;
   // The model may broaden a tool query and silently drop a small town/team.
   // Anchor weather/sports searches in the caller's own wording. Contextual
   // follow-ups retain the latest explicit topic as well as the newest question.
-  const anchor = users.slice(0, -1).reverse().find(s => /weather|forecast|meteo|météo|tempo|scores?|results?|football|calcio|risultat|campionat|погод|времето|天气|天氣|天気|スポーツ|試合/iu.test(s));
+  const anchor = users.slice(0, -1).reverse().find(s => /weather|forecast|meteo|météo|tempo|scores?|results?|football|calcio|risultat|campionat|погод|времето|天气|天氣|天気|スポーツ|試合|weer|voetbal|uitslag|futebol|resultado/iu.test(s));
   const contextual = text !== latest && anchor ? anchor + " " + users.at(-1) : users.at(-1);
   // Reading a whole page in parts happens only when the user asks for it: "read it to me", or the
   // answers to all the questions of an article (a study article has more than one part can hold).
-  const readAloud = /\b(read|leggi|leggimi|leggere|lire|lis|lisez|lis-moi)\b|прочит|прочет|читай|прочти|读|讀|読/iu.test(latest) ||
-    /\b(answers?|rispost[ae]|réponses?)\b.{0,40}\b(questions?|domand[ae])\b|отговор.{0,40}въпрос|ответ.{0,40}вопрос|(答案|回答).{0,20}问题|问题.{0,6}(答案|回答)|質問.{0,20}(答え|回答)/iu.test(latest);
+  const readAloud = /\b(read|leggi|leggimi|leggere|lire|lis|lisez|lis-moi|lees|voorlezen|leia|ler)\b|(?<!\p{L})lê(?!\p{L})|прочит|прочет|читай|прочти|读|讀|読/iu.test(latest) ||
+    /\b(answers?|rispost[ae]|réponses?)\b.{0,40}\b(questions?|domand[ae])\b|отговор.{0,40}въпрос|ответ.{0,40}вопрос|(答案|回答).{0,20}问题|问题.{0,6}(答案|回答)|質問.{0,20}(答え|回答)|\bantwoord(?:en)?\b.{0,40}\bvragen\b|\brespostas?\b.{0,40}\bperguntas?\b/iu.test(latest);
   return { required: !historical && (weather || sports || current || research || timetable || price), vaguePlace, readAloud,
     read: !historical && (timetable || price), deep: !historical && (timetable || price || current),
     query: (weather || sports) && !(weather && placeReference && !anchor) ? String(contextual || "").slice(0, 250) : null,
@@ -778,10 +781,10 @@ function liveResearchPlan(history, today = new Date().toISOString().slice(0, 10)
 
 function unsupportedAction(text) {
   const s = String(text || "").normalize("NFKC").toLowerCase();
-  if (/^(?:please\s+|per favore\s+)?(?:(?:can you|could you|puoi|potresti|peux-tu|pouvez-vous)\s+)?(?:download\b|scarica(?:re|mi)?\b|télécharge(?:r)?\b|скачай\b|изтегли\b|下载|ダウンロード)/iu.test(s.trim())) return "downloadUnavailable";
-  if (/(?:cambia|change|switch|passa|imposta|usa|mets|passe|измени|смени|поменяй|换|切换|変更|変えて)/iu.test(s) &&
-      /voce|voice|voix|голос|глас|声音|声/iu.test(s) &&
-      /maschi|femmin|\bmale\b|\bfemale\b|mascul|fémin|мужск|женск|мъжк|男性|女性|男声|女声/iu.test(s)) return "voiceChangeUnavailable";
+  if (/^(?:please\s+|per favore\s+)?(?:(?:can you|could you|puoi|potresti|peux-tu|pouvez-vous|kun je|kunt u|podes|pode)\s+)?(?:download\b|downloaden\b|scarica(?:re|mi)?\b|télécharge(?:r)?\b|скачай\b|изтегли\b|descarrega(?:r)?\b|transfere\b|下载|ダウンロード)/iu.test(s.trim())) return "downloadUnavailable";
+  if (/(?:cambia|change|switch|passa|imposta|usa|mets|passe|измени|смени|поменяй|换|切换|変更|変えて|verander|wijzig|gebruik|muda|mude|troca|usa)/iu.test(s) &&
+      /voce|voice|voix|голос|глас|声音|声|stem|voz/iu.test(s) &&
+      /maschi|femmin|\bmale\b|\bfemale\b|mascul|fémin|мужск|женск|мъжк|男性|女性|男声|女声|mannen|vrouwen|mannelijk|vrouwelijk|feminin/iu.test(s)) return "voiceChangeUnavailable";
   return null;
 }
 
@@ -792,6 +795,8 @@ const DEFLECTS = new RegExp([
   "\\b(?:consulte[zr]|visite[zr]|vérifie[zr]|rendez-vous sur|allez sur)\\s+(?:directement\\s+)?(?:le\\s+|sur le\\s+)?(?:site|l'application)\\b",
   "(?:посетите|проверьте|смотрите|зайдите на|посетете|проверете|вижте)\\s+(?:на\\s+)?(?:официальн\\S+\\s+|официалн\\S+\\s+)?(?:сайт|сайте|сайта|приложени)",
   "(?:访问|查看|查询|登录).{0,12}(?:官网|网站|应用)", "(?:公式)?(?:ウェブ)?サイト(?:を|で)(?:ご確認|ご覧|確認して)",
+  "\\b(?:bekijk|raadpleeg|bezoek|kijk op|ga naar|check)\\s+(?:de\\s+|hun\\s+)?(?:officiële\\s+)?(?:website|site|app)\\b",
+  "\\b(?:consulte|visite|veja|verifique|vá a|aceda a|aceda ao)\\s+(?:o\\s+|a\\s+)?(?:site|sítio|página|aplicação|app)\\b",
 ].join("|"), "iu");
 const READ_NUDGE = "Do not send the user to a website or an app: they cannot look at it. Call read_page now on the best " +
   "official page from the search results and give the actual answer from its text. If the page cannot be read, try one other " +
@@ -808,8 +813,10 @@ const MADE = new RegExp([
   String.raw`(?:създадох|запазих|изпратих|прикачих)`,
   String.raw`我(?:已经|已)?(?:为你|为您)?(?:创建|生成|保存|发送|上传)了`,
   String.raw`(?:作成|保存|送信|添付)しました`,
+  String.raw`\bik heb\b[^.!?]{0,40}\b(?:gemaakt|aangemaakt|opgeslagen|verstuurd|verzonden|gedownload|bijgevoegd)\b`,
+  String.raw`\b(?:criei|guardei|enviei|descarreguei|anexei|gerei)\b`,
 ].join("|"), "iu");
-const ON_PAGE = /\b(?:last answer|text box)\b|ultima risposta|casella di testo|dernière réponse|zone de texte|последен отговор|последний ответ|текстов(?:ото|ое) пол|上一个回答|文本框|最後の回答|テキストボックス/iu;
+const ON_PAGE = /\b(?:last answer|text box)\b|ultima risposta|casella di testo|dernière réponse|zone de texte|последен отговор|последний ответ|текстов(?:ото|ое) пол|上一个回答|文本框|最後の回答|テキストボックス|laatste antwoord|tekstvak|(?<!\p{L})última resposta|caixa de texto/iu;
 function falseClaim(text, boxed) {
   const t = String(text || "");
   return MADE.test(t) || (!boxed && ON_PAGE.test(t));

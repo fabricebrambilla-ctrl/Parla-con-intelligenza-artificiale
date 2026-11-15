@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/style.css">
 </head>
-<body class="voice-page">
+<body class="voice-page" data-new-langs="{{newLangs}}">
   <main class="voice-panel">
     <h1 data-i18n="h1">{{h1}}</h1>
     <!-- Agreement by pressing Start: read before the button, and part of the button's description.
@@ -26,6 +26,9 @@
       <button type="button" lang="ru" data-set-lang="ru">Русский</button>
       <button type="button" lang="zh-Hans" data-set-lang="zh">中文</button>
       <button type="button" lang="ja" data-set-lang="ja">日本語</button>
+      <!-- Removed by the page while NEW_LANGUAGES does not switch them on. -->
+      <button type="button" lang="nl" data-set-lang="nl">Nederlands</button>
+      <button type="button" lang="pt-PT" data-set-lang="pt">Português</button>
     </div>
     <!-- Shown only when two or more microphones exist; names are readable only after permission. -->
     <button id="micBtn" type="button" aria-expanded="false" data-i18n="micButton" hidden>{{micButton}}</button>

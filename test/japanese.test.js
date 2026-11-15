@@ -4,7 +4,7 @@ const fs=require('node:fs'),vm=require('node:vm');
 const I=require('../public/i18n.js'),legal=require('../legal.js'),about=require('../about.js');
 const app=fs.readFileSync(require.resolve('../public/app.js'),'utf8');
 function controls(){
- const c={lang:'ja'};
+ const c={lang:'ja',I:require('../public/i18n.js')};
  vm.runInNewContext(app.slice(app.indexOf('  var GOODBYE'),app.indexOf('  // ---------- conversation controls')),c);
  vm.runInNewContext(app.slice(app.indexOf('  var LANG_WORDS'),app.indexOf('  async function runCommand')),c);
  return c;

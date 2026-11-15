@@ -68,6 +68,41 @@ const PAGES = {
     contactTitle: "面向机构", contact: "如果您的机构为屏幕阅读器使用者提供支持，我很希望与您讨论免费试用或合作，一起改进这个应用。欢迎发邮件或打电话，安排一次简短交流。", emailLabel: "电子邮件", phoneLabel: "电话"
   }
 };
+// Dutch and Portuguese (Portugal), 2026-11-15.
+PAGES.nl = {
+  "organizationsTitle": "Proefprojecten en samenwerking",
+  "generalContactTitle": "Contact",
+  "generalContact": "Vragen over het project? Mail of bel me.",
+  "title": "Over Talk with AI",
+  "intro": "Ik ben 17 en zit op de middelbare school in Zwitserland. Ik wil graag ingenieur worden.",
+  "storyTitle": "Waarom ik dit heb gemaakt",
+  "story": "Mijn tante is blind geboren en gebruikt JAWS. Ze vond de bekende AI-hulpmiddelen moeilijk te gebruiken, vooral om dingen online op te zoeken. Ik ben dit project begonnen om dat eenvoudiger te maken.",
+  "missionTitle": "Vraag het met je stem. Verken het web.",
+  "mission": "Talk with AI is een gratis spraakassistent voor vragen en zoeken op het web. Je spreekt, luistert naar het antwoord en stelt een nieuwe vraag. Ik bouw hem voor mensen die een schermlezer gebruiken, zoals JAWS en NVDA.",
+  "pilotsTitle": "Lopende proefprojecten",
+  "pilotCountry": "Italië",
+  "contactTitle": "Voor organisaties",
+  "contact": "Als jouw organisatie mensen ondersteunt die een schermlezer gebruiken, bespreek ik graag een gratis proefproject of samenwerking, om de app samen te verbeteren. Mail of bel me voor een kort gesprek.",
+  "emailLabel": "E-mail",
+  "phoneLabel": "Telefoon"
+};
+PAGES.pt = {
+  "organizationsTitle": "Projetos-piloto e colaboração",
+  "generalContactTitle": "Contacto",
+  "generalContact": "Tem perguntas sobre o projeto? Envie-me um e-mail ou ligue-me.",
+  "title": "Sobre o Talk with AI",
+  "intro": "Tenho 17 anos e sou aluno do ensino secundário na Suíça. Gostava de estudar engenharia.",
+  "storyTitle": "Porque criei isto",
+  "story": "A minha tia nasceu cega e usa o JAWS. Achava difíceis de usar as ferramentas de inteligência artificial mais conhecidas, sobretudo para pesquisar na internet. Comecei este projeto para tornar isso mais simples.",
+  "missionTitle": "Pergunte com a voz. Explore a web.",
+  "mission": "O Talk with AI é um assistente de voz gratuito para perguntas e pesquisas na web. Fala, ouve a resposta e faz outra pergunta. Estou a desenvolvê-lo para quem usa leitores de ecrã, como o JAWS e o NVDA.",
+  "pilotsTitle": "Projetos-piloto em curso",
+  "pilotCountry": "Itália",
+  "contactTitle": "Para organizações",
+  "contact": "Se a sua organização apoia pessoas que usam leitores de ecrã, gostaria de falar sobre um projeto-piloto gratuito ou uma colaboração, para melhorarmos a aplicação juntos. Envie-me um e-mail ou ligue-me para combinarmos uma conversa curta.",
+  "emailLabel": "E-mail",
+  "phoneLabel": "Telefone"
+};
 
 function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

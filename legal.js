@@ -160,6 +160,131 @@ const ACCESSIBILITY = {
   },
 };
 
+// 2026-11-15: the commands added with "Show last answer" (C) and the microphone choice (A1), after
+// "change language" in the list of things you can say. (Dutch and Portuguese have them already.)
+const MORE_COMMANDS = {
+  en: ["“Show the last answer”: the last answer as text on the page, with a Copy button; “hide the answer” turns it off.", "“Change microphone”: use the next microphone."],
+  it: ["“Mostra l'ultima risposta”: l'ultima risposta come testo nella pagina, con un pulsante Copia; “nascondi la risposta” la disattiva.", "“Cambia microfono”: usa il microfono successivo."],
+  fr: ["« Affiche la dernière réponse » : la dernière réponse en texte sur la page, avec un bouton Copier ; « masque la réponse » la désactive.", "« Changer de microphone » : utiliser le microphone suivant."],
+  bg: ["„Покажи последния отговор“: последният отговор като текст на страницата, с бутон Копирай; „скрий отговора“ го изключва.", "„Смени микрофона“: използва следващия микрофон."],
+  ru: ["«Покажи последний ответ»: последний ответ текстом на странице, с кнопкой Копировать; «скрой ответ» выключает это.", "«Сменить микрофон»: использовать следующий микрофон."],
+  zh: ["“显示上一个回答”：把上一个回答作为文字显示在页面上，并有“复制”按钮；“隐藏回答”可以关闭。", "“换麦克风”：使用下一个麦克风。"],
+  ja: ["「最後の回答を表示」：最後の回答をページに文字で表示し、コピーボタンも表示します。「回答を非表示」で消せます。", "「マイクを変更」：次のマイクに切り替えます。"],
+};
+for (const lang of Object.keys(MORE_COMMANDS)) ACCESSIBILITY[lang].sections[3][1].splice(2, 0, ...MORE_COMMANDS[lang]);
+
+// Dutch and Portuguese (Portugal), 2026-11-15.
+ACCESSIBILITY.nl = {
+  "title": "Toegankelijkheidsverklaring: Praat met Kunstmatige Intelligentie",
+  "h1": "Toegankelijkheidsverklaring",
+  "sections": [
+    [
+      "Toestemming voor de microfoon en sneltoets",
+      "Wachten op toegang tot de microfoon. Als je browser het vraagt, kies dan Toestaan in de vraag om de microfoon te gebruiken. Deze knoppen staan buiten deze pagina. Alt+Shift+T bedient Praten ook vanaf elke plek op deze pagina, als je browser en schermlezer de sneltoets doorlaten."
+    ],
+    [
+      "Ons doel",
+      "Deze website is gemaakt om helemaal met de stem en met schermlezers te gebruiken. We streven naar de Web Content Accessibility Guidelines (WCAG) 2.2 op niveau AA en de Europese norm EN 301 549."
+    ],
+    [
+      "Hoe het werkt",
+      "De pagina heeft één kop en één grote knop. Druk erop om te beginnen. De eerste keer vraagt de assistent welke taal je wilt gebruiken: zeg het gewoon. Druk daarna op de spatiebalk (of de knop) om te beginnen met praten, en nog een keer als je klaar bent om het antwoord te krijgen. Als je zeven seconden niets zegt, antwoordt de assistent toch. Op de spatiebalk drukken terwijl de assistent praat, onderbreekt hem. Zeg tot ziens om het gesprek te beëindigen. Om van taal te wisselen, zeg het op elk moment, bijvoorbeeld \"spreek Nederlands\", of gebruik de knop Taal. Op een telefoon of tablet gebruik je de knop Praten in plaats van de spatiebalk. Je kunt altijd stoppen met de knop Gesprek beëindigen, die direct na de knop Praten staat."
+    ],
+    [
+      "Wat je kunt zeggen",
+      [
+        "“Herhaal”: hoor het laatste antwoord nog een keer.",
+        "“Taal wijzigen”, of bijvoorbeeld “spreek Engels”: wissel van taal.",
+        "“Laatste antwoord tonen”: het laatste antwoord als tekst op de pagina, met een knop Kopiëren; “verberg het antwoord” zet dit weer uit.",
+        "“Microfoon wijzigen”: gebruik de volgende microfoon.",
+        "“Help”: hoor wat je kunt zeggen.",
+        "“Tot ziens”: beëindig het gesprek."
+      ]
+    ],
+    [
+      "Opdrachten voor je schermlezer",
+      [
+        "NVDA: de pagina opent op de knop Gesprek starten. Druk op Spatie of Enter. Dit werkt in de bladermodus; de focusmodus is niet nodig. Als je bent weggegaan, druk op B om naar de volgende knop te gaan, of op Shift+B om terug te gaan. Escape beëindigt het gesprek. Druk op Control om NVDA stil te zetten terwijl de assistent praat.",
+        "JAWS: hetzelfde als NVDA. Spatie of Enter op de knop werkt met de virtuele cursor, B en Shift+B springen tussen knoppen, Escape beëindigt het gesprek en Control zet JAWS stil.",
+        "Verteller: druk in de scanmodus op Spatie of Enter op de knop; B springt naar de volgende knop. Caps Lock+Spatie zet de scanmodus aan en uit.",
+        "VoiceOver op de Mac: druk op Control+Option+Spatie op de knop, of op Spatie als de toetsenbordfocus erop staat. Tab gaat van knop naar knop.",
+        "VoiceOver op iPhone en iPad: veeg naar rechts naar de knop Gesprek starten en tik twee keer. Tik daarna twee keer op de knop Praten om te praten, en nog een keer om het antwoord te krijgen. De knop Gesprek beëindigen staat direct daarna.",
+        "TalkBack op Android: hetzelfde als VoiceOver op de iPhone: veeg naar rechts naar de knop en tik twee keer.",
+        "Orca op Linux: druk op Spatie of Enter op de knop; B springt naar de volgende knop. Orca+A wisselt tussen bladermodus en focusmodus."
+      ]
+    ],
+    [
+      "Ondersteunde schermlezers en apparaten",
+      "Hij is ontworpen voor JAWS, NVDA en Verteller op Windows, VoiceOver op Mac en iPhone, TalkBack op Android en Orca op Linux, met actuele versies van Chrome, Edge, Firefox en Safari. Er zijn geen koptelefoon en geen speciale instellingen nodig."
+    ],
+    [
+      "Bekende beperkingen",
+      "De stem hangt af van je apparaat en van de diensten die de beheerder heeft ingeschakeld; een natuurlijke stem is niet in elke situatie beschikbaar. Er zijn automatische controles gedaan, maar volledige tests op echte apparaten met JAWS, NVDA en VoiceOver moeten nog gebeuren. De Nederlandse versie is nog niet door Nederlandstalige gebruikers getest. Je kunt de assistent niet onderbreken door te praten; druk in plaats daarvan op de knop."
+    ],
+    [
+      "Feedback",
+      "Als iets voor jou niet werkt, schrijf dan naar {email}. Elk bericht wordt gelezen."
+    ]
+  ],
+  "updated": "Laatst bijgewerkt:",
+  "back": "Terug naar de gesprekspagina"
+};
+ACCESSIBILITY.pt = {
+  "title": "Declaração de acessibilidade: Fale com a Inteligência Artificial",
+  "h1": "Declaração de acessibilidade",
+  "sections": [
+    [
+      "Autorização do microfone e atalho de teclado",
+      "A aguardar o acesso ao microfone. Se o navegador perguntar, escolha Permitir no pedido de autorização do microfone. Estes controlos estão fora desta página. Alt+Shift+T também aciona Falar a partir de qualquer ponto desta página, se o navegador e o leitor de ecrã deixarem passar o atalho."
+    ],
+    [
+      "O nosso objetivo",
+      "Este site foi feito para ser usado inteiramente por voz e com leitores de ecrã. Procuramos cumprir as Diretrizes de Acessibilidade para o Conteúdo da Web (WCAG) 2.2, nível AA, e a norma europeia EN 301 549."
+    ],
+    [
+      "Como usar",
+      "A página tem um título e um botão grande. Prima-o para começar. Na primeira vez, o assistente pergunta que língua quer usar: basta dizê-la. Depois prima a barra de espaços (ou o botão) para começar a falar, e outra vez quando terminar, para ouvir a resposta. Se não falar durante sete segundos, o assistente responde na mesma. Premir a barra de espaços enquanto o assistente fala interrompe-o. Para terminar a conversa, diga adeus. Para mudar de língua, diga-o a qualquer momento, por exemplo \"fala inglês\", ou use o botão Língua. Num telemóvel ou tablet, use o botão Falar em vez da barra de espaços. Pode terminar a qualquer momento com o botão Terminar conversa, que fica logo a seguir ao botão Falar."
+    ],
+    [
+      "O que pode dizer",
+      [
+        "“Repete”: ouvir de novo a última resposta.",
+        "“Mudar de língua”, ou por exemplo “fala inglês”: mudar de língua.",
+        "“Mostra a última resposta”: a última resposta como texto na página, com um botão Copiar; “esconde a resposta” desliga-o.",
+        "“Mudar de microfone”: usar o microfone seguinte.",
+        "“Ajuda”: ouvir o que pode dizer.",
+        "“Adeus”: terminar a conversa."
+      ]
+    ],
+    [
+      "Comandos para o seu leitor de ecrã",
+      [
+        "NVDA: a página abre no botão Iniciar conversa. Prima Espaço ou Enter. Funciona no modo de navegação; não precisa do modo de foco. Se se afastou, prima B para ir para o botão seguinte, ou Shift+B para voltar. Escape termina a conversa. Prima Control para calar o NVDA enquanto o assistente fala.",
+        "JAWS: igual ao NVDA. Espaço ou Enter no botão funciona com o cursor virtual, B e Shift+B saltam entre botões, Escape termina a conversa e Control cala o JAWS.",
+        "Narrador: no modo de análise, prima Espaço ou Enter no botão; B salta para o botão seguinte. Caps Lock+Espaço liga e desliga o modo de análise.",
+        "VoiceOver no Mac: prima Control+Option+Espaço no botão, ou Espaço quando o foco do teclado está nele. Tab passa de botão em botão.",
+        "VoiceOver no iPhone e no iPad: deslize para a direita até ao botão Iniciar conversa e toque duas vezes. Depois toque duas vezes no botão Falar para falar, e outra vez para ouvir a resposta. O botão Terminar conversa fica logo a seguir.",
+        "TalkBack no Android: igual ao VoiceOver no iPhone: deslize para a direita até ao botão e toque duas vezes.",
+        "Orca no Linux: prima Espaço ou Enter no botão; B salta para o botão seguinte. Orca+A alterna entre o modo de navegação e o modo de foco."
+      ]
+    ],
+    [
+      "Leitores de ecrã e dispositivos suportados",
+      "Foi pensado para o JAWS, o NVDA e o Narrador no Windows, o VoiceOver no Mac e no iPhone, o TalkBack no Android e o Orca no Linux, com versões atuais do Chrome, Edge, Firefox e Safari. Não são precisos auscultadores nem definições especiais."
+    ],
+    [
+      "Limitações conhecidas",
+      "A voz depende do seu dispositivo e dos serviços ativados pelo responsável; uma voz natural não está disponível em todas as configurações. Foram feitas verificações automáticas, mas os testes completos em dispositivos reais com o JAWS, o NVDA e o VoiceOver ainda estão por fazer. A versão em português ainda não foi testada por utilizadores que falam português. Não pode interromper o assistente falando; prima o botão."
+    ],
+    [
+      "Comentários",
+      "Se alguma coisa não funcionar para si, escreva para {email}. Todas as mensagens são lidas."
+    ]
+  ],
+  "updated": "Última atualização:",
+  "back": "Voltar à página da conversa"
+};
+
 // Keep microphone help available to read again without starting capture.
 const microphoneText = require("./public/i18n.js");
 for (const lang of Object.keys(ACCESSIBILITY)) {

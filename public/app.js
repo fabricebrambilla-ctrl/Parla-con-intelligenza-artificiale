@@ -38,6 +38,11 @@
       lastBtn = $("lastBtn"), lastBox = $("lastBox"), lastText = $("lastText"), copyBtn = $("copyBtn"), copyStatus = $("copyStatus");
 
   if (IS_TOUCH) $("helpText").setAttribute("data-i18n", "helpTouch");
+  // Languages not switched on yet (see NEW_LANGUAGES) are not offered.
+  (function () {
+    var all = langsBox.querySelectorAll("[data-set-lang]");
+    for (var i = 0; i < all.length; i++) if (I.LANGS.indexOf(all[i].getAttribute("data-set-lang")) === -1) all[i].parentNode.removeChild(all[i]);
+  })();
 
   function renderTexts() {
     I.applyPage(lang);
@@ -177,7 +182,9 @@
     bg: /kalina|borislav|daria/,
     ru: /svetlana|dariya|dmitry|milena|yuri|katya|google русский/,
     ja: /nanami|keita|kyoko|otoya|haruka|ichiro|sayaka|google 日本語/,
-    zh: /xiaoxiao|xiaoyi|yunxi|yunjian|tingting|lili|google 普通话|google 中文/
+    zh: /xiaoxiao|xiaoyi|yunxi|yunjian|tingting|lili|google 普通话|google 中文/,
+    nl: /colette|fenna|maarten|xander|claire|google nederlands/,
+    pt: /raquel|duarte|fernanda|joana|catarina|google português de portugal/
   };
 
   function pickVoice(code) {
@@ -190,6 +197,8 @@
       var n = String(v.name || "").toLowerCase();
       var s = 0;
       if (vl === want) s += 2;
+      // Portugal was chosen for Portuguese: a Brazilian voice only when there is no Portuguese one.
+      if (code === "pt" && vl !== want) s -= 9;
       if (/natural|neural/.test(n)) s += 8;          // Edge online voices, Windows 11 natural voices
       if (/premium|enhanced|siri/.test(n)) s += 6;   // Apple high-quality voices
       if (/google/.test(n)) s += 4;                  // Chrome and Android voices
@@ -704,7 +713,8 @@
   // ---------- goodbye detection (backup for the model's end_conversation) ----------
   // (\b does not work for Cyrillic, so match whole words by padding with spaces)
   var GOODBYE = ["goodbye", "good bye", "bye", "stop", "arrivederci", "ciao ciao", "basta", "au revoir",
-                 "arrête", "arrete", "довиждане", "чао", "стоп", "до свидания", "пока", "хватит"];
+                 "arrête", "arrete", "довиждане", "чао", "стоп", "до свидания", "пока", "хватит",
+                 "tot ziens", "doei", "dag dag", "stoppen", "adeus", "tchau", "até logo", "até à próxima", "parar"];
   function isGoodbye(text) {
     var clean = text.toLowerCase().replace(/[.,!?¡¿;:。，！？«»"“”]/g, " ").replace(/\s+/g, " ").trim();
     var compact = clean.replace(/[\s「」『』。]/g, "");
@@ -779,15 +789,20 @@
 
   // ---------- language question (first conversation only) ----------
   var LANG_WORDS = {
-    ja: ["japanese", "giapponese", "japonais", "японск", "日本語", "日语", "日文", "nihongo"],
-    en: ["英語", "english", "inglese", "anglais", "английски", "английск", "англий", "英语", "英文"],
-    it: ["イタリア語", "italian", "italien", "италиански", "итальянск", "意大利"],
-    fr: ["フランス語", "french", "français", "francais", "francese", "френски", "французск", "法语", "法文"],
-    bg: ["ブルガリア語", "bulgarian", "българск", "bulgaro", "bulgare", "болгарск", "保加利亚"],
-    ru: ["ロシア語", "russian", "русск", "russo", "russe", "руски", "俄语", "俄文"],
-    zh: ["中国語", "chinese", "mandarin", "cinese", "chinois", "китайск", "中文", "汉语", "普通话", "华语", "中国"]
+    ja: ["japanese", "giapponese", "japonais", "японск", "日本語", "日语", "日文", "nihongo", "japans", "japonês", "japones"],
+    en: ["英語", "english", "inglese", "anglais", "английски", "английск", "англий", "英语", "英文", "engels", "inglês", "ingles"],
+    it: ["イタリア語", "italian", "italien", "италиански", "итальянск", "意大利", "italiaans"],
+    fr: ["フランス語", "french", "français", "francais", "francese", "френски", "французск", "法语", "法文", "frans", "francês", "frances"],
+    bg: ["ブルガリア語", "bulgarian", "българск", "bulgaro", "bulgare", "болгарск", "保加利亚", "bulgaars", "búlgaro"],
+    ru: ["ロシア語", "russian", "русск", "russo", "russe", "руски", "俄语", "俄文", "russisch"],
+    zh: ["中国語", "chinese", "mandarin", "cinese", "chinois", "китайск", "中文", "汉语", "普通话", "华语", "中国", "chinees", "chinês", "chines"],
+    nl: ["オランダ語", "dutch", "olandese", "néerlandais", "neerlandais", "нидерландск", "холандски", "голландск", "荷兰语", "荷兰",
+         "nederlands", "hollands", "neerlandês", "neerlandes", "holandês", "holandes"],
+    pt: ["ポルトガル語", "portuguese", "portoghese", "portugais", "португалски", "португальск", "葡萄牙语", "葡萄牙",
+         "português", "portugues", "portugees"]
   };
-  var WHISPER_LANGS = { japanese: "ja", english: "en", italian: "it", french: "fr", bulgarian: "bg", russian: "ru", chinese: "zh" };
+  var WHISPER_LANGS = { japanese: "ja", english: "en", italian: "it", french: "fr", bulgarian: "bg", russian: "ru", chinese: "zh",
+                        dutch: "nl", portuguese: "pt" };
 
   function matchLanguage(text, detected) {
     var t = String(text || "").toLowerCase();
@@ -798,10 +813,12 @@
         if (p !== -1 && p < bestPos) { best = code; bestPos = p; }
       });
     });
-    if (best) return best;
+    // A language that is not switched on yet (NEW_LANGUAGES) is not chosen.
+    if (best) return I.LANGS.indexOf(best) !== -1 ? best : null;
     // Just a word or two in some language ("Italiano", "Русский"): use the language it was spoken in.
     var short = t.trim().split(/\s+/).length <= 3;
-    return short && WHISPER_LANGS[String(detected || "").toLowerCase()] || null;
+    var spoken = short && WHISPER_LANGS[String(detected || "").toLowerCase()];
+    return spoken && I.LANGS.indexOf(spoken) !== -1 ? spoken : null;
   }
 
   // ---------- changing language by voice, during a conversation ----------
@@ -811,15 +828,18 @@
                       "parla", "parlami", "parliamo", "parlare", "passa", "passiamo", "usa", "cambia", "rispondi",
                       "parle", "parlez", "parler", "parlons", "passe", "passez", "passons", "utilise", "changer", "réponds", "répondez",
                       "говори", "говорете", "говорим", "премини", "преминем", "смени", "отговаряй", "отговори",
-                      "говорите", "говорить", "перейди", "перейдите", "переключи", "переключись", "давай", "отвечай", "ответь", "разговаривай"];
+                      "говорите", "говорить", "перейди", "перейдите", "переключи", "переключись", "давай", "отвечай", "ответь", "разговаривай",
+                      "spreek", "praat", "schakel", "gebruik", "antwoord", "fala", "fale", "falar", "muda", "mude", "usa", "responde", "responda"];
   var CHANGE_LANG = ["change language", "change the language", "switch language", "another language", "different language",
                      "other language", "cambia lingua", "cambiare lingua", "cambia la lingua", "altra lingua",
                      "cambio la lingua", "cambio lingua", "cambiare la lingua", "lingua diversa",
                      "changer de langue", "change de langue", "changer la langue", "autre langue",
                      "смени езика", "смяна на езика", "друг език", "смени язык", "сменить язык", "поменяй язык",
-                     "другой язык", "换语言", "换一种语言", "切换语言", "更改语言", "改变语言"];
-  var JA_SWITCH = /^(日本語|英語|イタリア語|フランス語|ブルガリア語|ロシア語|中国語)(?:で|に)(?:話して|話してください|答えて|答えてください|切り替えて|切り替えてください|変更して|して)(?:ください)?$/;
-  var ZH_SWITCH = /(说|讲|切换到|切换成|换成|换到|改成|改用)\s*(中文|汉语|普通话|英语|英文|意大利语|法语|法文|俄语|俄文|保加利亚语|日语|日文|日本語)/;
+                     "другой язык", "换语言", "换一种语言", "切换语言", "更改语言", "改变语言",
+                     "taal wijzigen", "taal veranderen", "verander de taal", "andere taal", "wijzig de taal",
+                     "mudar de língua", "mudar a língua", "mudar de idioma", "mudar o idioma", "outra língua", "outro idioma"];
+  var JA_SWITCH = /^(日本語|英語|イタリア語|フランス語|ブルガリア語|ロシア語|中国語|オランダ語|ポルトガル語)(?:で|に)(?:話して|話してください|答えて|答えてください|切り替えて|切り替えてください|変更して|して)(?:ください)?$/;
+  var ZH_SWITCH = /(说|讲|切换到|切换成|换成|换到|改成|改用)\s*(中文|汉语|普通话|英语|英文|意大利语|法语|法文|俄语|俄文|保加利亚语|日语|日文|日本語|荷兰语|葡萄牙语)/;
 
   // Other spoken commands; the whole request must be one of these (polite words aside),
   // so "help me write a letter" still goes to the assistant.
@@ -829,26 +849,33 @@
           "changer de microphone", "change de microphone", "changer le microphone", "change le microphone", "autre microphone",
           "смени микрофона", "смяна на микрофона", "друг микрофон", "сменить микрофон", "смени микрофон", "поменяй микрофон",
           "другой микрофон", "换麦克风", "更换麦克风", "切换麦克风", "换一个麦克风",
-          "マイクを変更", "マイクを変更して", "マイクを変更してください", "マイクを変えて", "マイクを変えてください", "マイクを切り替えて"],
+          "マイクを変更", "マイクを変更して", "マイクを変更してください", "マイクを変えて", "マイクを変えてください", "マイクを切り替えて",
+          "microfoon wijzigen", "wijzig de microfoon", "andere microfoon", "verander de microfoon", "volgende microfoon",
+          "mudar de microfone", "mudar o microfone", "muda o microfone", "outro microfone", "trocar de microfone", "troca o microfone"],
     show: ["show the last answer", "show last answer", "show me the last answer", "show the answer", "show me the answer", "show answers",
            "mostra l'ultima risposta", "mostrami l'ultima risposta", "mostra la risposta", "mostrami la risposta",
            "affiche la dernière réponse", "montre la dernière réponse", "montre-moi la dernière réponse", "affiche la réponse", "montre la réponse",
            "покажи последния отговор", "покажи отговора", "покажи последний ответ", "покажи ответ", "покажите ответ",
-           "显示上一个回答", "显示最后的回答", "显示回答", "显示答案", "最後の回答を表示", "最後の回答を表示して", "回答を表示", "回答を表示して", "回答を見せて"],
+           "显示上一个回答", "显示最后的回答", "显示回答", "显示答案", "最後の回答を表示", "最後の回答を表示して", "回答を表示", "回答を表示して", "回答を見せて",
+           "laatste antwoord tonen", "toon het laatste antwoord", "laat het laatste antwoord zien", "toon het antwoord", "laat het antwoord zien",
+           "mostra a última resposta", "mostrar a última resposta", "mostra-me a última resposta", "mostra a resposta", "mostrar a resposta"],
     hide: ["hide the last answer", "hide the answer", "hide answers", "hide the answers", "nascondi l'ultima risposta", "nascondi la risposta", "nascondi le risposte",
            "masque la réponse", "cache la réponse", "masque les réponses", "скрий отговора", "скрий отговорите", "скрой ответ", "скрыть ответ", "скрой ответы",
-           "隐藏回答", "隐藏答案", "回答を隠して", "回答を非表示", "回答を非表示にして"],
+           "隐藏回答", "隐藏答案", "回答を隠して", "回答を非表示", "回答を非表示にして",
+           "verberg het antwoord", "verberg het laatste antwoord", "antwoord verbergen", "esconde a resposta", "esconder a resposta", "esconde a última resposta"],
     repeat: ["repeat", "repeat that", "repeat it", "say that again", "say it again", "can you repeat that", "could you repeat that",
              "what did you say", "again", "ripeti", "ripetilo", "puoi ripetere", "ripeti per favore", "come hai detto", "cosa hai detto",
              "répète", "répétez", "tu peux répéter", "vous pouvez répéter", "pardon", "повтори", "повторете", "кажи пак", "кажете пак",
-             "повторите", "ещё раз", "еще раз", "что ты сказал", "再说一遍", "再说一次", "重复", "重复一遍", "没听清", "もう一度", "もう一度お願いします", "繰り返して", "繰り返してください", "もう一度言って", "もう一度言ってください", "もう一度話して", "もう一度話してください"],
+             "повторите", "ещё раз", "еще раз", "что ты сказал", "再说一遍", "再说一次", "重复", "重复一遍", "没听清", "もう一度", "もう一度お願いします", "繰り返して", "繰り返してください", "もう一度言って", "もう一度言ってください", "もう一度話して", "もう一度話してください",
+             "herhaal", "herhaal dat", "nog een keer", "kun je dat herhalen", "wat zei je", "repete", "repita", "podes repetir", "pode repetir", "diz outra vez", "o que disseste"],
     help: ["help", "what can i say", "instructions", "how does this work", "aiuto", "cosa posso dire", "istruzioni",
            "aide", "à l'aide", "que puis-je dire", "qu'est-ce que je peux dire", "помощ", "какво мога да кажа", "инструкции",
-           "помощь", "помогите", "что я могу сказать", "инструкция", "帮助", "我能说什么", "我可以说什么", "说明", "怎么用", "ヘルプ", "使い方", "操作方法", "使い方を教えて", "使い方を教えてください"]
+           "помощь", "помогите", "что я могу сказать", "инструкция", "帮助", "我能说什么", "我可以说什么", "说明", "怎么用", "ヘルプ", "使い方", "操作方法", "使い方を教えて", "使い方を教えてください",
+           "help", "hulp", "wat kan ik zeggen", "uitleg", "ajuda", "o que posso dizer", "instruções"]
   };
   // Commands the assistant can ask the page to carry out (server tool page_command).
   var PAGE_COMMANDS = { choose_language: "ask", show_last_answer: "show", change_microphone: "mic" };
-  var POLITE = /^(ok|okay|please|per favore|s'il te plaît|s'il vous plaît|моля|пожалуйста|请) | (please|per favore|s'il te plaît|s'il vous plaît|моля|пожалуйста)$/g;
+  var POLITE = /^(ok|okay|oké|please|per favore|s'il te plaît|s'il vous plaît|моля|пожалуйста|请|alsjeblieft|alstublieft|por favor) | (please|per favore|s'il te plaît|s'il vous plaît|моля|пожалуйста|alsjeblieft|alstublieft|por favor)$/g;
 
   // Returns "repeat", "help", a language code, "ask" (ask the language again), or null.
   function voiceCommand(text) {
@@ -870,7 +897,7 @@
     var padded = " " + clean + " ";
     var hasSwitch = SWITCH_WORDS.some(function (w) { return padded.indexOf(" " + w + " ") !== -1; });
     // The language must come at the end ("talk about Italian food" is not a request).
-    var words = clean.replace(/ (please|per favore|s'il vous plaît|s'il te plaît|моля|пожалуйста)$/, "").split(" ");
+    var words = clean.replace(/ (please|per favore|s'il vous plaît|s'il te plaît|моля|пожалуйста|alsjeblieft|alstublieft|por favor)$/, "").split(" ");
     var code = hasSwitch ? matchLanguage(words[words.length - 1]) : null;
     if (code) return code;
     return CHANGE_LANG.some(function (w) { return padded.indexOf(" " + w + " ") !== -1; }) ? "ask" : null;

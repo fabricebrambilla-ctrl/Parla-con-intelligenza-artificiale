@@ -109,4 +109,76 @@ module.exports = {
     updated: "最終更新：",
     back: "会話のページに戻る",
   },
+  nl: {
+    "title": "Voorwaarden: Praat met Kunstmatige Intelligentie",
+    "h1": "Voorwaarden",
+    "sections": [
+      [
+        "De dienst",
+        "Praat met Kunstmatige Intelligentie is een gratis spraakassistent. Er is geen account, geen wachtwoord en geen betaling. {owner} beheert hem als persoonlijk project vanuit Zwitserland. Door op Starten te drukken ga je akkoord met deze voorwaarden en met het privacybeleid."
+      ],
+      [
+        "Je stem en tekst gaan naar externe diensten",
+        "Als je spreekt, gaat je geluid naar onze server en naar Groq, dat het omzet in tekst (transcriptie) en het antwoord schrijft. Voor actuele informatie gaan een zoekvraag en de adressen van webpagina's die gelezen moeten worden naar Tavily. Het antwoord kan worden uitgesproken door Fish Audio of door je eigen apparaat. Wij bewaren je opnames en je gesprekken niet. Het privacybeleid geeft de details."
+      ],
+      [
+        "Antwoorden kunnen fout zijn",
+        "Je praat met een kunstmatige intelligentie, niet met een mens. De antwoorden kunnen fout, onvolledig of verouderd zijn, ook als er een bron wordt genoemd. Het is geen medische, juridische, financiële of noodhulpdienst. Controleer belangrijke informatie voordat je erop vertrouwt."
+      ],
+      [
+        "Redelijk gebruik",
+        "Gebruik de dienst niet om de wet te overtreden of anderen schade te doen. Geef geen privégegevens van andere mensen. Probeer de dienst niet te overbelasten of aan te vallen."
+      ],
+      [
+        "Beschikbaarheid",
+        "De dienst is gratis en wordt geleverd zonder enige garantie. Hij kan traag zijn, voor die dag beperkt zijn, of op elk moment worden gewijzigd of gestopt, ook omdat de externe diensten hun eigen limieten hebben."
+      ],
+      [
+        "Aansprakelijkheid",
+        "Voor zover de wet het toestaat, is {owner} niet aansprakelijk voor schade die ontstaat door het gebruik van de dienst of doordat je op de antwoorden vertrouwt. Rechten die de wet je geeft en die niet kunnen worden uitgesloten, blijven gelden."
+      ],
+      [
+        "Wijzigingen en contact",
+        "Deze voorwaarden kunnen veranderen. De datum hieronder toont de huidige versie, en je browser onthoudt de versie waarmee je akkoord ging. Vragen: {email}."
+      ]
+    ],
+    "updated": "Laatst bijgewerkt:",
+    "back": "Terug naar de gesprekspagina"
+  },
+  pt: {
+    "title": "Termos: Fale com a Inteligência Artificial",
+    "h1": "Termos",
+    "sections": [
+      [
+        "O serviço",
+        "Fale com a Inteligência Artificial é um assistente de voz gratuito. Não há conta, nem palavra-passe, nem pagamento. {owner} gere-o como projeto pessoal a partir da Suíça. Ao premir Iniciar, aceita estes termos e a política de privacidade."
+      ],
+      [
+        "A sua voz e o texto vão para serviços externos",
+        "Quando fala, o som vai para o nosso servidor e para a Groq, que o transforma em texto (transcrição) e escreve a resposta. Para informações atuais, uma pergunta de pesquisa e os endereços das páginas web a ler vão para a Tavily. A resposta pode ser lida em voz pela Fish Audio ou pelo seu próprio dispositivo. Não guardamos as suas gravações nem as suas conversas. A política de privacidade tem os pormenores."
+      ],
+      [
+        "As respostas podem estar erradas",
+        "Está a falar com uma inteligência artificial, não com uma pessoa. As respostas podem estar erradas, incompletas ou desatualizadas, mesmo quando indicam uma fonte. Não é um serviço médico, jurídico, financeiro nem de emergência. Confirme as informações importantes antes de confiar nelas."
+      ],
+      [
+        "Uso adequado",
+        "Não use o serviço para infringir a lei nem para prejudicar outras pessoas. Não lhe dê informações privadas de outras pessoas. Não tente sobrecarregá-lo nem atacá-lo."
+      ],
+      [
+        "Disponibilidade",
+        "O serviço é gratuito e não tem qualquer garantia. Pode ser lento, ficar limitado durante o dia, ser alterado ou terminar a qualquer momento, também porque os serviços externos têm os seus próprios limites."
+      ],
+      [
+        "Responsabilidade",
+        "Na medida em que a lei o permita, {owner} não é responsável por danos resultantes do uso do serviço ou da confiança nas suas respostas. Os direitos que a lei lhe dá e que não podem ser excluídos mantêm-se."
+      ],
+      [
+        "Alterações e contacto",
+        "Estes termos podem mudar. A data abaixo mostra a versão atual, e o seu navegador lembra-se da versão que aceitou. Perguntas: {email}."
+      ]
+    ],
+    "updated": "Última atualização:",
+    "back": "Voltar à página da conversa"
+  },
 };

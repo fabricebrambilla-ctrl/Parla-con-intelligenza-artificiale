@@ -86,8 +86,9 @@ test("the spoken help names every page command, in every language, and each name
   const said = { en: ["repeat", "change language", "show the last answer", "change microphone"], it: ["ripeti", "cambia lingua", "mostra l'ultima risposta", "cambia microfono"],
     fr: ["répète", "changer de langue", "affiche la dernière réponse", "changer de microphone"], bg: ["повтори", "смени езика", "покажи последния отговор", "смени микрофона"],
     ru: ["повтори", "смени язык", "покажи последний ответ", "сменить микрофон"], zh: ["再说一遍", "换语言", "显示上一个回答", "换麦克风"],
-    ja: ["もう一度", "言語を変更", "最後の回答を表示", "マイクを変更"] };
-  for (const lang of I18N.LANGS) {
+    ja: ["もう一度", "言語を変更", "最後の回答を表示", "マイクを変更"],
+    nl: ["herhaal", "taal wijzigen", "laatste antwoord tonen", "microfoon wijzigen"], pt: ["repete", "mudar de língua", "mostra a última resposta", "mudar de microfone"] };
+  for (const lang of I18N.ALL_LANGS) {
     const help = I18N.t(lang, "voiceHelp");
     for (const phrase of said[lang]) {
       assert.ok(help.includes(phrase), `${lang}: help names "${phrase}"`);

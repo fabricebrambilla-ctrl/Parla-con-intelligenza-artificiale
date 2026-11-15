@@ -7,7 +7,9 @@ const STOP = new Set(("the and for are was were with that this from what when wh
   "che chi con per non una uno gli del della delle dei dai dal alla alle sono come cosa quando dove quale quali mi ti si ci " +
   "les des est une pour pas que qui dans sur avec sont mais quel quelle quand comment vous nous " +
   "как что это для или при где когда какой какая какие мне " +
-  "как какво кога къде за от на").split(" "));
+  "как какво кога къде за от на " +
+  "het een van dat niet zijn met voor maar ook wat wie waar wanneer hoe welke naar bij mij " +
+  "uma dos das que não com por para mais como quando onde qual quais").split(" "));
 
 function fold(s) {
   return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -212,7 +214,7 @@ function splitParts(text, size = 2500) {
 
 // Short sentences that say when the page's information is valid or was updated ("Effective Monday,
 // January 26, 2026", "Valido dal 14 dicembre 2025", "Updated September 2025"), so the answer can name them.
-const DATED = /\b(effective|valid|updated|last updated|published|revised|as of|valido|valida|in vigore|aggiornat[oa]|pubblicat[oa]|en vigueur|valable|mis à jour|publié|gültig|aktualisiert|действ|обновл|опубликов|в сила|актуализ)/i;
+const DATED = /\b(effective|valid|updated|last updated|published|revised|as of|valido|valida|in vigore|aggiornat[oa]|pubblicat[oa]|en vigueur|valable|mis à jour|publié|gültig|aktualisiert|действ|обновл|опубликов|в сила|актуализ|geldig|bijgewerkt|gepubliceerd|dienstregeling vanaf|válid[oa]|atualizad[oa]|publicad[oa]|em vigor)/i;
 const HAS_DATE = /\b(19|20)\d{2}\b|\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b|\d{4}年/;
 function pageDates(text, max = 3) {
   const out = [];
@@ -250,7 +252,7 @@ function layoutLost(text, page = "") {
   return count(t) >= 20 || (count(page) >= 20 && count(t) < 5);
 }
 
-const asksTime = (question) => /\b(time|times|timetable|schedule|when|first|last|next|orari|orario|ora|quando|primo|ultimo|prossimo|horaire|heure|quand|premier|dernier|prochain)\b|распис|время|когда|во сколько|в колко|кога|时间|时刻|時刻|何時|几点|いつ/i.test(fold(question));
+const asksTime = (question) => /\b(time|times|timetable|schedule|when|first|last|next|orari|orario|ora|quando|primo|ultimo|prossimo|horaire|heure|quand|premier|dernier|prochain|hoe laat|wanneer|eerste|laatste|volgende|dienstregeling|horario|horarios|primeiro|proximo|a que horas)\b|распис|время|когда|во сколько|в колко|кога|时间|时刻|時刻|何時|几点|いつ/i.test(fold(question));
 
 // Links on the page that may hold the real answer (a timetable page or PDF), as absolute addresses.
 function usefulLinks(markdown, base, question, max = 12) {
@@ -264,7 +266,7 @@ function usefulLinks(markdown, base, question, max = 12) {
     try { url = new URL(m[2], base); } catch { continue; }
     if (!/^https?:$/.test(url.protocol)) continue;
     const hay = fold(label + " " + url.pathname);
-    const useful = /timetable|schedule|orari|horaire|fahrplan|\.pdf\b|fares?|prices?|tariff|prezzi|tarifs/.test(hay) || wanted.some((w) => hay.includes(w));
+    const useful = /timetable|schedule|orari|horaire|fahrplan|dienstregeling|horario|\.pdf\b|fares?|prices?|tariff|prezzi|tarifs|tarieven|precos/.test(hay) || wanted.some((w) => hay.includes(w));
     if (!useful || !label || seen.has(url.href)) continue;
     seen.add(url.href);
     out.push({ text: label.slice(0, 80), url: url.href.slice(0, 300) });
