@@ -157,3 +157,15 @@ for (const lang of Object.keys(REMEMBERED)) {
   // Before the sentence about removing the preferences, so that sentence covers these too.
   prefs[1] += REMEMBERED[lang];
 }
+
+// 2026-11-15: answers can come from reading a page (Tavily Extract), not only from search excerpts.
+const READ_PAGES = {
+  en: " To answer from a web page, the address of that page (usually one found by the search) is also sent to Tavily, which returns the page's text. The app keeps the text of pages it has read, never your words, in memory for up to 20 minutes, so that an article read in parts is not fetched again.",
+  it: " Per rispondere leggendo una pagina web, anche l’indirizzo di quella pagina (di solito trovata con la ricerca) viene inviato a Tavily, che ne restituisce il testo. L’app conserva in memoria il testo delle pagine lette, mai le tue parole, per al massimo 20 minuti, così un articolo letto a parti non viene scaricato di nuovo.",
+  fr: " Pour répondre à partir d’une page web, l’adresse de cette page (le plus souvent trouvée par la recherche) est aussi envoyée à Tavily, qui en renvoie le texte. L’application garde en mémoire le texte des pages lues, jamais vos paroles, pendant 20 minutes au plus, afin qu’un article lu en plusieurs parties ne soit pas téléchargé à nouveau.",
+  bg: " За да отговори от уеб страница, адресът на страницата (обикновено намерена при търсенето) също се изпраща до Tavily, който връща текста ѝ. Приложението пази в паметта текста на прочетените страници, никога вашите думи, най-много 20 минути, за да не изтегля отново статия, която се чете на части.",
+  ru: " Чтобы ответить по веб-странице, адрес этой страницы (обычно найденной поиском) также отправляется в Tavily, который возвращает её текст. Приложение хранит в памяти текст прочитанных страниц, но не ваши слова, не дольше 20 минут, чтобы статью, которую читают по частям, не загружать заново.",
+  zh: "为了根据网页内容回答，该网页的地址（通常是搜索找到的）也会发送给 Tavily，由其返回网页文字。应用会把已读网页的文字（绝不包括您说的话）在内存中保留最多 20 分钟，以便分段朗读文章时无需重新获取。",
+  ja: "ウェブページの内容から答えるため、そのページのアドレス（通常は検索で見つかったもの）もTavilyに送信され、Tavilyがページの本文を返します。アプリは読んだページの本文（あなたの言葉は含みません）を最大20分間メモリに保持し、記事を分けて読み上げるときに再取得しないようにします。",
+};
+for (const lang of Object.keys(READ_PAGES)) module.exports[lang].sections[2][1] += READ_PAGES[lang];

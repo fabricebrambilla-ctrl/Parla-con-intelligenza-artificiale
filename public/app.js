@@ -68,6 +68,7 @@
   var talkLabel = false;   // the button reads "Talk" (from the first time the assistant waits for the user)
   var pendingTalk = false; // the space bar interrupted the assistant: start recording when it has stopped
   var aiVoiceLangs = [];   // languages with the natural AI voice (from the server)
+  var readingPage = null;  // the page being read aloud in parts ({url, part, parts}), in memory only
 
   function setState(s) {
     state = s;
@@ -632,8 +633,8 @@
   // {code: "temporary"} (network, sleeping server, busy AI: ask to repeat).
   async function request(url, opts) {
     var ctl = new AbortController();
-    // Generous: a sleeping free server can take ~50 s to wake up.
-    var timer = setTimeout(function () { ctl.abort(); }, 60000);
+    // Generous: a sleeping free server can take ~50 s to wake up, and reading a page takes time.
+    var timer = setTimeout(function () { ctl.abort(); }, 90000);
     opts.signal = ctl.signal;
     opts.headers = Object.assign({}, opts.headers || {});
     try {
@@ -948,7 +949,7 @@
 
       // If the assistant searches the web, say so instead of staying silent.
       var searching = Promise.resolve();
-      var r2 = await chat({ lang: lang, context: context, messages: transcript.slice(-20) }, function () {
+      var r2 = await chat({ lang: lang, context: context, messages: transcript.slice(-20), reading: readingPage || undefined }, function () {
         if (my !== session) return;
         stopThinking();
         searching = say(tt("searching")).then(function () {
@@ -959,6 +960,7 @@
       stopThinking();
       if (my !== session) return;
       failures = 0;
+      readingPage = r2.reading || null;
       var reply = String(r2.text || "");
       // Spoken by a voice of the language the reply is written in, not always the page's language.
       var replyLang = I.LANGS.indexOf(r2.lang) !== -1 ? r2.lang : lang;
@@ -1092,6 +1094,7 @@
     rec = null;
     transcript = [];
     context = "";
+    readingPage = null;
     lastSaid = "";
     lastSaidLang = null;
     if (recResolve) { var done = recResolve; recResolve = null; done(null); }

@@ -7,7 +7,7 @@ const code=source.slice(source.indexOf('function systemPrompt('),source.indexOf(
 const searchCall={id:'search',function:{name:'web_search',arguments:JSON.stringify({query:'weather Bassano Italy'})}};
 function fixture({tool=true,error=false,result={results:[{title:'Forecast',content:'Forecast for fixture date.'}]},onSearch=()=>{}}={}) {
   const calls=[],searches=[];
-  const c={I18N,CHAT_MODEL:'mock',TOOLS:[],qa:{lastModelCall:()=>false},
+  const c={I18N,CHAT_MODEL:'mock',TOOLS:[],TRACE_RESEARCH:false,qa:{lastModelCall:()=>false},
     groqAnswer:async body=>{calls.push(structuredClone(body));if(error)throw Object.assign(Error('bad tools'),{status:400});
       return {choices:[{message:calls.length===1&&tool?{tool_calls:[searchCall]}:{content:'Fixture answer.'}}]};},
     webSearch:async(...args)=>{searches.push(args);onSearch();return result;}};

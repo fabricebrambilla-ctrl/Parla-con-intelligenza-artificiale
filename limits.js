@@ -29,6 +29,9 @@ const LIMITS = {
   burstPerMinute: num("REQUESTS_PER_MINUTE_PER_IP"),
   tavilyPerDay: num("DAILY_TAVILY_SEARCHES"),
   tavilyPerMonth: num("MONTHLY_TAVILY_SEARCHES"),
+  // Tavily Extract (reading a page). The advanced setting costs more credits than a search.
+  tavilyExtractPerDay: num("DAILY_TAVILY_EXTRACTS"),
+  tavilyExtractPerMonth: num("MONTHLY_TAVILY_EXTRACTS"),
   // Agent API messages (AGENT_DAILY_MESSAGES=0 turns the agent API off).
   agentPerDay: num("AGENT_DAILY_MESSAGES"),
   agentPerIpPerDay: num("AGENT_DAILY_MESSAGES_PER_IP"),
@@ -71,7 +74,7 @@ class RedisStore {
 }
 
 const store = process.env.REDIS_URL ? new RedisStore(process.env.REDIS_URL) : new MemoryStore();
-if (!process.env.REDIS_URL && (USAGE_LIMITS_ON || on(LIMITS.agentPerDay) || on(LIMITS.statsIdsPerIp) || on(LIMITS.tavilyPerDay))) {
+if (!process.env.REDIS_URL && (USAGE_LIMITS_ON || on(LIMITS.agentPerDay) || on(LIMITS.statsIdsPerIp) || on(LIMITS.tavilyPerDay) || on(LIMITS.tavilyExtractPerDay))) {
   console.warn("limits: REDIS_URL is not set, so usage counters reset when the server restarts.");
 }
 
@@ -180,6 +183,21 @@ async function takeTavilySearch() {
   return perDay <= LIMITS.tavilyPerDay && perMonth <= LIMITS.tavilyPerMonth;
 }
 
+// Every Tavily Extract call (one page read) is counted here, per day and per month, whether or
+// not a limit is set, so the owner can see how many were made. False once a set limit is passed.
+async function takeTavilyExtract() {
+  const [perDay, perMonth] = await Promise.all([
+    store.incr(`x:${day()}`, 1, DAY),
+    store.incr(`x:${month()}`, 1, 32 * 24 * 3600),
+  ]);
+  return perDay <= LIMITS.tavilyExtractPerDay && perMonth <= LIMITS.tavilyExtractPerMonth;
+}
+// Extract calls counted so far: { day, month } (attempts, including refused ones).
+async function tavilyExtractCount() {
+  const [perDay, perMonth] = await Promise.all([store.incr(`x:${day()}`, 0, DAY), store.incr(`x:${month()}`, 0, 32 * 24 * 3600)]);
+  return { day: perDay, month: perMonth };
+}
+
 // Express middleware for the agent API: one message from the agents' own daily budget
 // (whole site and per address). A refused message uses nothing.
 function agentLimit() {
@@ -213,5 +231,5 @@ async function statsIdAllowed(req, id) {
   return false;
 }
 
-module.exports = { LIMITS, limit, agentLimit, takeTavilySearch, statsIdAllowed, clientId, clientIp, normalize };
+module.exports = { LIMITS, limit, agentLimit, takeTavilySearch, takeTavilyExtract, tavilyExtractCount, statsIdAllowed, clientId, clientIp, normalize };
 
