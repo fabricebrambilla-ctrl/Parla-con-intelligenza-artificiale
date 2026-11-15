@@ -41,7 +41,7 @@
   function renderTexts() {
     I.applyPage(lang);
     $("helpText").textContent = tk("help") + (IS_TOUCH ? "" : " " + tt("shortcutHelp"));
-    if (micPermission.textContent) micPermission.textContent = tt("micPending");
+    if (micPermission.textContent) micPermission.textContent = micShortText();
     talkBtn.textContent = talkLabel ? tt("talk") : tt("start");
     endBtn.textContent = tt("end");
     micBtn.textContent = tt("micButton");
@@ -438,6 +438,35 @@
     }
   }
 
+  // ---------- first microphone permission ----------
+  // Only browsers whose prompt wording was checked get specific words; iPhone, Safari and
+  // Android get the general "choose Allow" until they are tested.
+  function micBrowser() {
+    var ua = String(navigator.userAgent || "");
+    if (/Android|iPhone|iPad|iPod|CriOS|FxiOS|EdgiOS/.test(ua)) return "";
+    if (/Firefox\//.test(ua)) return "Firefox";
+    if (/Chrome\//.test(ua) && !/Edg\/|OPR\/|SamsungBrowser|YaBrowser|Vivaldi/.test(ua)) return "Chrome";
+    return "";
+  }
+  function micShortText() { return tt("micShort" + micBrowser()); }
+  // "granted", "denied", "prompt" (not asked yet), or "unknown". A remembered guide is not
+  // a grant: this is asked again on every Start, because browsers can end a permission.
+  async function microphonePermissionState() {
+    var state = "unknown";
+    if (navigator.permissions && navigator.permissions.query) {
+      try { state = (await navigator.permissions.query({ name: "microphone" })).state || "unknown"; } catch (e) {}
+    }
+    // Where the browser cannot be asked: microphone names are readable only once access is allowed.
+    if (state === "unknown" && navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      try {
+        var list = await navigator.mediaDevices.enumerateDevices();
+        if ((list || []).some(function (d) { return d.kind === "audioinput" && d.label; })) state = "granted";
+      } catch (e2) {}
+    }
+    return state;
+  }
+  var micAllowedHere = false;   // the microphone was already opened on this page
+
   var micRequest = 0, restoreMicFocus = null, micFocusOwner = null;
   function cancelMicFocusRestore() {
     if (restoreMicFocus) window.removeEventListener("focus", restoreMicFocus);
@@ -476,22 +505,24 @@
     function current() { return active && my === session && request === micRequest; }
     function cancelled() { var e = new Error("Microphone request cancelled"); e.name = "AbortError"; return e; }
     try {
-      var granted = false;
-      if (navigator.permissions && navigator.permissions.query) {
-        try { granted = (await navigator.permissions.query({ name: "microphone" })).state === "granted"; } catch (e) {}
-      }
+      var granted = micAllowedHere || (await microphonePermissionState()) === "granted";
       if (!current()) throw cancelled();
       if (!granted) {
-        micPermission.textContent = tt("micPending");
-        // Focus once, before the browser opens its prompt. Never schedule a later
-        // focus move that could interrupt the browser's permission controls.
+        var explanation = micShortText();
+        micPermission.textContent = explanation;
+        // Focus once, then wait before asking the browser: its prompt takes focus at once,
+        // and a screen reader needs time to announce the explanation first. Never schedule
+        // a later focus move that could interrupt the browser's permission controls.
         if (document.hasFocus()) {
           micPermission.focus({ preventScroll: true });
           if (document.activeElement === micPermission) micFocusOwner = request;
+          await announcePause(Math.min(4500, 2000 + explanation.length * 30));
+          if (!current()) throw cancelled();
         }
       }
       acquired = await requestMicStream();
       if (!current()) throw cancelled();
+      micAllowedHere = true;
       refreshMics();
       clearMicPermission();
       try {
@@ -947,15 +978,7 @@
     }
   }
 
-  // A remembered guide is not a permission grant. Query again after every Start;
-  // browsers can revoke grants or issue one-visit permissions at any time.
-  async function microphonePermissionState() {
-    if (!navigator.permissions || !navigator.permissions.query) return "unknown";
-    try {
-      var result = await navigator.permissions.query({ name: "microphone" });
-      return result.state;
-    } catch (e) { return "unknown"; }
-  }
+  function announcePause(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
   async function startConversation(withContext) {
     if (active) return;
@@ -1006,11 +1029,19 @@
     var firstPrivacyNotice = get("privacyNoticeVersion") !== "2026-10-26";
     var permissionState = await microphonePermissionState();
     if (my !== session) return;
-    if (permissionState === "denied") { giveUp("errMicDenied"); return; }
-    var firstMicGuide = permissionState !== "granted" &&
-      (permissionState === "prompt" || get("micPermissionGuide") !== "2026-11-13");
-    var disclosure = tt("aiDisclosure") + (firstPrivacyNotice ? " " + tt("notice") : "") +
-      (firstMicGuide ? " " + tt("micGuide") + " " + tt("micRemember") + " " + tt(IS_TOUCH ? "micGuideTouch" : "micGuideKeyboard") : "");
+    if (permissionState === "denied") {
+      // Blocked: say the exact steps, then leave them on the page. The microphone is not requested.
+      await say(tt("errMicDenied"));
+      if (my === session) giveUp("errMicDenied");
+      return;
+    }
+    // Not allowed yet: the first time, say what to choose in this browser; a returning
+    // user who already heard that hears one short line.
+    var micAsk = permissionState !== "granted";
+    var firstMicGuide = micAsk && get("micPermissionGuide") !== "2026-11-15";
+    var micWords = !micAsk ? "" : !firstMicGuide ? tt("micShort" + micBrowser()) :
+      tt("micGuide") + " " + tt("micChoice" + micBrowser()) + " " + tt(IS_TOUCH ? "micGuideTouch" : "micGuideKeyboard");
+    var disclosure = tt("aiDisclosure") + (firstPrivacyNotice ? " " + tt("notice") : "") + (micWords ? " " + micWords : "");
     var disclosureInterrupted = await say(disclosure);
     if (my !== session) return;
     if (firstPrivacyNotice && !disclosureInterrupted) set("privacyNoticeVersion", "2026-10-26");
@@ -1019,7 +1050,7 @@
     micFallbackSaid = false;
     try {
       await ensureMic();
-      if (my === session && firstMicGuide && !disclosureInterrupted) set("micPermissionGuide", "2026-11-13");
+      if (my === session && firstMicGuide && !disclosureInterrupted) set("micPermissionGuide", "2026-11-15");
     } catch (e) {
       if (my === session) giveUp(micErrorKey(e));
       return;

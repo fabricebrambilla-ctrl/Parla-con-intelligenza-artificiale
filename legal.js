@@ -162,7 +162,7 @@ const ACCESSIBILITY = {
 // Keep microphone help available to read again without starting capture.
 const microphoneText = require("./public/i18n.js");
 for (const lang of Object.keys(ACCESSIBILITY)) {
-  ACCESSIBILITY[lang].sections[0][1] += " " + microphoneText.t(lang, "micRemember") +
+  ACCESSIBILITY[lang].sections[0][1] += " " + microphoneText.t(lang, "micChoiceChrome") + " " + microphoneText.t(lang, "micChoiceFirefox") +
     " " + microphoneText.t(lang, "micGuideKeyboard");
 }
 
