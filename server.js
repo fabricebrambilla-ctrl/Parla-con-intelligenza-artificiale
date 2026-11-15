@@ -583,6 +583,20 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "page_command",
+      description:
+        "Carry out one of the page's own commands right after your reply: open the spoken list of languages, show the last " +
+        "answer as text, or switch to the next microphone. Say only a short lead-in, the page does the rest.",
+      parameters: {
+        type: "object",
+        properties: { command: { type: "string", enum: ["choose_language", "show_last_answer", "change_microphone"] } },
+        required: ["command"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "end_conversation",
       description: "End the conversation when the user says goodbye, stop, or that they are finished.",
       parameters: {
@@ -621,9 +635,16 @@ function systemPrompt(lang, context, agent = false) {
     `Clearly separate what is confirmed from what is only reported or announced. For health, legal or money questions, ` +
     `give general information and suggest checking with a professional.\n` +
     `Do not simply agree with the user; if the facts differ, correct them politely.\n` +
-    `Capabilities: you can answer questions and search the web, but cannot control the device, download or save files, ` +
-    `send email, or switch the site's voice between male and female. Never claim you performed those actions. ` +
-    `Explain the limitation and offer instructions when useful. Changing the spoken language is supported.\n` +
+    `What this page can do: the user speaks after pressing the Talk button. Spoken commands the page carries out itself: ` +
+    `"change language" (lists the languages) or "speak" plus a language: ${I18N.LANGS.map(l => I18N.META[l].english).join(", ")}; ` +
+    `"show the last answer" and "hide the last answer" (the answer as text on the page, with a Copy button); "change microphone"; ` +
+    `"repeat"; "help"; "goodbye" ends the conversation. When the user asks how to do one of these, say the command; when they ` +
+    `want it done now, call page_command. ` +
+    `Limits: you can talk, search the web, read web pages and put text on the page. You cannot create, save, send or download ` +
+    `files, documents, images, 3D models, games or apps, cannot control the device or other apps, cannot send email, cannot ` +
+    `see the screen, and cannot switch the voice between male and female. Never say you made, saved, sent or attached ` +
+    `something: if asked for one of these, say plainly that you cannot, and offer what you can do, for example the steps or ` +
+    `the code as text in the text box.\n` +
     `Long content (step-by-step guides, code, lists, recipes): do not read it all out. Call put_in_text_box with the full ` +
     `text, then say in one or two sentences what it holds and that it is on the page as text under the heading "Last answer", ` +
     `with a Copy button. If the user would rather listen, read it a few steps at a time and ask whether to go on.\n` +
@@ -746,6 +767,27 @@ const READ_NUDGE = "Do not send the user to a website or an app: they cannot loo
   "official page from the search results and give the actual answer from its text. If the page cannot be read, try one other " +
   "page; if that fails too, say which pages you tried and what you could not find.";
 
+// Replies that claim something was made, saved, sent or attached (the assistant cannot), or that the
+// text is on the page when nothing was put there. Seven languages; past-tense claims only.
+const MADE = new RegExp([
+  String.raw`\bi(?:['’]ve| have| just)?\s+(?:created|made|generated|built|saved|sent|downloaded|uploaded|attached|exported|emailed)\b[^.!?]{0,40}\b(?:file|document|model|game|app|pdf|image|picture|drawing|spreadsheet|presentation|stl|program|download|link|email|e-mail|message|for you)\b`,
+  String.raw`\b(?:here is|here's) (?:the|your) (?:file|download|link to download|document|pdf|model|game|app)\b`,
+  String.raw`\bho (?:creato|generato|salvato|inviato|scaricato|allegato|preparato il file)\b`,
+  String.raw`\bj['’]ai (?:créé|généré|enregistré|envoyé|téléchargé|joint)(?![\p{L}])`,
+  String.raw`(?:я )?(?:создал|сохранил|отправил|прикрепил)[аи]? (?:для вас |вам )?(?:файл|документ|модель|игру|приложение)`,
+  String.raw`(?:създадох|запазих|изпратих|прикачих)`,
+  String.raw`我(?:已经|已)?(?:为你|为您)?(?:创建|生成|保存|发送|上传)了`,
+  String.raw`(?:作成|保存|送信|添付)しました`,
+].join("|"), "iu");
+const ON_PAGE = /\b(?:last answer|text box)\b|ultima risposta|casella di testo|dernière réponse|zone de texte|последен отговор|последний ответ|текстов(?:ото|ое) пол|上一个回答|文本框|最後の回答|テキストボックス/iu;
+function falseClaim(text, boxed) {
+  const t = String(text || "");
+  return MADE.test(t) || (!boxed && ON_PAGE.test(t));
+}
+const CLAIM_NUDGE = "Your reply says you made, saved, sent or attached something, or that text is on the page, but no " +
+  "file was made and nothing was put on the page. Rewrite it: say plainly what you cannot do, and give what you can. " +
+  "For long text call put_in_text_box with the full text first.";
+
 // The page the browser says is being read aloud in parts (it holds this, the server keeps no conversation).
 function validReading(r) {
   const url = r && typeof r === "object" ? pageUrl(r.url) : null;
@@ -783,8 +825,13 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
   let end = false;
   let farewell = "";
   let box = "";           // long content for the text box on the page
+  let command = null;     // a page command to carry out after the reply
+  let claimNudged = false;
   // The voice site shows the box on the page; an agent gets the content after the reply text.
-  const withBox = (reply) => !box ? reply : agent ? { ...reply, text: (reply.text ? reply.text + "\n\n" : "") + box } : { ...reply, box };
+  const withBox = (reply) => {
+    const out = !box ? reply : agent ? { ...reply, text: (reply.text ? reply.text + "\n\n" : "") + box } : { ...reply, box };
+    return command ? { ...out, command } : out;
+  };
   let announced = false;
   let researched = false;
   let found = 0;          // search results with an address that could be read
@@ -837,6 +884,12 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
         messages.push({ role: "assistant", content: msg.content || "" }, { role: "system", content: READ_NUDGE });
         continue;
       }
+      // Saying it made, saved or sent something it cannot: one push to say plainly what it can do instead.
+      if (!claimNudged && !end && round < ROUNDS - 2 && !qa.lastModelCall() && falseClaim(text, !!box)) {
+        claimNudged = true;
+        messages.push({ role: "assistant", content: msg.content || "" }, { role: "system", content: CLAIM_NUDGE });
+        continue;
+      }
       return withBox({ text: text || (end ? farewell : ""), end, reading: readingOut });
     }
 
@@ -850,6 +903,11 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
         end = true;
         farewell = clean(args.farewell) || I18N.t(lang, "farewell");
         result = { ok: true };
+      } else if (call.function?.name === "page_command") {
+        const wanted = ["choose_language", "show_last_answer", "change_microphone"].includes(args.command) ? args.command : null;
+        if (agent) result = { error: "There is no page in this conversation." };
+        else if (!wanted) result = { error: "Unknown command." };
+        else { command = wanted; result = { ok: true, note: "The page does this right after your reply. Say only a short lead-in." }; }
       } else if (call.function?.name === "put_in_text_box") {
         const text = String(args.text || "").trim().slice(0, 20000);
         if (text) { box = text; result = { ok: true, shown: "The text is now on the page under the heading Last answer, with a Copy button." }; }
@@ -945,7 +1003,7 @@ app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), 
   const send = (obj) => res.write(JSON.stringify(qa.decorate(obj)) + "\n");
   try {
     const lang = pickLang(req.body?.lang);
-    const { text, end, reading, box } = await runChat({
+    const { text, end, reading, box, command } = await runChat({
       lang,
       context: String(req.body?.context || "").slice(0, 2000),
       messages: history,
@@ -956,7 +1014,7 @@ app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), 
     // that language (the user may have asked for an answer in another language).
     // `reading`: the page being read aloud in parts; the browser sends it back with the next question.
     // `box`: long content to show as text on the page instead of reading it all out.
-    send({ type: "reply", text, end, lang: I18N.detectLang(text, lang), ai_generated: true, ...(reading ? { reading } : {}), ...(box ? { box } : {}) });
+    send({ type: "reply", text, end, lang: I18N.detectLang(text, lang), ai_generated: true, ...(reading ? { reading } : {}), ...(box ? { box } : {}), ...(command ? { command } : {}) });
     res.end();
   } catch (err) {
     logFailure("chat", err);

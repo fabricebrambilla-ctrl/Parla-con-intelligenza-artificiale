@@ -814,6 +814,7 @@
                       "говорите", "говорить", "перейди", "перейдите", "переключи", "переключись", "давай", "отвечай", "ответь", "разговаривай"];
   var CHANGE_LANG = ["change language", "change the language", "switch language", "another language", "different language",
                      "other language", "cambia lingua", "cambiare lingua", "cambia la lingua", "altra lingua",
+                     "cambio la lingua", "cambio lingua", "cambiare la lingua", "lingua diversa",
                      "changer de langue", "change de langue", "changer la langue", "autre langue",
                      "смени езика", "смяна на езика", "друг език", "смени язык", "сменить язык", "поменяй язык",
                      "другой язык", "换语言", "换一种语言", "切换语言", "更改语言", "改变语言"];
@@ -845,6 +846,8 @@
            "aide", "à l'aide", "que puis-je dire", "qu'est-ce que je peux dire", "помощ", "какво мога да кажа", "инструкции",
            "помощь", "помогите", "что я могу сказать", "инструкция", "帮助", "我能说什么", "我可以说什么", "说明", "怎么用", "ヘルプ", "使い方", "操作方法", "使い方を教えて", "使い方を教えてください"]
   };
+  // Commands the assistant can ask the page to carry out (server tool page_command).
+  var PAGE_COMMANDS = { choose_language: "ask", show_last_answer: "show", change_microphone: "mic" };
   var POLITE = /^(ok|okay|please|per favore|s'il te plaît|s'il vous plaît|моля|пожалуйста|请) | (please|per favore|s'il te plaît|s'il vous plaît|моля|пожалуйста)$/g;
 
   // Returns "repeat", "help", a language code, "ask" (ask the language again), or null.
@@ -854,7 +857,8 @@
     for (var k in COMMANDS) if (COMMANDS[k].indexOf(bare) !== -1) return k;
     var japanese = clean.replace(/\s/g, "");
     if (JA_SWITCH.test(japanese)) return matchLanguage(japanese);
-    if (["言語を変更", "言語を変えて", "言語を変更して", "言語を変更してください", "言語を変えてください"].indexOf(japanese) !== -1) return "ask";
+    // "言語を変えて", and questions such as "言語を変えるにはどうすればいいですか".
+    if (/^言語を(変更|変え|切り替え)/.test(japanese) && japanese.length <= 24) return "ask";
     if (/[一-鿿]/.test(clean)) {
       if (clean.replace(/\s/g, "").length > 12) return null;
       var m = clean.match(ZH_SWITCH);
@@ -979,13 +983,16 @@
       var reply = String(r2.text || "");
       // Long content the assistant put in the text box is shown at once; it said so in its reply.
       if (r2.box) { rememberAnswer(String(r2.box)); showLast(); }
-      else if (reply) rememberAnswer(reply);
+      else if (reply && r2.command !== "show_last_answer") rememberAnswer(reply);
       // Spoken by a voice of the language the reply is written in, not always the page's language.
       var replyLang = I.LANGS.indexOf(r2.lang) !== -1 ? r2.lang : lang;
       if (reply) { transcript.push({ role: "assistant", content: reply }); lastSaid = reply; lastSaidLang = replyLang; }
       await say(reply || (r2.end ? tt("farewell") : ""), reply ? replyLang : lang);
       if (my !== session) return;
       if (r2.end) return endConversation();
+      // The assistant asked the page to carry out one of its own commands.
+      var pageCmd = PAGE_COMMANDS[r2.command];
+      if (pageCmd) return runCommand(pageCmd);
       goReady();
     } catch (e) {
       stopThinking();
