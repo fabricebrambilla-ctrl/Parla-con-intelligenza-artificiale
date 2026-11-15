@@ -27,7 +27,7 @@ function harness(saved = {}) {
   const doc = { activeElement: null };
   const talkBtn = el(false), lastBtn = el(true), lastBox = el(true), lastText = el(false), copyBtn = el(false), copyStatus = el(false);
   doc.activeElement = talkBtn;
-  const c = vm.createContext({ document: doc, talkBtn, lastBtn, lastBox, lastText, copyBtn, copyStatus, lastAnswer: "",
+  const c = vm.createContext({afterSpeech:()=>false, document: doc, talkBtn, lastBtn, lastBox, lastText, copyBtn, copyStatus, lastAnswer: "",
     get: (k) => (k in values ? values[k] : null), set: (k, v) => { values[k] = v; }, tt: (k) => I.t("en", k),
     navigator: { clipboard: { writeText: async (t) => { if (saved.noClipboard) throw new Error("denied"); clip.push(t); } } } });
   const start = app.indexOf("  function rememberAnswer("), end = app.indexOf("  lastBtn.addEventListener(");

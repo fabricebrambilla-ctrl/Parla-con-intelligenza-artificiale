@@ -89,7 +89,7 @@ test('old permission completion cannot clear or refocus a newer pending explanat
  newer.resolve(media);await latest;assert.equal(c.document.activeElement,c.talkBtn);
 });
 function keyboard(){
- const c=vm.createContext({active:true,talkBtn:{focus(){c.focused=true;}},onTalkPress(){c.talked=(c.talked||0)+1;},endConversation(){},document:{addEventListener(type,fn){c.handler=fn;}}});
+ const c=vm.createContext({active:true,afterSpeech:()=>false,talkBtn:{focus(){c.focused=true;}},onTalkPress(){c.talked=(c.talked||0)+1;},endConversation(){},document:{addEventListener(type,fn){c.handler=fn;}}});
  vm.runInContext(app.slice(app.indexOf('  function isOtherControl'),app.indexOf('  ["keydown"')),c);
  const start=app.indexOf('  document.addEventListener("keydown", function (e) {\n    if (isTalkShortcut');vm.runInContext(app.slice(start,app.indexOf('\n\n  langBtn.addEventListener',start)),c);return c;
 }
@@ -107,7 +107,7 @@ test('all languages and HTML expose permission guidance and shortcut',()=>{
 
 test('changing the page language keeps About and legal links in that language',()=>{
  const elements=Object.fromEntries(['helpText','privacyLink','termsLink','accessibilityLink','aboutLink','lastHeading'].map(id=>[id,{}]));
- const c=vm.createContext({micBtn:{},lastBtn:{},copyBtn:{},I:{applyPage(){}},lang:'fr',tk:()=>'',tt:key=>key,IS_TOUCH:false,
+ const c=vm.createContext({afterSpeech:()=>false,micBtn:{},lastBtn:{},copyBtn:{},I:{applyPage(){}},lang:'fr',tk:()=>'',tt:key=>key,IS_TOUCH:false,
   micPermission:{textContent:''},talkBtn:{},talkLabel:false,endBtn:{},langsBox:{querySelectorAll:()=>[]},
   $:id=>elements[id]});
  vm.runInContext(app.slice(app.indexOf('  function renderTexts()'),app.indexOf('  // ---------- state ----------')),c);

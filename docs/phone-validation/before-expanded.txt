@@ -1,0 +1,666 @@
+✖ G1 touch starts recording and the speak-now cue only after 1500 ms (2.228791ms)
+✔ G1 desktop still records and cues immediately (0.817875ms)
+✖ G1 ending during touch delay cannot record or cue later (4.3935ms)
+✖ G2 Copy status and last-answer attributes wait for speech to end (0.619041ms)
+✖ G2 conversation labels wait for speech to end (0.484ms)
+✖ G2 non-error announcements wait; errors can interrupt (0.4655ms)
+✖ G3 goReady restores lost page focus: normal answer (0.484333ms)
+✖ G3 goReady restores lost page focus: nothing heard (0.415625ms)
+✖ G3 goReady restores lost page focus: retry (0.458583ms)
+✖ G3 goReady restores lost page focus: language switch (0.447417ms)
+✖ G3 goReady restores lost page focus: show last answer (0.474167ms)
+✖ G3 goReady restores lost page focus: page command (0.396958ms)
+✖ G3 goReady restores lost page focus: pendingTalk (0.41775ms)
+✔ G3 does not refocus Talk or steal deliberately chosen focus (0.380417ms)
+✖ G4 headphones advice exists only in touch first-use/help in all nine languages (0.083334ms)
+✖ G1 microphone removed during phone delay returns ready without a false cue (0.570375ms)
+✖ G3 actual completion path returns lost focus: normal (0.759166ms)
+✖ G3 actual completion path returns lost focus: nothing heard (0.516792ms)
+✖ G3 actual completion path returns lost focus: retry (0.51175ms)
+✖ G3 actual completion path returns lost focus: language (0.514667ms)
+✖ G3 actual completion path returns lost focus: show (0.442334ms)
+✖ G3 actual completion path returns lost focus: page command (0.503792ms)
+✖ G3 actual completion path returns lost focus: interruption (0.79525ms)
+✖ G2 actual speech completion flushes queued Copy without changing voice rate (0.463041ms)
+✖ G2 a status scheduled just before speech also waits for its end (0.350417ms)
+✖ G2 queued updates from an ended conversation are discarded (0.348667ms)
+✖ G2 translated labels are not rendered during speech (0.431667ms)
+✖ G1 a microphone removed during language recording does not leave its caller waiting (0.42725ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 2
+ℹ fail 26
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 95.230167
+
+✖ failing tests:
+
+test at ../phones-before.test.js:25:1
+✖ G1 touch starts recording and the speak-now cue only after 1500 ms (2.228791ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + {
+  +   auto: false,
+  +   elapsed: 0,
+  +   frames: [],
+  +   silence: 0,
+  +   speechFrames: 0,
+  +   speechStarted: false,
+  +   voiced: 0
+  + }
+  - null
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:27:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { auto: false, frames: [], elapsed: 0, voiced: 0, silence: 0, speechFrames: 0, speechStarted: false },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:33:1
+✖ G1 ending during touch delay cannot record or cue later (4.3935ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(t)
+  
+      at Object.tick (/private/tmp/phones-before.test.js:23:81)
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:34:93)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:37:1
+✖ G2 Copy status and last-answer attributes wait for speech to end (0.619041ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  '' !== 'unchanged'
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:39:45)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: 'unchanged',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:42:1
+✖ G2 conversation labels wait for speech to end (0.484ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'Start conversation'
+  - 'unchanged'
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:44:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Start conversation',
+    expected: 'unchanged',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:47:1
+✖ G2 non-error announcements wait; errors can interrupt (0.4655ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:48:71)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:53:2
+✖ G3 goReady restores lost page focus: normal answer (0.484333ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:53:2
+✖ G3 goReady restores lost page focus: nothing heard (0.415625ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:53:2
+✖ G3 goReady restores lost page focus: retry (0.458583ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:53:2
+✖ G3 goReady restores lost page focus: language switch (0.447417ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:53:2
+✖ G3 goReady restores lost page focus: show last answer (0.474167ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:53:2
+✖ G3 goReady restores lost page focus: page command (0.396958ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:53:2
+✖ G3 goReady restores lost page focus: pendingTalk (0.41775ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:63:1
+✖ G4 headphones advice exists only in touch first-use/help in all nine languages (0.083334ms)
+  AssertionError [ERR_ASSERTION]: en
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:64:58)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:68:1
+✖ G1 microphone removed during phone delay returns ready without a false cue (0.570375ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(t)
+  
+      at Object.tick (/private/tmp/phones-before.test.js:23:81)
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:69:78)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:73:2
+✖ G3 actual completion path returns lost focus: normal (0.759166ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:88:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:73:2
+✖ G3 actual completion path returns lost focus: nothing heard (0.516792ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:88:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:73:2
+✖ G3 actual completion path returns lost focus: retry (0.51175ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:88:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:73:2
+✖ G3 actual completion path returns lost focus: language (0.514667ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:88:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:73:2
+✖ G3 actual completion path returns lost focus: show (0.442334ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:88:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:73:2
+✖ G3 actual completion path returns lost focus: page command (0.503792ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:88:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:73:2
+✖ G3 actual completion path returns lost focus: interruption (0.79525ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:88:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:91:1
+✖ G2 actual speech completion flushes queued Copy without changing voice rate (0.463041ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'Copied.'
+  - 'unchanged'
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:96:57)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Copied.',
+    expected: 'unchanged',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:100:1
+✖ G2 a status scheduled just before speech also waits for its end (0.350417ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'Copied.' !== ''
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:102:9)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Copied.',
+    expected: '',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:104:1
+✖ G2 queued updates from an ended conversation are discarded (0.348667ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'Copied.'
+  - 'unchanged'
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:106:9)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Copied.',
+    expected: 'unchanged',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:108:1
+✖ G2 translated labels are not rendered during speech (0.431667ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:112:44)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../phones-before.test.js:115:1
+✖ G1 a microphone removed during language recording does not leave its caller waiting (0.42725ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(t)
+  
+      at Object.tick (/private/tmp/phones-before.test.js:23:81)
+      at TestContext.<anonymous> (/private/tmp/phones-before.test.js:117:59)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

@@ -51,14 +51,19 @@ test("every page has a Dutch and a Portuguese version", () => {
 });
 
 test("switched off (the default): not offered on the page, by the server or by voice", async () => {
-  assert.deepEqual(I.LANGS.filter((l) => NEW.includes(l)), [], "tests run with NEW_LANGUAGES unset");
+  // Test the off configuration independently of the outer suite configuration.
+  const offModule = { exports: {} };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../public/i18n.js"), "utf8"),
+    { module: offModule, process: { env: { NEW_LANGUAGES: "" } } });
+  const offI = offModule.exports;
+  assert.deepEqual(Array.from(offI.LANGS).filter((l) => NEW.includes(l)), []);
   const html = await (await fetch(`http://127.0.0.1:${OFF}/?lang=nl`, { headers: { "Accept-Language": "nl-NL,nl;q=0.9" } })).text();
   assert.match(html, /<html lang="en">/, "a Dutch browser gets the default language");
   assert.match(html, /data-new-langs=""/);
   assert.match(app, /if \(I\.LANGS\.indexOf\(all\[i\]\.getAttribute\("data-set-lang"\)\) === -1\) all\[i\]\.parentNode\.removeChild\(all\[i\]\);/);
   const terms = await (await fetch(`http://127.0.0.1:${OFF}/terms?lang=pt`)).text();
   assert.doesNotMatch(terms, /Termos/);
-  const c = vm.createContext({ lang: "en", I: { LANGS: I.LANGS } });
+  const c = vm.createContext({ lang: "en", I: { LANGS: offI.LANGS } });
   vm.runInContext(app.slice(app.indexOf("  var LANG_WORDS = {"), app.indexOf("  async function runCommand")), c);
   assert.equal(c.matchLanguage("Nederlands"), null);
   assert.notEqual(c.voiceCommand("Speak Dutch"), "nl");

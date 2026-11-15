@@ -1,0 +1,358 @@
+✖ G1 touch starts recording and the speak-now cue only after 1500 ms (5.940666ms)
+✔ G1 desktop still records and cues immediately (0.837042ms)
+✖ G1 ending during touch delay cannot record or cue later (7.202084ms)
+✖ G2 Copy status and last-answer attributes wait for speech to end (0.5925ms)
+✖ G2 conversation labels wait for speech to end (0.49775ms)
+✖ G2 non-error announcements wait; errors can interrupt (0.4625ms)
+✖ G3 goReady restores lost page focus: normal answer (0.472625ms)
+✖ G3 goReady restores lost page focus: nothing heard (0.444375ms)
+✖ G3 goReady restores lost page focus: retry (0.457208ms)
+✖ G3 goReady restores lost page focus: language switch (0.454167ms)
+✖ G3 goReady restores lost page focus: show last answer (0.417458ms)
+✖ G3 goReady restores lost page focus: page command (0.41ms)
+✖ G3 goReady restores lost page focus: pendingTalk (0.415291ms)
+✔ G3 does not refocus Talk or steal deliberately chosen focus (0.5ms)
+✖ G4 headphones advice exists only in touch first-use/help in all nine languages (0.109375ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 2
+ℹ fail 13
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 139.386
+
+✖ failing tests:
+
+test at test/phones.test.js:25:1
+✖ G1 touch starts recording and the speak-now cue only after 1500 ms (5.940666ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + {
+  +   auto: false,
+  +   elapsed: 0,
+  +   frames: [],
+  +   silence: 0,
+  +   speechFrames: 0,
+  +   speechStarted: false,
+  +   voiced: 0
+  + }
+  - null
+  
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:27:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { auto: false, frames: [], elapsed: 0, voiced: 0, silence: 0, speechFrames: 0, speechStarted: false },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/phones.test.js:33:1
+✖ G1 ending during touch delay cannot record or cue later (7.202084ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(t)
+  
+      at Object.tick (/private/tmp/talk-ai-phones/test/phones.test.js:23:76)
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:34:93)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at test/phones.test.js:37:1
+✖ G2 Copy status and last-answer attributes wait for speech to end (0.5925ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  '' !== 'unchanged'
+  
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:39:45)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: 'unchanged',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/phones.test.js:42:1
+✖ G2 conversation labels wait for speech to end (0.49775ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'Start conversation'
+  - 'unchanged'
+  
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:44:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Start conversation',
+    expected: 'unchanged',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/phones.test.js:47:1
+✖ G2 non-error announcements wait; errors can interrupt (0.4625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:48:71)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/phones.test.js:53:2
+✖ G3 goReady restores lost page focus: normal answer (0.472625ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/phones.test.js:53:2
+✖ G3 goReady restores lost page focus: nothing heard (0.444375ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/phones.test.js:53:2
+✖ G3 goReady restores lost page focus: retry (0.457208ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/phones.test.js:53:2
+✖ G3 goReady restores lost page focus: language switch (0.454167ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/phones.test.js:53:2
+✖ G3 goReady restores lost page focus: show last answer (0.417458ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/phones.test.js:53:2
+✖ G3 goReady restores lost page focus: page command (0.41ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/phones.test.js:53:2
+✖ G3 goReady restores lost page focus: pendingTalk (0.415291ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+  + actual - expected
+  
+    {
+  -   contains: [Function: contains],
+  -   focus: [Function: focus],
+  -   hidden: false,
+  -   removeAttribute: [Function: removeAttribute],
+      setAttribute: [Function: setAttribute],
+  -   textContent: 'unchanged'
+    }
+  
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:55:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: [Object],
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/phones.test.js:63:1
+✖ G4 headphones advice exists only in touch first-use/help in all nine languages (0.109375ms)
+  AssertionError [ERR_ASSERTION]: en
+      at TestContext.<anonymous> (/private/tmp/talk-ai-phones/test/phones.test.js:64:58)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

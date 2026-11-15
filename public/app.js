@@ -45,6 +45,7 @@
   })();
 
   function renderTexts() {
+    if (afterSpeech(renderTexts)) return;
     I.applyPage(lang);
     $("helpText").textContent = tk("help") + (IS_TOUCH ? "" : " " + tt("shortcutHelp"));
     if (micPermission.textContent) micPermission.textContent = micShortText();
@@ -83,6 +84,18 @@
   function setState(s) {
     state = s;
     document.body.setAttribute("data-state", s);
+    if (s !== "speaking") {
+      var queued = afterSpeech.queue || [];
+      afterSpeech.queue = [];
+      queued.forEach(function (job) { if (job.session === session) job.run(); });
+    }
+  }
+
+  // Defer page announcements until playback ends; discard work from older sessions.
+  function afterSpeech(run) {
+    if (state !== "speaking") return false;
+    (afterSpeech.queue || (afterSpeech.queue = [])).push({ session: session, run: run });
+    return true;
   }
 
   // ---------- mute gate: the screen reader is probably talking ----------
@@ -108,7 +121,7 @@
       // The screen reader says little when the talk button or the space bar is pressed,
       // so only pause the mic briefly then.
       var talk = e.target === talkBtn || (e.type === "keydown" && (isTalkShortcut(e) || (isSpace(e) && !isOtherControl(e.target))));
-      muteFor(talk ? 300 : 1500);
+      muteFor(talk && !IS_TOUCH ? 300 : 1500);
     }, { capture: true, passive: true });
   });
   window.addEventListener("focus", function () { muteFor(1000); });
@@ -116,9 +129,13 @@
 
   // ---------- errors: one alert, only after audio stopped ----------
   function announce(key) {
+    if (!/^err/.test(key) && afterSpeech(function () { announce(key); })) return;
     muteFor(4000);
     alertBox.textContent = "";
-    setTimeout(function () { alertBox.textContent = tt(key); }, 150);
+    setTimeout(function () {
+      if (!/^err/.test(key) && afterSpeech(function () { announce(key); })) return;
+      alertBox.textContent = tt(key);
+    }, 150);
   }
 
   // ---------- audio context and sounds ----------
@@ -319,7 +336,8 @@
     if (stopSpeaking) stopSpeaking();
     var cancelled = false;
     var isCancelled = function () { return cancelled; };
-    stopSpeaking = function () {
+    var my = session;
+    var cancelSpeech = stopSpeaking = function () {
       cancelled = true;
       if (window.speechSynthesis) speechSynthesis.cancel();
     };
@@ -332,7 +350,10 @@
       rest = await speakAi(splitSentences(text, 300), isCancelled, code);
     }
     if (rest.length && !cancelled) await speakBrowser(rest, isCancelled, code);
-    stopSpeaking = null;
+    if (stopSpeaking === cancelSpeech) {
+      stopSpeaking = null;
+      if (my === session && state === "speaking") setState("processing");
+    }
     return cancelled;
   }
 
@@ -733,6 +754,7 @@
   // The label becomes "Talk" only when the assistant first waits for the user (see goReady), so the
   // screen reader's "Talk, button" doesn't talk over the greeting and works as the cue to press it.
   function showConversationControls(on) {
+    if (afterSpeech(function () { showConversationControls(on); })) return;
     if (!on) { talkLabel = false; talkBtn.textContent = tt("start"); }
     if (on) { talkBtn.setAttribute("data-active", "true"); talkBtn.removeAttribute("aria-describedby"); }
     else { talkBtn.removeAttribute("data-active"); talkBtn.setAttribute("aria-describedby", "agree helpText"); }
@@ -747,17 +769,37 @@
   // Waiting for the user to press the space bar (or the button) to talk.
   function goReady() {
     if (!active) return;
-    if (!talkLabel) { talkLabel = true; talkBtn.textContent = tt("talk"); }
-    if (pendingTalk) { pendingTalk = false; return startRecording(false); }
     setState("ready");
+    if (!talkLabel) { talkLabel = true; talkBtn.textContent = tt("talk"); }
+    // Only recover lost page focus. End, Copy, Language and all chosen controls win.
+    if (document.hasFocus() && (document.activeElement === document.body ||
+        document.activeElement === document.documentElement)) talkBtn.focus({ preventScroll: true });
+    if (pendingTalk) { pendingTalk = false; return startRecording(false); }
   }
 
   async function startRecording(auto) {
-    var my = session;
+    var my = session, request = startRecording.request = (startRecording.request || 0) + 1;
     if (!stream) {
       setState("processing");
       try { await ensureMic(); } catch (e) { if (my === session) fail(micErrorKey(e)); return; }
       if (!active || my !== session) return;
+    }
+    if (IS_TOUCH) {
+      rec = null;
+      setState("processing");
+      // Mitigation only: the page cannot hear or detect TalkBack/VoiceOver speech.
+      // Hold all recording and the speak-now cue until the gesture announcement settles.
+      muteFor(1500);
+      do {
+        await new Promise(function (resolve) { setTimeout(resolve, Math.max(0, muteUntil - performance.now())); });
+        if (!active || my !== session || request !== startRecording.request) return;
+      } while (performance.now() < muteUntil);
+    }
+    if (!active || my !== session || request !== startRecording.request) return;
+    if (IS_TOUCH && !stream) {
+      if (auto && recResolve) { var done = recResolve; recResolve = null; done(null); }
+      else goReady();
+      return;
     }
     rec = { auto: auto, frames: [], elapsed: 0, voiced: 0, silence: 0, speechFrames: 0, speechStarted: false };
     setState("listening");
@@ -905,8 +947,8 @@
 
   async function runCommand(cmd) {
     var my = session, reply;
-    if (cmd === "repeat") { if (lastSaid) { await say(lastSaid, lastSaidLang); if (my === session) goReady(); return; } reply = tt("voiceHelp"); }
-    else if (cmd === "help") reply = tt("voiceHelp");
+    if (cmd === "repeat") { if (lastSaid) { await say(lastSaid, lastSaidLang); if (my === session) goReady(); return; } reply = tk("voiceHelp"); }
+    else if (cmd === "help") reply = tk("voiceHelp");
     else if (cmd === "show") reply = showLast() ? tt("lastShown") : tt("lastNone");
     else if (cmd === "hide") { hideLast(true); reply = tt("lastHidden"); }
     else if (cmd === "mic") {
@@ -1185,7 +1227,10 @@
   document.addEventListener("keydown", function (e) {
     if (isTalkShortcut(e)) {
       e.preventDefault();
-      if (!e.repeat) { talkBtn.focus(); onTalkPress(); }
+      if (!e.repeat) {
+        if (!afterSpeech(function () { talkBtn.focus(); })) talkBtn.focus();
+        onTalkPress();
+      }
       return;
     }
     // Escape ends the conversation (when the screen reader lets the key through).
@@ -1195,7 +1240,8 @@
     onTalkPress();
   });
 
-  langBtn.addEventListener("click", function () {
+  langBtn.addEventListener("click", function toggleLanguages() {
+    if (afterSpeech(toggleLanguages)) return;
     var open = langsBox.hidden;
     langsBox.hidden = !open;
     langBtn.setAttribute("aria-expanded", open ? "true" : "false");
@@ -1203,15 +1249,17 @@
     if (open) { var cur = langsBox.querySelector('[data-set-lang="' + lang + '"]'); if (cur) cur.focus(); }
   });
 
-  langsBox.addEventListener("keydown", function (e) {
+  langsBox.addEventListener("keydown", function closeLanguages(e) {
     if (e.key !== "Escape") return;
     e.stopPropagation();
+    if (afterSpeech(function () { closeLanguages(e); })) return;
     langsBox.hidden = true;
     langBtn.setAttribute("aria-expanded", "false");
     langBtn.focus();
   });
 
-  langsBox.addEventListener("click", function (e) {
+  langsBox.addEventListener("click", function selectLanguage(e) {
+    if (afterSpeech(function () { selectLanguage(e); })) return;
     var b = e.target.closest("[data-set-lang]");
     if (!b) return;
     lang = b.getAttribute("data-set-lang");
@@ -1246,19 +1294,22 @@
       micsBox.appendChild(b);
     });
   }
-  micBtn.addEventListener("click", function () {
+  micBtn.addEventListener("click", function toggleMicrophones() {
+    if (afterSpeech(toggleMicrophones)) return;
     var open = micsBox.hidden;
     micsBox.hidden = !open;
     micBtn.setAttribute("aria-expanded", open ? "true" : "false");
     if (open) { var cur = micsBox.querySelector('[aria-current]') || micsBox.querySelector("button"); if (cur) cur.focus(); }
   });
-  micsBox.addEventListener("keydown", function (e) {
+  micsBox.addEventListener("keydown", function closeMicrophones(e) {
     if (e.key !== "Escape") return;
     e.stopPropagation();
+    if (afterSpeech(function () { closeMicrophones(e); })) return;
     closeMicList();
     micBtn.focus();
   });
-  micsBox.addEventListener("click", function (e) {
+  micsBox.addEventListener("click", function selectMicrophone(e) {
+    if (afterSpeech(function () { selectMicrophone(e); })) return;
     var b = e.target.closest("[data-mic]");
     if (!b) return;
     var id = b.getAttribute("data-mic");
@@ -1283,11 +1334,13 @@
   // during a conversation focus stays on the Talk button.
   function rememberAnswer(text) {
     lastAnswer = text;
+    if (afterSpeech(function () { rememberAnswer(text); })) return;
     if (!lastBox.hidden) lastText.textContent = text;
   }
   // Returns false when there is nothing to show yet.
   function showLast() {
     if (!lastAnswer) return false;
+    if (afterSpeech(showLast)) return true;
     set("showLast", "1");
     lastText.textContent = lastAnswer;
     copyStatus.textContent = "";
@@ -1298,19 +1351,25 @@
   }
   // `forget`: the button goes away too (the feature is off again).
   function hideLast(forget) {
+    if (afterSpeech(function () { hideLast(forget); })) return;
     lastBox.hidden = true;
     lastBtn.setAttribute("aria-expanded", "false");
     if (forget) { set("showLast", ""); lastBtn.hidden = true; }
     if (lastBox.contains(document.activeElement) || (forget && document.activeElement === lastBtn)) talkBtn.focus();
   }
+  function setCopyStatus(text) {
+    if (afterSpeech(function () { setCopyStatus(text); })) return;
+    copyStatus.textContent = text;
+  }
   async function copyLast() {
-    if (!lastAnswer) { copyStatus.textContent = tt("lastNone"); return false; }
+    if (!lastAnswer) { setCopyStatus(tt("lastNone")); return false; }
     var ok = false;
     try { await navigator.clipboard.writeText(lastAnswer); ok = true; } catch (e) {}
-    copyStatus.textContent = ok ? tt("copied") : tt("copyFailed");
+    setCopyStatus(ok ? tt("copied") : tt("copyFailed"));
     return ok;
   }
-  lastBtn.addEventListener("click", function () {
+  lastBtn.addEventListener("click", function toggleLastAnswer() {
+    if (afterSpeech(toggleLastAnswer)) return;
     if (lastBox.hidden) { if (!showLast()) { copyStatus.textContent = ""; lastText.textContent = tt("lastNone"); lastBox.hidden = false; lastBtn.setAttribute("aria-expanded", "true"); } }
     else hideLast(false);
   });

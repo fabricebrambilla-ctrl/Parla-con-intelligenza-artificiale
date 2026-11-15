@@ -704,8 +704,26 @@
     for (var i = 0; i < els.length; i++) els[i].textContent = t(lang, els[i].getAttribute("data-i18n"));
   }
 
+  // Optional phone advice, not a requirement; desktop instructions stay unchanged.
+  var PHONE_HEADPHONES = {
+    "en": "On a phone, headphones can help keep the screen reader and assistant audio from overlapping.",
+    "it": "Sul telefono, le cuffie possono aiutare a evitare che la voce del lettore di schermo e quella dell’assistente si sovrappongano.",
+    "fr": "Sur un téléphone, un casque peut aider à éviter que les voix du lecteur d’écran et de l’assistant se superposent.",
+    "bg": "На телефон слушалките могат да помогнат гласовете на екранния четец и асистента да не се застъпват.",
+    "ru": "На телефоне наушники могут помочь уменьшить наложение голосов экранного диктора и помощника.",
+    "ja": "スマートフォンでは、イヤホンを使うとスクリーンリーダーとアシスタントの音声の重なりを減らせることがあります。",
+    "zh": "在手机上，使用耳机有助于减少屏幕阅读器和助手的声音相互干扰。",
+    "nl": "Op een telefoon kan een hoofdtelefoon helpen voorkomen dat de schermlezer en de assistent door elkaar praten.",
+    "pt": "Num telemóvel, os auscultadores podem ajudar a evitar que as vozes do leitor de ecrã e do assistente se sobreponham."
+};
+  Object.keys(PHONE_HEADPHONES).forEach(function (code) {
+    S[code].phoneHeadphones = PHONE_HEADPHONES[code];
+    S[code].greetingTouch += " " + PHONE_HEADPHONES[code];
+    S[code].voiceHelpTouch = S[code].voiceHelp + " " + PHONE_HEADPHONES[code];
+  });
+
+
   var api = { LANGS: LANGS, ALL_LANGS: ALL_LANGS, GATED: GATED, META: META, S: S, pick: pick, t: t, applyPage: applyPage, detectLang: detectLang };
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.I18N = api;
 })(this);
-

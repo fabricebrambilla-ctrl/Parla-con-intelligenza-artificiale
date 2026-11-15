@@ -1,0 +1,36 @@
+✔ G1 touch starts recording and the speak-now cue only after 1500 ms (4.059583ms)
+✔ G1 desktop still records and cues immediately (0.513083ms)
+✔ G1 ending during touch delay cannot record or cue later (0.470125ms)
+✔ G2 Copy status and last-answer attributes wait for speech to end (0.508ms)
+✔ G2 conversation labels wait for speech to end (0.443834ms)
+✔ G2 non-error announcements wait; errors can interrupt (0.462458ms)
+✔ G3 goReady restores lost page focus: normal answer (0.429416ms)
+✔ G3 goReady restores lost page focus: nothing heard (0.366333ms)
+✔ G3 goReady restores lost page focus: retry (0.383917ms)
+✔ G3 goReady restores lost page focus: language switch (0.449042ms)
+✔ G3 goReady restores lost page focus: show last answer (0.386084ms)
+✔ G3 goReady restores lost page focus: page command (0.372167ms)
+✔ G3 goReady restores lost page focus: pendingTalk (0.372166ms)
+✔ G3 does not refocus Talk or steal deliberately chosen focus (0.383625ms)
+✔ G4 headphones advice exists only in touch first-use/help in all nine languages (0.129792ms)
+✔ G1 microphone removed during phone delay returns ready without a false cue (0.394583ms)
+✔ G3 actual completion path returns lost focus: normal (0.725167ms)
+✔ G3 actual completion path returns lost focus: nothing heard (0.457375ms)
+✔ G3 actual completion path returns lost focus: retry (0.454291ms)
+✔ G3 actual completion path returns lost focus: language (0.475375ms)
+✔ G3 actual completion path returns lost focus: show (0.438417ms)
+✔ G3 actual completion path returns lost focus: page command (0.467417ms)
+✔ G3 actual completion path returns lost focus: interruption (0.458292ms)
+✔ G2 actual speech completion flushes queued Copy without changing voice rate (0.4765ms)
+✔ G2 a status scheduled just before speech also waits for its end (0.382333ms)
+✔ G2 queued updates from an ended conversation are discarded (0.363167ms)
+✔ G2 translated labels are not rendered during speech (0.430875ms)
+✔ G1 a microphone removed during language recording does not leave its caller waiting (0.373458ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 102.819
