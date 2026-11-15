@@ -186,6 +186,10 @@ test("a timetable question must read a page after searching, and the search exce
   assert.equal(answer.text, "The first weekday train leaves at 6:38 a.m.");
   assert.equal(t.calls[0].tool_choice.function.name, "web_search");
   assert.equal(t.calls[1].tool_choice.function.name, "read_page", "the page must be read, not only found");
+  // Groq counts the requested ceiling per minute: forced tool calls ask for little, the answer for more.
+  assert.equal(t.calls[0].max_completion_tokens, 400);
+  assert.equal(t.calls[1].max_completion_tokens, 400);
+  assert.equal(t.calls[2].max_completion_tokens, 1200);
   assert.equal(t.reads[0].part, 0, "a timetable is never read in article parts");
   assert.equal(t.searches[0][1].deep, true, "time-sensitive questions use the deeper search");
   const search = t.calls[2].messages.find((m) => m.role === "tool" && m.content.includes("metrolinktrains.com/sb.pdf"));
@@ -312,4 +316,39 @@ test("the privacy notice says that page addresses go to Tavily and that page tex
     assert.match(search, /Tavily[\s\S]*Tavily/, lang);
     assert.match(search, /20/, lang);
   }
+});
+
+// ---------- Groq's per-minute token limit ----------
+
+function groq(responses) {
+  const models = [];
+  const c = { console: { warn() {}, log() {} }, TRACE_RESEARCH: false, FALLBACK_MODEL: "small", qa: { current: () => null }, setTimeout, clearTimeout,
+    groqChat: async (body) => { models.push(body.model); const r = responses.shift(); if (r && r.status) throw r; return r; } };
+  const start = source.indexOf("function providerError("), end = source.indexOf("function errorCode(");
+  const a = source.indexOf("async function groqAnswer("), b = source.indexOf("\n}\n", a) + 3;
+  vm.runInNewContext(source.slice(start, end) + source.slice(a, b), c);
+  return { c, models };
+}
+
+test("a per-minute token limit that frees up within seconds is waited for, then the same model is asked again", async () => {
+  const g = groq([]);
+  const tpm = g.c.providerError(429, "Rate limit reached for model `openai/gpt-oss-120b` on tokens per minute (TPM): Limit 8000, Used 6437, Requested 5757. Please try again in 0.4s.", "Groq");
+  assert.equal(tpm.retryInMs, 1000, "whole seconds, like the Retry-After header");
+  const h = groq([tpm, { ok: true }]);
+  const t0 = Date.now();
+  assert.deepEqual(await h.c.groqAnswer({ model: "big" }), { ok: true });
+  assert.ok(Date.now() - t0 >= 1000);
+  assert.deepEqual(h.models, ["big", "big"]);
+});
+
+test("a long wait or a daily limit is not waited for", async () => {
+  const g = groq([]);
+  const long = g.c.providerError(429, "Rate limit reached on tokens per minute (TPM). Please try again in 37s.", "Groq");
+  const daily = g.c.providerError(429, "Rate limit reached on tokens per day (TPD): Limit 200000. Please try again in 3s.", "Groq");
+  assert.equal(daily.retryInMs, undefined);
+  const h = groq([long, { ok: "small" }]);
+  const t0 = Date.now();
+  assert.deepEqual(await h.c.groqAnswer({ model: "big" }), { ok: "small" });
+  assert.ok(Date.now() - t0 < 500);
+  assert.deepEqual(h.models, ["big", "small"], "the smaller model answers at once");
 });

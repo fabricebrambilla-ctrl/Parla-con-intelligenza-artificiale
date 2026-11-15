@@ -208,8 +208,18 @@ function providerError(status, message, name) {
   const err = new Error(name + " " + status + ": " + (message || "unknown error"));
   err.status = status;
   err.daily = status === 429 && /per day|\bRPD\b|\bTPD\b|\bASD\b/i.test(message || "");
+  // A per-minute token limit that frees up in a few seconds ("Please try again in 3.02s").
+  const wait = status === 429 && !err.daily && /tokens per minute|\bTPM\b/i.test(message || "") && /try again in ([\d.]+)s\b/i.exec(message || "");
+  // Whole seconds, as in Groq's Retry-After header, which the key rotation also waits for.
+  if (wait) err.retryInMs = Math.ceil(Number(wait[1])) * 1000;
   return err;
 }
+
+const SHORT_WAIT_MS = 15000;
+const pause = (ms, stop) => new Promise((resolve) => {
+  const timer = setTimeout(resolve, ms);
+  stop?.addEventListener?.("abort", () => { clearTimeout(timer); resolve(); }, { once: true });
+});
 
 function errorCode(err) {
   if (err.qaBudget) return { status: 429, error: "qa_budget" };
@@ -248,7 +258,17 @@ async function groqChat(body, timeoutMs = 30000, stop = null) {
 async function groqAnswer(body, stop) {
   try {
     return await groqChat(body, 30000, stop);
-  } catch (err) {
+  } catch (first) {
+    let err = first;
+    // One research answer makes several calls within a minute. When Groq says the minute's tokens
+    // free up within a few seconds, wait and ask the same model again, instead of the weaker one.
+    if (err.status === 429 && err.retryInMs <= SHORT_WAIT_MS && !err.qaBudget && !qa.current() && !stop?.aborted) {
+      if (TRACE_RESEARCH) console.log(`trace: waiting ${err.retryInMs} ms for Groq's per-minute tokens`);
+      await pause(err.retryInMs + 250, stop);
+      if (stop?.aborted) throw err;
+      try { return await groqChat(body, 30000, stop); } catch (again) { err = again; }
+    }
+    if (TRACE_RESEARCH && err.status === 429) console.log(`trace: Groq 429 ${err.daily ? "daily" : err.retryInMs ? "retry in " + err.retryInMs + " ms" : "other"}: ${String(err.message).slice(0, 160)}`);
     if (err.qaBudget || (qa.current() && err.status === 429) || err.status !== 429 || !FALLBACK_MODEL || body.model === FALLBACK_MODEL || stop?.aborted) throw err;
     console.warn(`chat: ${body.model} is over a Groq rate limit, answering with ${FALLBACK_MODEL}`);
     return await groqChat({ ...body, model: FALLBACK_MODEL }, 30000, stop);
@@ -635,6 +655,11 @@ function systemPrompt(lang, context, agent = false) {
     `Clearly separate what is confirmed from what is only reported or announced. For health, legal or money questions, ` +
     `give general information and suggest checking with a professional.\n` +
     `Do not simply agree with the user; if the facts differ, correct them politely.\n` +
+    `Copyrighted texts (articles, books, magazines, study material, lyrics): never refuse only because a text is copyrighted. ` +
+    `Find and read it if you can, then give its main points and answer questions about it in your own words; a short quote ` +
+    `is fine. For a study article with questions, answer each question briefly in your own words from what the article says. ` +
+    `If the user wants the whole text word for word, say plainly that you cannot read it out word for word, and offer a ` +
+    `summary or a close retelling part by part. If you could not find or read the text, say so instead of guessing.\n` +
     `What this page can do: the user speaks after pressing the Talk button. Spoken commands the page carries out itself: ` +
     `"change language" (lists the languages) or "speak" plus a language: ${I18N.LANGS.map(l => I18N.META[l].english).join(", ")}; ` +
     `"show the last answer" and "hide the last answer" (the answer as text on the page, with a Copy button); "change microphone"; ` +
@@ -684,8 +709,11 @@ const READING_RULES =
     `A journey planner where you type a start and an end returns nothing useful through read_page; use the operator's published ` +
     `timetable page or PDF instead (read_page lists useful links found on a page). If you truly cannot get the answer, say which ` +
     `pages you tried and what you could not find. ` +
-    `Long pages: read_page gives only the relevant part of a page. To read a long article aloud, call read_page with part 1, ` +
-    `say that part faithfully, then ask "Shall I continue?" in the user's language, and go on with the next part when the user agrees. `;
+    `Long pages: read_page gives only the relevant part of a page. To read a long article aloud, or to answer all the questions ` +
+    `of a study article, call read_page with part 1 and answer only the questions in that part, then part 2, and so on. ` +
+    `To read a long article aloud, call read_page with part 1, ` +
+    `retell that part closely and completely in plain spoken words, then ask "Shall I continue?" in the user's language, and go ` +
+    `on with the next part when the user agrees. `;
 
 // Speech synthesizers read symbols literally; keep only plain text.
 function forSpeech(text) {
@@ -738,8 +766,10 @@ function liveResearchPlan(history, today = new Date().toISOString().slice(0, 10)
   // follow-ups retain the latest explicit topic as well as the newest question.
   const anchor = users.slice(0, -1).reverse().find(s => /weather|forecast|meteo|météo|tempo|scores?|results?|football|calcio|risultat|campionat|погод|времето|天气|天氣|天気|スポーツ|試合/iu.test(s));
   const contextual = text !== latest && anchor ? anchor + " " + users.at(-1) : users.at(-1);
-  // Reading a whole page aloud in parts happens only when the user asks for it.
-  const readAloud = /\b(read|leggi|leggimi|leggere|lire|lis|lisez|lis-moi)\b|прочит|прочет|читай|прочти|读|讀|読/iu.test(latest);
+  // Reading a whole page in parts happens only when the user asks for it: "read it to me", or the
+  // answers to all the questions of an article (a study article has more than one part can hold).
+  const readAloud = /\b(read|leggi|leggimi|leggere|lire|lis|lisez|lis-moi)\b|прочит|прочет|читай|прочти|读|讀|読/iu.test(latest) ||
+    /\b(answers?|rispost[ae]|réponses?)\b.{0,40}\b(questions?|domand[ae])\b|отговор.{0,40}въпрос|ответ.{0,40}вопрос|(答案|回答).{0,20}问题|问题.{0,6}(答案|回答)|質問.{0,20}(答え|回答)/iu.test(latest);
   return { required: !historical && (weather || sports || current || research || timetable || price), vaguePlace, readAloud,
     read: !historical && (timetable || price), deep: !historical && (timetable || price || current),
     query: (weather || sports) && !(weather && placeReference && !anchor) ? String(contextual || "").slice(0, 250) : null,
@@ -853,8 +883,11 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
     // from a search excerpt (excerpts can be from an old timetable and carry no date).
     const mustRead = !mustSearch && plan.read && researched && found > 0 && !readSinceSearch && reads < 3 && round < ROUNDS - 1;
     if (mustSearch && qa.lastModelCall()) return { text: I18N.t(lang, "liveInfoUnavailable"), end: false };
+    // Groq counts the requested max_completion_tokens against the 8,000 tokens a minute, not only what
+    // is used. A forced search or page read needs well under 100 tokens, so it asks for less.
+    const forced = mustSearch || mustRead;
     try {
-      data = await groqAnswer({ ...base, tools: TOOLS, tool_choice: mustSearch
+      data = await groqAnswer({ ...base, ...(forced ? { max_completion_tokens: 400 } : {}), tools: TOOLS, tool_choice: mustSearch
         ? { type: "function", function: { name: "web_search" } }
         : round === ROUNDS - 1 || qa.lastModelCall() || unusable >= 2 ? "none"
         : mustRead ? { type: "function", function: { name: "read_page" } } : "auto" }, stop);
