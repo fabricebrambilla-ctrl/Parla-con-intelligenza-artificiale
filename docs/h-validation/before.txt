@@ -1,0 +1,375 @@
+✖ H repeat instructions is a local command in every supported language (10.538625ms)
+✖ H the opening no longer asks for a language recording (5.202459ms)
+✖ H help repeats the operating instructions as well as available commands (33.408458ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1545.445292
+
+✖ failing tests:
+
+test at test/onboarding-h.test.js:3:1
+✖ H repeat instructions is a local command in every supported language (10.538625ms)
+  AssertionError [ERR_ASSERTION]: repeat the instructions
+  
+  null !== 'help'
+  
+      at TestContext.<anonymous> (/Users/fabrice/Documents/ChatGPT/Fabrice/hands-free/test/onboarding-h.test.js:5:220)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: 'help',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/onboarding-h.test.js:7:1
+✖ H the opening no longer asks for a language recording (5.202459ms)
+  AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /await chooseLanguage/. Input:
+  
+  '  async function startConversation(withContext) {\n' +
+    '    if (active) return;\n' +
+    '    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.AudioWorkletNode) {\n' +
+    '      return announce("errSupport");\n' +
+    '    }\n' +
+    '    alertBox.textContent = "";\n' +
+    '    active = true;\n' +
+    '    failures = 0;\n' +
+    '    pendingTalk = false;\n' +
+    '    choosing = false;\n' +
+    '    var my = ++session;\n' +
+    '    transcript = [];\n' +
+    '    context = "";\n' +
+    '\n' +
+    '    // Must happen inside the click: unlock audio and speech (iOS Safari).\n' +
+    '    ensureContext();\n' +
+    '    if (window.speechSynthesis) {\n' +
+    '      var unlock = new SpeechSynthesisUtterance(" ");\n' +
+    '      unlock.volume = 0;\n' +
+    '      speechSynthesis.speak(unlock);\n' +
+    '    }\n' +
+    '    showConversationControls(true);\n' +
+    '    setState("processing");\n' +
+    '\n' +
+    '    function giveUp(code) {\n' +
+    '      active = false;\n' +
+    '      session++;\n' +
+    '      closeMic();\n' +
+    '      setState("idle");\n' +
+    '      showConversationControls(false);\n' +
+    '      announce(code);\n' +
+    '    }\n' +
+    '\n' +
+    '    // Once a daily limit is reached, nothing starts until it resets.\n' +
+    '    try {\n' +
+    '      var status = await api("/api/limit", { method: "GET" });\n' +
+    '      aiVoiceLangs = Array.isArray(status.aiVoice) ? status.aiVoice : [];\n' +
+    '    } catch (e) {\n' +
+    '      if (my === session) giveUp(e.code === "errLimit" ? "errLimit" : "errConnection");\n' +
+    '      return;\n' +
+    '    }\n' +
+    '    if (my !== session) return;\n' +
+    '\n' +
+    '    // Agreement by pressing Start (the line with the Privacy Policy and Terms links sits\n' +
+    '    // before the button). The agreed version is saved at the press; one short sentence\n' +
+    '    // is spoken with the AI disclosure, before any microphone access, until it was heard.\n' +
+    '    var AGREEMENT_VERSION = "2026-11-15";\n' +
+    '    set("agreedVersion", AGREEMENT_VERSION);\n' +
+    '    var firstPrivacyNotice = get("agreementHeard") !== AGREEMENT_VERSION;\n' +
+    '    var permissionState = await microphonePermissionState();\n' +
+    '    if (my !== session) return;\n' +
+    '    if (permissionState === "denied") {\n' +
+    '      // Blocked: say the exact steps, then leave them on the page. The microphone is not requested.\n' +
+    '      await say(tt("errMicDenied"));\n' +
+    '      if (my === session) giveUp("errMicDenied");\n' +
+    '      return;\n' +
+    '    }\n' +
+    '    // Not allowed yet: the first time, say what to choose in this browser; a returning\n' +
+    '    // user who already heard that hears one short line.\n' +
+    '    var micAsk = permissionState !== "granted";\n' +
+    '    var firstMicGuide = micAsk && get("micPermissionGuide") !== "2026-11-15";\n' +
+    '    var micWords = !micAsk ? "" : !firstMicGuide ? tt("micShort" + micBrowser()) :\n' +
+    '      tt("micGuide") + " " + tt("micChoice" + micBrowser()) + " " + tt(IS_TOUCH ? "micGuideTouch" : "micGuideKeyboard");\n' +
+    '    var disclosure = tt("aiDisclosure") + (firstPrivacyNotice ? " " + tt("agreeSpoken") : "") + (micWords ? " " + micWords : "");\n' +
+    '    var disclosureInterrupted = await say(disclosure);\n' +
+    '    if (my !== session) return;\n' +
+    '    if (firstPrivacyNotice && !disclosureInterrupted) set("agreementHeard", AGREEMENT_VERSION);\n' +
+    '    setState("processing");\n' +
+    '\n' +
+    '    micFallbackSaid = false;\n' +
+    '    try {\n' +
+    '      await ensureMic();\n' +
+    '      if (my === session && firstMicGuide && !disclosureInterrupted) set("micPermissionGuide", "2026-11-15");\n' +
+    '    } catch (e) {\n' +
+    '      if (my === session) giveUp(micErrorKey(e));\n' +
+    '      return;\n' +
+    '    }\n' +
+    '    if (my !== session) return;\n' +
+    '\n' +
+    '    sounds.start();\n' +
+    '    await new Promise(function (r) { setTimeout(r, 500); });\n' +
+    '    if (my !== session) return;\n' +
+    '\n' +
+    '    // The first time, ask which language to use.\n' +
+    '    if (!get("langChosen")) {\n' +
+    '      try { await chooseLanguage(my); } catch (e) { if (my === session) fail(e.code || "errConnection"); return; }\n' +
+    '      if (my !== session) return;\n' +
+    '    }\n' +
+    '\n' +
+    '    // Identity was disclosed once before microphone access. Keep the remaining\n' +
+    '    // instructions brief, with a shorter return-visit version.\n' +
+    '    var intro = get("introHeard") ? tk("greetingShort") : tk("greeting");\n' +
+    '    set("introHeard", "1");\n' +
+    '    lastSaid = intro;\n' +
+    '    await say(intro);\n' +
+    '    if (my !== session) return;\n' +
+    '    goReady();\n' +
+    '  }\n' +
+    '\n'
+  
+      at TestContext.<anonymous> (/Users/fabrice/Documents/ChatGPT/Fabrice/hands-free/test/onboarding-h.test.js:9:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '  async function startConversation(withContext) {\n    if (active) return;\n    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.AudioWorkletNode) {\n      return announce("errSupport");\n    }\n    alertBox.textContent = "";\n    active = true;\n    failures = 0;\n    pendingTalk = false;\n    choosing = false;\n    var my = ++session;\n    transcript = [];\n    context = "";\n\n    // Must happen inside the click: unlock audio and speech (iOS Safari).\n    ensureContext();\n    if (window.speechSynthesis) {\n      var unlock = new SpeechSynthesisUtterance(" ");\n      unlock.volume = 0;\n      speechSynthesis.speak(unlock);\n    }\n    showConversationControls(true);\n    setState("processing");\n\n    function giveUp(code) {\n      active = false;\n      session++;\n      closeMic();\n      setState("idle");\n      showConversationControls(false);\n      announce(code);\n    }\n\n    // Once a daily limit is reached, nothing starts until it resets.\n    try {\n      var status = await api("/api/limit", { method: "GET" });\n      aiVoiceLangs = Array.isArray(status.aiVoice) ? status.aiVoice : [];\n    } catch (e) {\n      if (my === session) giveUp(e.code === "errLimit" ? "errLimit" : "errConnection");\n      return;\n    }\n    if (my !== session) return;\n\n    // Agreement by pressing Start (the line with the Privacy Policy and Terms links sits\n    // before the button). The agreed version is saved at the press; one short sentence\n    // is spoken with the AI disclosure, before any microphone access, until it was heard.\n    var AGREEMENT_VERSION = "2026-11-15";\n    set("agreedVersion", AGREEMENT_VERSION);\n    var firstPrivacyNotice = get("agreementHeard") !== AGREEMENT_VERSION;\n    var permissionState = await microphonePermissionState();\n    if (my !== session) return;\n    if (permissionState === "denied") {\n      // Blocked: say the exact steps, then leave them on the page. The microphone is not requested.\n      await say(tt("errMicDenied"));\n      if (my === session) giveUp("errMicDenied");\n      return;\n    }\n    // Not allowed yet: the first time, say what to choose in this browser; a returning\n    // user who already heard that hears one short line.\n    var micAsk = permissionState !== "granted";\n    var firstMicGuide = micAsk && get("micPermissionGuide") !== "2026-11-15";\n    var micWords = !micAsk ? "" : !firstMicGuide ? tt("micShort" + micBrowser()) :\n      tt("micGuide") + " " + tt("micChoice" + micBrowser()) + " " + tt(IS_TOUCH ? "micGuideTouch" : "micGuideKeyboard");\n    var disclosure = tt("aiDisclosure") + (firstPrivacyNotice ? " " + tt("agreeSpoken") : "") + (micWords ? " " + micWords : "");\n    var disclosureInterrupted = await say(disclosure);\n    if (my !== session) return;\n    if (firstPrivacyNotice && !disclosureInterrupted) set("agreementHeard", AGREEMENT_VERSION);\n    setState("processing");\n\n    micFallbackSaid = false;\n    try {\n      await ensureMic();\n      if (my === session && firstMicGuide && !disclosureInterrupted) set("micPermissionGuide", "2026-11-15");\n    } catch (e) {\n      if (my === session) giveUp(micErrorKey(e));\n      return;\n    }\n    if (my !== session) return;\n\n    sounds.start();\n    await new Promise(function (r) { setTimeout(r, 500); });\n    if (my !== session) return;\n\n    // The first time, ask which language to use.\n    if (!get("langChosen")) {\n      try { await chooseLanguage(my); } catch (e) { if (my === session) fail(e.code || "errConnection"); return; }\n      if (my !== session) return;\n    }\n\n    // Identity was disclosed once before microphone access. Keep the remaining\n    // instructions brief, with a shorter return-visit version.\n    var intro = get("introHeard") ? tk("greetingShort") : tk("greeting");\n    set("introHeard", "1");\n    lastSaid = intro;\n    await say(intro);\n    if (my !== session) return;\n    goReady();\n  }\n\n',
+    expected: /await chooseLanguage/,
+    operator: 'doesNotMatch',
+    diff: 'simple'
+  }
+
+test at test/onboarding-h.test.js:11:1
+✖ H help repeats the operating instructions as well as available commands (33.408458ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /cmd === "help"\) reply = tk\("greeting"\) \+ " " \+ tk\("voiceHelp"\)/. Input:
+  
+  '(function () {\n' +
+    '  "use strict";\n' +
+    '  var I = window.I18N;\n' +
+    '  var $ = function (id) { return document.getElementById(id); };\n' +
+    '\n' +
+    '  // iPhone/iPad (also iPadOS, which reports itself as a Mac with touch).\n' +
+    '  var IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||\n' +
+    '               (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);\n' +
+    '  // Phones and tablets without a keyboard or mouse: instructions say "the Talk button", not "the space bar".\n' +
+    '  var IS_TOUCH = !!(window.matchMedia && matchMedia("(pointer: coarse)").matches && !matchMedia("(any-pointer: fine)").matches);\n' +
+    '\n' +
+    '  // ---------- storage (never required to work) ----------\n' +
+    '  function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }\n' +
+    '  function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }\n' +
+    '\n' +
+    '  // Previous releases saved a tracking identifier. It is no longer needed.\n' +
+    '  try { localStorage.removeItem("anonId"); } catch (e) {}\n' +
+    '\n' +
+    "  // Conversations are never saved (owner's choice, 2026-10-24); delete what older versions saved.\n" +
+    '  try { localStorage.removeItem("history"); } catch (e) {}\n' +
+    '\n' +
+    '  // ---------- language ----------\n' +
+    '  // Links back from About and the legal pages carry the selected language.\n' +
+    '  var urlLang = null;\n' +
+    '  try {\n' +
+    '    var pageParams = new URLSearchParams(window.location.search);\n' +
+    '    if (pageParams.getAll("lang").length === 1) urlLang = pageParams.get("lang");\n' +
+    '  } catch (e) {}\n' +
+    '  var lang = I.LANGS.indexOf(urlLang) !== -1 ? urlLang :\n' +
+    '    I.pick(get("lang") ? [get("lang")] : navigator.languages || [navigator.language]);\n' +
+    '  var tt = function (key) { return I.t(lang, key); };\n' +
+    '  // Same, but with the touch wording on phones and tablets.\n' +
+    '  var tk = function (key) { return IS_TOUCH && I.S[lang][key + "Touch"] ? tt(key + "Touch") : tt(key); };\n' +
+    '\n' +
+    '  var talkBtn = $("talk"), endBtn = $("endConv"), langBtn = $("lang"),\n' +
+    '      langsBox = $("langs"), alertBox = $("alert"), micPermission = $("micPermission"),\n' +
+    '      micBtn = $("micBtn"), micsBox = $("mics"),\n' +
+    '      lastBtn = $("lastBtn"), lastBox = $("lastBox"), lastText = $("lastText"), copyBtn = $("copyBtn"), copyStatus = $("copyStatus");\n' +
+    '\n' +
+    '  if (IS_TOUCH) $("helpText").setAttribute("data-i18n", "helpTouch");\n' +
+    '  // Languages not switched on yet (see NEW_LANGUAGES) are not offered.\n' +
+    '  (function () {\n' +
+    '    var all = langsBox.querySelectorAll("[data-set-lang]");\n' +
+    '    for (var i = 0; i < all.length; i++) if (I.LANGS.indexOf(all[i].getAttribute("data-set-lang")) === -1) all[i].parentNode.removeChild(all[i]);\n' +
+    '  })();\n' +
+    '\n' +
+    '  function renderTexts() {\n' +
+    '    if (afterSpeech(renderTexts)) return;\n' +
+    '    I.applyPage(lang);\n' +
+    '    $("helpText").textContent = tk("help") + (IS_TOUCH ? "" : " " + tt("shortcutHelp"));\n' +
+    '    if (micPermission.textContent) micPermission.textContent = micShortText();\n' +
+    '    talkBtn.textContent = talkLabel ? tt("talk") : tt("start");\n' +
+    '    endBtn.textContent = tt("end");\n' +
+    '    micBtn.textContent = tt("micButton");\n' +
+    '    lastBtn.textContent = tt("lastButton");\n' +
+    '    copyBtn.textContent = tt("copyButton");\n' +
+    '    $("lastHeading").textContent = tt("lastHeading");\n' +
+    '    // Keep the chosen language on the other pages too.\n' +
+    '    $("aboutLink").href = "/about?lang=" + lang;\n' +
+    '    $("privacyLink").href = "/privacy?lang=" + lang;\n' +
+    '    $("termsLink").href = "/terms?lang=" + lang;\n' +
+    '    $("accessibilityLink").href = "/accessibility?lang=" + lang;\n' +
+    '    var opts = langsBox.querySelectorAll("[data-set-lang]");\n' +
+    '    for (var i = 0; i < opts.length; i++) {\n' +
+    '      if (opts[i].getAttribute("data-set-lang") === lang) opts[i].setAttribute("aria-current", "true");\n' +
+    '      else opts[i].removeAttribute("aria-current");\n' +
+    '    }\n' +
+    '  }\n' +
+    '\n' +
+    '  // ---------- state ----------\n' +
+    '  var active = false;      // a conversation is running\n' +
+    '  var session = 0;         // increases on every start/end, to drop stale async work\n' +
+    '  var state = "idle";      // idle | ready (waiting for the space bar) | listening | processing | speaking\n' +
+    '  var transcript = [];     // [{role, content}] kept in memory only\n' +
+    '  var context = "";        // always empty: conversations are not saved\n' +
+    '  var failures = 0;        // failed turns in a row\n' +
+    '  var choosing = false;    // the assistant is asking which language to use\n' +
+    '  var talkLabel = false;   // the button reads "Talk" (from the first time the assistant waits for the user)\n' +
+    '  var pendingTalk = false; // the space bar interrupted the assistant: start recording when it has stopped\n' +
+    '  var aiVoiceLangs = [];   // languages with the natural AI voice (from the server)\n' +
+    '  var readingPage = null;  // the page being read aloud in parts ({url, part, parts}), in memory only\n' +
+    '  var lastAnswer = "";     // text of the last answer (or the long content the assistant put in the box), in memory only\n' +
+    '\n' +
+    '  function setState(s) {\n' +
+    '    state = s;\n' +
+    '    document.body.setAttribute("data-state", s);\n' +
+    '    if (s !== "speaking") {\n' +
+    '      var queued = afterSpeech.queue || [];\n' +
+    '      afterSpeech.queue = [];\n' +
+    '      queued.forEach(function (job) { if (job.session === session) job.run(); });\n' +
+    '    }\n' +
+    '  }\n' +
+    '\n' +
+    '  // Defer page announcements until playback ends; discard work from older sessions.\n' +
+    '  function afterSpeech(run) {\n' +
+    '    if (state !== "speaking") return false;\n' +
+    '    (afterSpeech.queue || (afterSpeech.queue = [])).push({ session: session, run: run });\n' +
+    '    return true;\n' +
+    '  }\n' +
+    '\n' +
+    '  // ---------- mute gate: the screen reader is probably talking ----------\n' +
+    '  var muteUntil = 0;\n' +
+    '  // While muted, microphone frames are skipped (not recorded).\n' +
+    '  function muteFor(ms) {\n' +
+    '    muteUntil = Math.max(muteUntil, performance.now() + ms);\n' +
+    '  }\n' +
+    '  // The space bar works as the talk button even when focus is somewhere else on the page.\n' +
+    '  function isOtherControl(el) {\n' +
+    '    return !!(el && el.closest && el !== talkBtn && el.closest("button, a, input, select, textarea, [contenteditable]"));\n' +
+    '  }\n' +
+    '  function isTalkShortcut(e) {\n' +
+    '    return e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey &&\n' +
+    '      (e.code === "KeyT" || String(e.key).toLowerCase() === "t");\n' +
+    '  }\n' +
+    '  function micErrorKey(e) {\n' +
+    '    return e && (e.name === "NotAllowedError" || e.name === "PermissionDeniedError") ? "errMicDenied" : "errMic";\n' +
+    '  }\n' +
+    '  function isSpace(e) { return e.key === " " || e.key === "Spacebar"; }\n' +
+    '  ["keydown", "focusin", "click", "pointerdown", "touchstart"].forEach(function (ev) {\n' +
+    '    document.addEventListener(ev, function (e) {\n' +
+    '      // The screen reader says little when the talk button or the space bar is pressed,\n' +
+    '      // so only pause the mic briefly then.\n' +
+    '      var talk = e.target === talkBtn || (e.type === "keydown" && (isTalkShortcut(e) || (isSpace(e) && !isOtherControl(e.target))));\n' +
+    '      muteFor(talk && !IS_TOUCH ? 300 : 1500);\n' +
+    '    }, { capture: true, passive: true });\n' +
+    '  });\n' +
+    '  window.addEventListener("focus", function () { muteFor(1000); });\n' +
+    '  document.addEventListener("visibilitychange", function () { muteFor(1000); });\n' +
+    '\n' +
+    '  // ---------- errors: one alert, only after audio stopped ----------\n' +
+    '  function announce(key) {\n' +
+    '    if (!/^err/.test(key) && afterSpeech(function () { announce(key); })) return;\n' +
+    '    muteFor(4000);\n' +
+    '    alertBox.textContent = "";\n' +
+    '    setTimeout(function () {\n' +
+    '      if (!/^err/.test(key) && afterSpeech(function () { announce(key); })) return;\n' +
+    '      alertBox.textContent = tt(key);\n' +
+    '    }, 150);\n' +
+    '  }\n' +
+    '\n' +
+    '  // ---------- audio context and sounds ----------\n' +
+    '  var ctx = null;\n' +
+    '  function ensureContext() {\n' +
+    '    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();\n' +
+    '    // iOS can leave the context "interrupted" after a call or another app.\n' +
+    '    if (ctx.state !== "running") ctx.resume().catch(function () {});\n' +
+    '  }\n' +
+    '  function tone(freq, startIn, dur, vol) {\n' +
+    '    if (!ctx) return;\n' +
+    '    var t0 = ctx.currentTime + startIn;\n' +
+    '    var o = ctx.createOscillator(), g = ctx.createGain();\n' +
+    '    o.type = "sine";\n' +
+    '    o.frequency.value = freq;\n' +
+    '    g.gain.setValueAtTime(0.0001, t0);\n' +
+    '    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);\n' +
+    '    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);\n' +
+    '    o.connect(g).connect(ctx.destination);\n' +
+    '    o.start(t0);\n' +
+    '    o.stop(t0 + dur + 0.05);\n' +
+    '  }\n' +
+    '  var sounds = {\n' +
+    '    start: function () { tone(523, 0, 0.18, 0.15); tone(784, 0.15, 0.25, 0.15); },\n' +
+    '    end: function () { tone(784, 0, 0.18, 0.15); tone(523, 0.15, 0.3, 0.15); },\n' +
+    '    turn: function () { tone(880, 0, 0.12, 0.08); },             // recording starts\n' +
+    '    stop: function () { tone(660, 0, 0.1, 0.07); },              // recording sent\n' +
+    '    tick: function () { tone(440, 0, 0.05, 0.04); }\n' +
+    '  };\n' +
+    '  var thinkTimer = null, thinkDelay = null;\n' +
+    '  function startThinking() {\n' +
+    '    stopThinking();\n' +
+    '    thinkDelay = setTimeout(function () {\n' +
+    '      sounds.tick();\n' +
+    '      thinkTimer = setInterval(sounds.tick, 1000);\n' +
+    '    }, 1500);\n' +
+    '  }\n' +
+    '  function stopThinking() {\n' +
+    '    clearTimeout(thinkDelay);\n' +
+    '    clearInterval(thinkTimer);\n' +
+    '    thinkDelay = thinkTimer = null;\n' +
+    '  }\n' +
+    '\n' +
+    '  // ---------- speech output ----------\n' +
+    '  // English: natural AI voice from the server, played in this page (so echo\n' +
+    '  // cancellation knows about it). Other languages, or if that fails: the best\n' +
+    '  // voice installed on the device.\n' +
+    '  var voices = [];\n' +
+    '  function loadVoices() { if (window.speechSynthesis) voices = speechSynthesis.getVoices() || []; }\n' +
+    '  if (window.speechSynthesis) {\n' +
+    '    loadVoices();\n' +
+    '    if (speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", loadVoices);\n' +
+    '    else speechSynthesis.onvoiceschanged = loadVoices;\n' +
+    '  }\n' +
+    '\n' +
+    '  // Voices known to sound natural (Microsoft Edge online voices, Apple and Google voices).\n' +
+    '  var NICE_VOICES = {\n' +
+    '    en: /aria|jenny|ava|andrew|emma|brian|guy|samantha|ava|zoe|serena|daniel|google us english/,\n' +
+    '    it: /elsa|isabella|diego|giuseppe|alice|federica|luca|google italiano/,\n' +
+    '    fr: /denise|vivienne|henri|remy|eloise|amélie|amelie|thomas|audrey|google français/,\n' +
+    '    bg: /kalina|borislav|daria/,\n' +
+    '    ru: /svetlana|dariya|dmitry|milena|yuri|katya|google русский/,\n' +
+    '    ja: /nanami|keita|kyoko|otoya|haruka|ichiro|sayaka|google 日本語/,\n' +
+    '    zh: /xiaoxiao|xiaoyi|yunxi|yunjian|tingting|lili|google 普通话|google 中文/,\n' +
+    '    nl: /colette|fenna|maarten|xander|claire|google nederlands/,\n' +
+    '    pt: /raquel|duarte|fernanda|joana|catarina|google português de'... 54760 more characters
+  
+      at TestContext.<anonymous> (/Users/fabrice/Documents/ChatGPT/Fabrice/hands-free/test/onboarding-h.test.js:12:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: `(function () {\n  "use strict";\n  var I = window.I18N;\n  var $ = function (id) { return document.getElementById(id); };\n\n  // iPhone/iPad (also iPadOS, which reports itself as a Mac with touch).\n  var IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||\n               (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);\n  // Phones and tablets without a keyboard or mouse: instructions say "the Talk button", not "the space bar".\n  var IS_TOUCH = !!(window.matchMedia && matchMedia("(pointer: coarse)").matches && !matchMedia("(any-pointer: fine)").matches);\n\n  // ---------- storage (never required to work) ----------\n  function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }\n  function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }\n\n  // Previous releases saved a tracking identifier. It is no longer needed.\n  try { localStorage.removeItem("anonId"); } catch (e) {}\n\n  // Conversations are never saved (owner's choice, 2026-10-24); delete what older versions saved.\n  try { localStorage.removeItem("history"); } catch (e) {}\n\n  // ---------- language ----------\n  // Links back from About and the legal pages carry the selected language.\n  var urlLang = null;\n  try {\n    var pageParams = new URLSearchParams(window.location.search);\n    if (pageParams.getAll("lang").length === 1) urlLang = pageParams.get("lang");\n  } catch (e) {}\n  var lang = I.LANGS.indexOf(urlLang) !== -1 ? urlLang :\n    I.pick(get("lang") ? [get("lang")] : navigator.languages || [navigator.language]);\n  var tt = function (key) { return I.t(lang, key); };\n  // Same, but with the touch wording on phones and tablets.\n  var tk = function (key) { return IS_TOUCH && I.S[lang][key + "Touch"] ? tt(key + "Touch") : tt(key); };\n\n  var talkBtn = $("talk"), endBtn = $("endConv"), langBtn = $("lang"),\n      langsBox = $("langs"), alertBox = $("alert"), micPermission = $("micPermission"),\n      micBtn = $("micBtn"), micsBox = $("mics"),\n      lastBtn = $("lastBtn"), lastBox = $("lastBox"), lastText = $("lastText"), copyBtn = $("copyBtn"), copyStatus = $("copyStatus");\n\n  if (IS_TOUCH) $("helpText").setAttribute("data-i18n", "helpTouch");\n  // Languages not switched on yet (see NEW_LANGUAGES) are not offered.\n  (function () {\n    var all = langsBox.querySelectorAll("[data-set-lang]");\n    for (var i = 0; i < all.length; i++) if (I.LANGS.indexOf(all[i].getAttribute("data-set-lang")) === -1) all[i].parentNode.removeChild(all[i]);\n  })();\n\n  function renderTexts() {\n    if (afterSpeech(renderTexts)) return;\n    I.applyPage(lang);\n    $("helpText").textContent = tk("help") + (IS_TOUCH ? "" : " " + tt("shortcutHelp"));\n    if (micPermission.textContent) micPermission.textContent = micShortText();\n    talkBtn.textContent = talkLabel ? tt("talk") : tt("start");\n    endBtn.textContent = tt("end");\n    micBtn.textContent = tt("micButton");\n    lastBtn.textContent = tt("lastButton");\n    copyBtn.textContent = tt("copyButton");\n    $("lastHeading").textContent = tt("lastHeading");\n    // Keep the chosen language on the other pages too.\n    $("aboutLink").href = "/about?lang=" + lang;\n    $("privacyLink").href = "/privacy?lang=" + lang;\n    $("termsLink").href = "/terms?lang=" + lang;\n    $("accessibilityLink").href = "/accessibility?lang=" + lang;\n    var opts = langsBox.querySelectorAll("[data-set-lang]");\n    for (var i = 0; i < opts.length; i++) {\n      if (opts[i].getAttribute("data-set-lang") === lang) opts[i].setAttribute("aria-current", "true");\n      else opts[i].removeAttribute("aria-current");\n    }\n  }\n\n  // ---------- state ----------\n  var active = false;      // a conversation is running\n  var session = 0;         // increases on every start/end, to drop stale async work\n  var state = "idle";      // idle | ready (waiting for the space bar) | listening | processing | speaking\n  var transcript = [];     // [{role, content}] kept in memory only\n  var context = "";        // always empty: conversations are not saved\n  var failures = 0;        // failed turns in a row\n  var choosing = false;    // the assistant is asking which language to use\n  var talkLabel = false;   // the button reads "Talk" (from the first time the assistant waits for the user)\n  var pendingTalk = false; // the space bar interrupted the assistant: start recording when it has stopped\n  var aiVoiceLangs = [];   // languages with the natural AI voice (from the server)\n  var readingPage = null;  // the page being read aloud in parts ({url, part, parts}), in memory only\n  var lastAnswer = "";     // text of the last answer (or the long content the assistant put in the box), in memory only\n\n  function setState(s) {\n    state = s;\n    document.body.setAttribute("data-state", s);\n    if (s !== "speaking") {\n      var queued = afterSpeech.queue || [];\n      afterSpeech.queue = [];\n      queued.forEach(function (job) { if (job.session === session) job.run(); });\n    }\n  }\n\n  // Defer page announcements until playback ends; discard work from older sessions.\n  function afterSpeech(run) {\n    if (state !== "speaking") return false;\n    (afterSpeech.queue || (afterSpeech.queue = [])).push({ session: session, run: run });\n    return true;\n  }\n\n  // ---------- mute gate: the screen reader is probably talking ----------\n  var muteUntil = 0;\n  // While muted, microphone frames are skipped (not recorded).\n  function muteFor(ms) {\n    muteUntil = Math.max(muteUntil, performance.now() + ms);\n  }\n  // The space bar works as the talk button even when focus is somewhere else on the page.\n  function isOtherControl(el) {\n    return !!(el && el.closest && el !== talkBtn && el.closest("button, a, input, select, textarea, [contenteditable]"));\n  }\n  function isTalkShortcut(e) {\n    return e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey &&\n      (e.code === "KeyT" || String(e.key).toLowerCase() === "t");\n  }\n  function micErrorKey(e) {\n    return e && (e.name === "NotAllowedError" || e.name === "PermissionDeniedError") ? "errMicDenied" : "errMic";\n  }\n  function isSpace(e) { return e.key === " " || e.key === "Spacebar"; }\n  ["keydown", "focusin", "click", "pointerdown", "touchstart"].forEach(function (ev) {\n    document.addEventListener(ev, function (e) {\n      // The screen reader says little when the talk button or the space bar is pressed,\n      // so only pause the mic briefly then.\n      var talk = e.target === talkBtn || (e.type === "keydown" && (isTalkShortcut(e) || (isSpace(e) && !isOtherControl(e.target))));\n      muteFor(talk && !IS_TOUCH ? 300 : 1500);\n    }, { capture: true, passive: true });\n  });\n  window.addEventListener("focus", function () { muteFor(1000); });\n  document.addEventListener("visibilitychange", function () { muteFor(1000); });\n\n  // ---------- errors: one alert, only after audio stopped ----------\n  function announce(key) {\n    if (!/^err/.test(key) && afterSpeech(function () { announce(key); })) return;\n    muteFor(4000);\n    alertBox.textContent = "";\n    setTimeout(function () {\n      if (!/^err/.test(key) && afterSpeech(function () { announce(key); })) return;\n      alertBox.textContent = tt(key);\n    }, 150);\n  }\n\n  // ---------- audio context and sounds ----------\n  var ctx = null;\n  function ensureContext() {\n    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();\n    // iOS can leave the context "interrupted" after a call or another app.\n    if (ctx.state !== "running") ctx.resume().catch(function () {});\n  }\n  function tone(freq, startIn, dur, vol) {\n    if (!ctx) return;\n    var t0 = ctx.currentTime + startIn;\n    var o = ctx.createOscillator(), g = ctx.createGain();\n    o.type = "sine";\n    o.frequency.value = freq;\n    g.gain.setValueAtTime(0.0001, t0);\n    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);\n    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);\n    o.connect(g).connect(ctx.destination);\n    o.start(t0);\n    o.stop(t0 + dur + 0.05);\n  }\n  var sounds = {\n    start: function () { tone(523, 0, 0.18, 0.15); tone(784, 0.15, 0.25, 0.15); },\n    end: function () { tone(784, 0, 0.18, 0.15); tone(523, 0.15, 0.3, 0.15); },\n    turn: function () { tone(880, 0, 0.12, 0.08); },             // recording starts\n    stop: function () { tone(660, 0, 0.1, 0.07); },              // recording sent\n    tick: function () { tone(440, 0, 0.05, 0.04); }\n  };\n  var thinkTimer = null, thinkDelay = null;\n  function startThinking() {\n    stopThinking();\n    thinkDelay = setTimeout(function () {\n      sounds.tick();\n      thinkTimer = setInterval(sounds.tick, 1000);\n    }, 1500);\n  }\n  function stopThinking() {\n    clearTimeout(thinkDelay);\n    clearInterval(thinkTimer);\n    thinkDelay = thinkTimer = null;\n  }\n\n  // ---------- speech output ----------\n  // English: natural AI voice from the server, played in this page (so echo\n  // cancellation knows about it). Other languages, or if that fails: the best\n  // voice installed on the device.\n  var voices = [];\n  function loadVoices() { if (window.speechSynthesis) voices = speechSynthesis.getVoices() || []; }\n  if (window.speechSynthesis) {\n    loadVoices();\n    if (speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", loadVoices);\n    else speechSynthesis.onvoiceschanged = loadVoices;\n  }\n\n  // Voices known to sound natural (Microsoft Edge online voices, Apple and Google voices).\n  var NICE_VOICES = {\n    en: /aria|jenny|ava|andrew|emma|brian|guy|samantha|ava|zoe|serena|daniel|google us english/,\n    it: /elsa|isabella|diego|giuseppe|alice|federica|luca|google italiano/,\n    fr: /denise|vivienne|henri|remy|eloise|amélie|amelie|thomas|audrey|google français/,\n    bg: /kalina|borislav|daria/,\n    ru: /svetlana|dariya|dmitry|milena|yuri|katya|google русский/,\n    ja: /nanami|keita|kyoko|otoya|haruka|ichiro|sayaka|google 日本語/,\n    zh: /xiaoxiao|xiaoyi|yunxi|yunjian|tingting|lili|google 普通话|google 中文/,\n    nl: /colette|fenna|maarten|xander|claire|google nederlands/,\n    pt: /raquel|duarte|fernanda|joana|catarina|google português de`... 54760 more characters,
+    expected: /cmd === "help"\) reply = tk\("greeting"\) \+ " " \+ tk\("voiceHelp"\)/,
+    operator: 'match',
+    diff: 'simple'
+  }

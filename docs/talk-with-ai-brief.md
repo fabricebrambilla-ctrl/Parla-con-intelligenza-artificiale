@@ -419,7 +419,10 @@ Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public 
 
 ### Current state of the code (keep this up to date)
 
-- 2026-11-15 G phones (**implemented, awaiting real-user confirmation**): feature-detected touch recording waits at least 1.5 seconds after microphone readiness and until the input mute period ends; the tone/vibration start only with recording. Desktop timings are unchanged. Non-error status, Copy notices, labels/ARIA and requested UI focus changes wait until speech ends; stale-session jobs are discarded. Ready-state focus recovers only body/documentElement focus in the foreground, preserving chosen controls. Touch-only first-use/help includes optional headphones advice in all nine locales (pt-PT); gated languages remain off unless enabled by the existing setting. Speech speed and iPhone permission wording are unchanged. The existing accessibility headphones sentence is unchanged pending the owner decision requested in chat. See `docs/phones-2026-11-15.md` and regression evidence; physical VoiceOver/TalkBack testing remains required.
+- 2026-11-18 H: shorter first-use flow starts in the browser/selected language without a second language-recording step. “Repeat the instructions” is recognized locally in all nine languages and help repeats operating instructions plus commands. Existing privacy and permission safeguards remain. Three regressions failed before implementation. Both complete suites (default and NEW_LANGUAGES=nl,pt) passed: 278 passed, one optional Redis test skipped in each. Initial synced-folder startup timeouts were resolved by running the identical checkout in a local temporary folder; logs are in docs/h-validation. Implemented, awaiting real-user confirmation. The separately authorized hands-free redesign follows this commit.
+
+
+- 2026-11-15 G phones (**implemented, awaiting real-user confirmation**): feature-detected touch recording waits at least 1.5 seconds after microphone readiness and until the input mute period ends; the tone/vibration start only with recording. Desktop timings are unchanged. Non-error status, Copy notices, labels/ARIA and requested UI focus changes wait until speech ends; stale-session jobs are discarded. Ready-state focus recovers only body/documentElement focus in the foreground, preserving chosen controls. Touch-only first-use/help includes optional headphones advice in all nine locales (pt-PT); gated languages remain off unless enabled by the existing setting. Speech speed and iPhone permission wording are unchanged. The existing accessibility headphones sentence is unchanged, as subsequently requested by the owner. See `docs/phones-2026-11-15.md` and regression evidence; physical VoiceOver/TalkBack testing remains required.
 
 
 - **Status wording rule (owner, 2026-11-14):** nothing in this file, code comments, docs or emails may be called "fixed" until a real blind user has confirmed it. Entries below marked *implemented, awaiting real-user confirmation* passed automated checks only.
@@ -542,6 +545,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Change | Files |
 |---|---|---|
+| 2026-11-18 | H: remove first-use language interview and make instructions repeatable. Implemented, awaiting real-user confirmation. | `public/app.js`, onboarding tests, H validation, brief |
 | 2026-11-15 | G: touch recording delay, speech-time UI deferral, ready-state focus recovery and localized optional phone advice. Implemented, awaiting real-user confirmation. | `public/app.js`, `public/i18n.js`, phone/VM regression tests, phone report and evidence, this brief |
 | 2026-11-15 | F: Dutch and Portuguese (Portugal) in every part of the site, switched off until `NEW_LANGUAGES=nl,pt`; accessibility statements list the new commands. Implemented, not switched on: recognition, voice and translations not checked by ear or by native speakers. | `public/i18n.js`, `public/app.js`, `public/index.html`, `server.js`, `page-text.js`, `terms.js`, `privacy-notice.js`, `legal.js`, `about.js`, `test/dutch-portuguese.test.js`, older tests, this brief |
 | 2026-11-15 | D follow-up: spoken help names all page commands in seven languages. Implemented, awaiting real-user confirmation. | `public/i18n.js`, `test/own-commands-and-limits.test.js`, this brief |
@@ -604,7 +608,10 @@ Deviations from this brief (decided with the owner, see §13):
 
 ## 13. User preferences (newest first; these override the rest of the brief)
 
-2026-11-15 Task G: preserve desktop timings, native keys and push-to-talk. Reduce phone reader/audio overlap with a touch delay and quiet speech-time UI; optional headphones tip in all nine locales, Portugal Portuguese. Do not change the accessibility headphones sentence without an owner decision (asked, pending). Do not change speed or add controls before a real iPhone test. Report current permission wording; further first-use simplification is Task H. No live provider tests. Every change remains implemented, awaiting real-user confirmation.
+2026-11-18: Complete, test and push H before the new hands-free work. Owner chose to KEEP the existing accessibility-page headphones sentence unchanged; the optional spoken phone advice remains. The later hands-free prompt overrides older push-to-talk and no-speed-control preferences; implement it separately after H.
+
+
+2026-11-15 Task G: preserve desktop timings, native keys and push-to-talk. Reduce phone reader/audio overlap with a touch delay and quiet speech-time UI; optional headphones tip in all nine locales, Portugal Portuguese. Do not change the accessibility headphones sentence without an owner decision (owner chose to keep existing sentence). Do not change speed or add controls before a real iPhone test. Report current permission wording; further first-use simplification is Task H. No live provider tests. Every change remains implemented, awaiting real-user confirmation.
 
 2026-11-15: Portuguese is **European Portuguese (pt-PT)**. Changes from the 2026-11-14 work list go to `main` as well as the working branch (owner confirmed again). **No speaking-speed control yet**: wait for a real iPhone test before adding "faster/slower" (the 2026-10-11 preference stays).
 

@@ -1,0 +1,25 @@
+✔ H repeat instructions is a local command in every supported language (69.288375ms)
+✔ H the opening no longer asks for a language recording (0.700125ms)
+✔ H help repeats the operating instructions as well as available commands (1.378542ms)
+✔ first disclosure precedes microphone; no language recording is required (18.575583ms)
+✔ return greeting keeps one AI disclosure without repeating the full privacy notice (5.65625ms)
+✔ ending during disclosure never opens the microphone (46.71425ms)
+✔ ending clears conversation memory; finishing a recording preserves existing context (3.246ms)
+✔ all six notices name the Swiss operator and distinguish aggregate counts from API chat storage (51.336ms)
+✔ microphone guide finishes before browser permission, and repeats after a failed request (6.347667ms)
+✔ known guide is not repeated and touch guidance precedes the browser prompt (8.046708ms)
+✔ return visit respects actual granted permission, not the stored guide (2.132666ms)
+✔ return visit respects actual prompt permission, not the stored guide (1.3755ms)
+✔ return visit respects actual denied permission, not the stored guide (27.307958ms)
+✔ return visit respects actual unknown permission, not the stored guide (13.329958ms)
+✔ granted permission skips guide even on a fresh visit (2.103708ms)
+✔ ending while permission is checked does not speak or capture (3.638875ms)
+✔ permission query rejection and missing support fall back safely (4.821083ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 694.157

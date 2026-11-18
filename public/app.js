@@ -910,7 +910,7 @@
              "répète", "répétez", "tu peux répéter", "vous pouvez répéter", "pardon", "повтори", "повторете", "кажи пак", "кажете пак",
              "повторите", "ещё раз", "еще раз", "что ты сказал", "再说一遍", "再说一次", "重复", "重复一遍", "没听清", "もう一度", "もう一度お願いします", "繰り返して", "繰り返してください", "もう一度言って", "もう一度言ってください", "もう一度話して", "もう一度話してください",
              "herhaal", "herhaal dat", "nog een keer", "kun je dat herhalen", "wat zei je", "repete", "repita", "podes repetir", "pode repetir", "diz outra vez", "o que disseste"],
-    help: ["help", "what can i say", "instructions", "how does this work", "aiuto", "cosa posso dire", "istruzioni",
+    help: ["repeat the instructions", "ripeti le istruzioni", "répète les instructions", "повтори инструкциите", "повтори инструкции", "重复使用说明", "使い方をもう一度教えて", "herhaal de instructies", "repete as instruções", "help", "what can i say", "instructions", "how does this work", "aiuto", "cosa posso dire", "istruzioni",
            "aide", "à l'aide", "que puis-je dire", "qu'est-ce que je peux dire", "помощ", "какво мога да кажа", "инструкции",
            "помощь", "помогите", "что я могу сказать", "инструкция", "帮助", "我能说什么", "我可以说什么", "说明", "怎么用", "ヘルプ", "使い方", "操作方法", "使い方を教えて", "使い方を教えてください",
            "help", "hulp", "wat kan ik zeggen", "uitleg", "ajuda", "o que posso dizer", "instruções"]
@@ -948,7 +948,7 @@
   async function runCommand(cmd) {
     var my = session, reply;
     if (cmd === "repeat") { if (lastSaid) { await say(lastSaid, lastSaidLang); if (my === session) goReady(); return; } reply = tk("voiceHelp"); }
-    else if (cmd === "help") reply = tk("voiceHelp");
+    else if (cmd === "help") reply = tk("greeting") + " " + tk("voiceHelp");
     else if (cmd === "show") reply = showLast() ? tt("lastShown") : tt("lastNone");
     else if (cmd === "hide") { hideLast(true); reply = tt("lastHidden"); }
     else if (cmd === "mic") {
@@ -1160,11 +1160,8 @@
     await new Promise(function (r) { setTimeout(r, 500); });
     if (my !== session) return;
 
-    // The first time, ask which language to use.
-    if (!get("langChosen")) {
-      try { await chooseLanguage(my); } catch (e) { if (my === session) fail(e.code || "errConnection"); return; }
-      if (my !== session) return;
-    }
+    // Start in the selected/browser language; spoken language changes remain available.
+    set("langChosen", "1");
 
     // Identity was disclosed once before microphone access. Keep the remaining
     // instructions brief, with a shorter return-visit version.

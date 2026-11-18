@@ -16,10 +16,10 @@ function start(saved={}, cancel=false) {
   vm.runInContext(app.slice(app.indexOf("  async function startConversation"),app.indexOf("  function endConversation")),c);
   return {c,events,values};
 }
-test("first AI and privacy disclosure precede microphone and language recording",async()=>{
+test("first disclosure precedes microphone; no language recording is required",async()=>{
   const f=start();await f.c.startConversation();
   const mic=f.events.findIndex(e=>e[0]==="microphone"),language=f.events.findIndex(e=>e[0]==="language recording");
-  assert.ok(mic>0&&language>mic);assert.match(f.events[0][1],/AI assistant.*outside services/);
+  assert.ok(mic>0);assert.equal(language,-1);assert.match(f.events[0][1],/AI assistant.*outside services/);
   const spoken=f.events.filter(e=>e[0]==="say").map(e=>e[1]).join(" ");
   assert.equal(spoken.match(/AI assistant/g).length,1);
   assert.ok(f.values.agreementHeard);
