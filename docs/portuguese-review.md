@@ -1,7 +1,7 @@
 # Portuguese (Portugal) review: Talk with AI
 
 Prepared on 2026-11-19 for a native speaker of **European Portuguese (pt-PT)** (for example someone at ACAPO Viseu) and for the owner.
-Portuguese is **switched off** on the live site. Nothing here is "fixed": everything is *implemented, awaiting real-user confirmation*.
+Portuguese is **switched off** on the live site. Section 5 covers the Brazilian version, which is also off. Nothing here is "fixed": everything is *implemented, awaiting real-user confirmation*.
 The texts below were written by an AI. No native speaker has read them yet.
 
 The lists are generated from the site's own source files (`public/i18n.js`, `public/app.js`, `legal.js`, `about.js`). If a text is changed, change it in those files, not only here.
@@ -47,7 +47,7 @@ Each item shows the Portuguese text, then the English original for reference.
   _English:_ I didn't hear anything. Press the space bar when you want to talk.
 - **notHeardTouch**: Não ouvi nada. Prima o botão Falar quando quiser falar.  
   _English:_ I didn't hear anything. Press the Talk button when you want to talk.
-- **langChanged**: Está bem, vou falar português.  
+- **langChanged**: Está bem, vou falar português de Portugal.  
   _English:_ OK, I'll speak English.
 - **askLanguage**: Que língua quer usar? Diga-a depois do sinal.  
   _English:_ Which language would you like to use? Say it after the tone.
@@ -152,7 +152,7 @@ Each item shows the Portuguese text, then the English original for reference.
   _English:_ End conversation
 - **talk**: Falar  
   _English:_ Talk
-- **langButton**: Língua: português. Mudar de língua  
+- **langButton**: Língua: português de Portugal. Mudar de língua  
   _English:_ Language: English. Change language
 - **micButton**: Mudar de microfone  
   _English:_ Change microphone
@@ -278,12 +278,13 @@ Este site foi feito para ser usado inteiramente por voz e com leitores de ecrã.
 
 **Como usar**
 
-A página tem um título e um botão grande. Prima-o para começar. Na primeira vez, o assistente pergunta que língua quer usar: basta dizê-la. Depois prima a barra de espaços (ou o botão) para começar a falar, e outra vez quando terminar, para ouvir a resposta. Se não falar durante sete segundos, o assistente responde na mesma. Premir a barra de espaços enquanto o assistente fala interrompe-o. Para terminar a conversa, diga adeus. Para mudar de língua, diga-o a qualquer momento, por exemplo "fala inglês", ou use o botão Língua. Num telemóvel ou tablet, use o botão Falar em vez da barra de espaços. Pode terminar a qualquer momento com o botão Terminar conversa, que fica logo a seguir ao botão Falar.
+A página tem um título e um botão grande. Prima-o para começar. Na primeira vez, se as duas versões do português estiverem disponíveis, o assistente pergunta se prefere o português de Portugal ou o do Brasil: basta dizer Portugal ou Brasil. Depois prima a barra de espaços (ou o botão) para começar a falar, e outra vez quando terminar, para ouvir a resposta. Se não falar durante sete segundos, o assistente responde na mesma. Premir a barra de espaços enquanto o assistente fala interrompe-o. Para terminar a conversa, diga adeus. Para mudar de língua, diga-o a qualquer momento, por exemplo "fala inglês", ou use o botão Língua. Num telemóvel ou tablet, use o botão Falar em vez da barra de espaços. Pode terminar a qualquer momento com o botão Terminar conversa, que fica logo a seguir ao botão Falar.
 
 **O que pode dizer**
 
 - “Repete”: ouvir de novo a última resposta.
 - “Mudar de língua”, ou por exemplo “fala inglês”: mudar de língua.
+- “Fala português de Portugal” ou “fala português do Brasil”: mudar a versão do português.
 - “Mostra a última resposta”: a última resposta como texto na página, com um botão Copiar; “esconde a resposta” desliga-o.
 - “Mudar de microfone”: usar o microfone seguinte.
 - “Ajuda”: ouvir o que pode dizer.
@@ -366,5 +367,164 @@ Do this only after the native-speaker review, or for a private test that you swi
 ### Known gaps the owner should know
 
 - No real Portuguese speech has been tested with the speech recognition (Groq Whisper, language code `pt`). Whisper is not told "Portugal" (it only takes `pt`), so it may write some words with Brazilian spelling. This only affects what the model reads, not what it says.
-- The Accessibility page ("Como usar") still says the assistant asks for the language the first time. Since the H change (2026-11-18), the first conversation starts in the browser's language instead. This is wrong in **all nine languages**, not only Portuguese. It is left for the owner to decide and is recorded in the brief.
+- The Accessibility page ("How to use") in the other seven languages still says the assistant asks for the language the first time. Since the H change (2026-11-18) it does not. In Portuguese this sentence now describes the real first-use question (Portugal or Brazil). The other languages are left for the owner to decide and are recorded in the brief.
 - The Privacy notice and Terms in Portuguese are translations, not a legal review under Portuguese law.
+
+## 5. Brazilian Portuguese (pt-BR), added 2026-11-19
+
+A second Portuguese, for Brazil. It has its own switch and is **off** unless `NEW_LANGUAGES` contains `pt-BR`. It needs its **own reviewer, a native speaker from Brazil**. The European reviewer does not need to read this section.
+
+How the site chooses:
+
+- A browser set to Portuguese (Brazil), `pt-BR`, gets Brazilian Portuguese. A browser set to `pt-PT`, or only `pt`, gets Portugal's Portuguese.
+- If only one of the two is switched on, every Portuguese browser gets that one.
+- When both are on, the first conversation of a Portuguese user starts with a question in both versions: "Prefere o português de Portugal ou o português do Brasil? Diga Portugal ou Brasil." The answer is remembered in the browser and is not asked again. If it is not understood twice, the version from the browser stays. It is never asked of users of other languages.
+- It can be changed at any time: the Language button lists "Português (Portugal)" and "Português (Brasil)", and the user can say "fala português do Brasil" or "fala português de Portugal" (also "fala brasileiro").
+- The AI is told to write Brazilian Portuguese. The Portugal correction (section 3) is **not** applied to Brazilian answers.
+- Speech recognition is the same for both (Whisper gets `pt`). The device voice is a Brazilian voice when one is installed (for example "Microsoft Francisca" or "Google português do Brasil").
+
+For the Brazilian reviewer, please check naturalness, Brazilian wording ("tela", "celular", "arquivo", "baixar", "você"), and clarity for a screen-reader user. The pages are at `/?lang=pt-BR`, `/terms?lang=pt-BR`, `/privacy?lang=pt-BR`, `/accessibility?lang=pt-BR`, `/about?lang=pt-BR` once switched on. In the privacy notice, the legal wording was translated from the Portugal version. It is **not** a review under Brazilian law (LGPD).
+
+### Spoken and on-page texts (pt-BR)
+
+- **lastButton**: Mostrar a última resposta  
+  _English: Show last answer_
+- **lastHeading**: Última resposta  
+  _English: Last answer_
+- **copyButton**: Copiar  
+  _English: Copy_
+- **copied**: Copiado.  
+  _English: Copied._
+- **copyFailed**: Não foi possível copiar. Selecione o texto com o teclado e copie.  
+  _English: Could not copy. Select the text with the keyboard and copy it._
+- **lastShown**: A última resposta está na página como texto, abaixo do título Última resposta, com um botão Copiar.  
+  _English: The last answer is on the page as text, under the heading Last answer, with a Copy button._
+- **lastNone**: Ainda não há nenhuma resposta para mostrar.  
+  _English: There is no answer to show yet._
+- **lastHidden**: O texto das respostas está desativado.  
+  _English: The text of answers is turned off._
+- **agreeBefore**: Ao pressionar Iniciar, você aceita a   
+  _English: By pressing Start you agree to the _
+- **agreePrivacy**: Política de Privacidade  
+  _English: Privacy Policy_
+- **agreeAnd**:  e os   
+  _English:  and _
+- **agreeTerms**: Termos  
+  _English: Terms_
+- **agreeAfter**: .  
+  _English: ._
+- **agreeSpoken**: Ao iniciar, você aceita a política de privacidade e os termos; sua voz e o texto vão para serviços externos.  
+  _English: By starting, you agree to the privacy policy and terms; your voice and text go to outside services._
+- **termsLink**: Termos  
+  _English: Terms_
+- **micGuide**: Para ouvir você, preciso do microfone. Agora o navegador vai pedir permissão.  
+  _English: To hear you, I need the microphone. Your browser will now ask for permission._
+- **micChoice**: Escolha Permitir.  
+  _English: Choose Allow._
+- **micChoiceChrome**: Escolha o botão que permite o acesso em todas as visitas ao site. Em inglês ele se chama "Allow while visiting the site"; nas versões mais antigas do Chrome, "Allow on every visit". Só desta vez, em inglês "Allow this time", também funciona, mas depois o Chrome pergunta de novo.  
+  _English: Choose "Allow while visiting the site"; older versions of Chrome call it "Allow on every visit". "Allow this time" also works, but then Chrome asks again later._
+- **micChoiceFirefox**: Escolha Permitir. Se você ouvir a caixa de seleção "Lembrar esta decisão", em inglês "Remember this decision", marque essa caixa antes, para o Firefox não perguntar de novo.  
+  _English: Choose Allow. If you hear the checkbox "Remember this decision", tick it first, so Firefox does not ask again._
+- **micShort**: O navegador está pedindo o microfone. Escolha Permitir.  
+  _English: The browser now asks for the microphone. Choose Allow._
+- **micShortChrome**: O navegador está pedindo o microfone. Escolha o botão que permite o acesso em todas as visitas.  
+  _English: The browser now asks for the microphone. Choose Allow while visiting the site._
+- **micShortFirefox**: O navegador está pedindo o microfone. Marque Lembrar esta decisão, se aparecer, e depois escolha Permitir.  
+  _English: The browser now asks for the microphone. Tick Remember this decision if it is shown, then choose Allow._
+- **errMicDenied**: O microfone está bloqueado para este site. Para liberar, abra o botão de informações do site, o ícone de cadeado ao lado do endereço. Com o teclado, vá para a barra de endereço e pressione Shift+Tab até chegar nele. Depois escolha Microfone e em seguida Permitir. Por fim, pressione Iniciar conversa de novo.  
+  _English: The microphone is blocked for this site. To allow it, open the site information button, the lock icon next to the address. With the keyboard, go to the address bar and press Shift+Tab until you reach it. Then choose Microphone, then Allow. After that, press Start conversation again._
+- **micButton**: Trocar de microfone  
+  _English: Change microphone_
+- **micFallback**: Não encontrei o microfone que você usou antes, então estou usando o microfone padrão.  
+  _English: I can't find the microphone you used before, so I'm using the default microphone._
+- **micNow**: Agora vou usar este microfone:  
+  _English: I will now use this microphone:_
+- **micOnlyOne**: Só encontrei um microfone, então não há outro para trocar.  
+  _English: I can find only one microphone, so there is nothing to change._
+- **micGuideTouch**: Com um leitor de tela por toque, encontre Permitir e toque duas vezes.  
+  _English: With a touch screen reader, find Allow, then double-tap it._
+- **micGuideKeyboard**: No pedido do navegador, use Tab ou Shift+Tab para passar pelas opções, Enter para ativar um botão e Espaço para marcar ou desmarcar uma caixa.  
+  _English: In the browser prompt, use Tab or Shift+Tab to move between choices, Enter to activate a button, and Space to toggle a checkbox._
+- **askWeatherPlace**: De qual cidade e de qual país você está falando? Também pode dizer uma cidade próxima.  
+  _English: Which town and country do you mean? You can also name a nearby city._
+- **liveInfoUnavailable**: Não consigo confirmar informações atuais neste momento. Tente mais tarde ou consulte uma fonte atualizada.  
+  _English: I can't verify current information right now. Please try again later or check an up-to-date source._
+- **downloadUnavailable**: Não consigo baixar arquivos automaticamente neste site. Posso ajudar a encontrar uma fonte e explicar como salvar o arquivo.  
+  _English: I can't download files automatically from this site. I can help you find a source and explain how to save it yourself._
+- **voiceChangeUnavailable**: Ainda não consigo trocar entre voz masculina e feminina neste site. A voz depende do seu dispositivo e do serviço de voz disponível.  
+  _English: I can't switch between male and female voices on this site yet. The voice depends on your device and the available speech service._
+- **aiDisclosure**: Sou um assistente de inteligência artificial.  
+  _English: I'm an AI assistant._
+- **title**: Fale com a Inteligência Artificial – pressione o botão para começar  
+  _English: Talk with Artificial Intelligence – press the button to start_
+- **h1**: Fale com a Inteligência Artificial  
+  _English: Talk with Artificial Intelligence_
+- **start**: Iniciar conversa  
+  _English: Start conversation_
+- **end**: Encerrar conversa  
+  _English: End conversation_
+- **langButton**: Idioma: português do Brasil. Mudar de idioma  
+  _English: Language: English. Change language_
+- **help**: Pressione para começar. Depois pressione a barra de espaço para falar e de novo para ouvir a resposta; pressione a qualquer momento para interromper. Para encerrar, diga tchau.  
+  _English: Press to start. Then press Space to talk, and again to get the answer; press it any time to interrupt. To end, say goodbye._
+- **greeting**: Pressione a barra de espaço para falar e de novo para enviar. Pressione enquanto eu falo para me interromper. Diga tchau para encerrar, ou ajuda para ouvir as instruções.  
+  _English: Press Space to talk, and again to send. Press it while I’m speaking to interrupt. Say goodbye to finish, or help for instructions._
+- **farewell**: Tchau!  
+  _English: Goodbye!_
+- **langChanged**: Tudo bem, vou falar português do Brasil.  
+  _English: OK, I'll speak English._
+- **voiceHelp**: Você pode dizer: repete, mudar de idioma, mostra a última resposta, trocar de microfone ou tchau.  
+  _English: You can say: repeat, change language, show the last answer, change microphone, or goodbye._
+- **shortcutHelp**: Com o NVDA ou o JAWS, pressione B para encontrar o botão e depois Espaço ou Enter. Alt+Shift+T também aciona Falar de qualquer lugar desta página, se o navegador e o leitor de tela deixarem passar o atalho.  
+  _English: With NVDA or JAWS, press B to find the button, then Space or Enter. Alt+Shift+T also controls Talk from anywhere on this page, if your browser and screen reader pass the shortcut through._
+- **errMic**: Não consigo usar o microfone. Permita o acesso ao microfone para este site e depois pressione o botão para tentar de novo.  
+  _English: I can't use the microphone. Allow microphone access for this site, then press the button to try again._
+- **errConnection**: Algo deu errado e a conexão caiu. Recarregue a página e tente de novo.  
+  _English: Something went wrong and the connection was lost. Please reload the page and try again._
+- **errLimit**: A inteligência artificial atingiu o limite gratuito de hoje. Tente de novo amanhã.  
+  _English: The AI has reached its free limit for today. Please try again tomorrow._
+- **errSupport**: Este navegador não consegue gravar áudio. Tente usar o Chrome, o Edge, o Firefox ou o Safari.  
+  _English: This browser can't record audio. Please try Chrome, Edge, Firefox or Safari._
+- **back**: Voltar para a página da conversa  
+  _English: Back to the conversation page_
+- **searching**: Vou pesquisar.  
+  _English: Let me look that up._
+- **errRetry**: Desculpe, algo deu errado. Pressione a barra de espaço e fale de novo.  
+  _English: Sorry, something went wrong. Please press the space bar and say that again._
+- **privacyLink**: Aviso de privacidade  
+  _English: Privacy notice_
+- **accessibilityLink**: Acessibilidade  
+  _English: Accessibility_
+- **aboutLink**: Sobre o projeto  
+  _English: About the project_
+- **askLanguage**: Qual idioma você quer usar? Diga depois do sinal.  
+  _English: Which language would you like to use? Say it after the tone._
+- **langNotUnderstood**: Desculpe, não entendi. Diga de novo o nome do seu idioma.  
+  _English: Sorry, I didn't understand. Please say the name of your language again._
+- **notHeard**: Não ouvi nada. Pressione a barra de espaço quando quiser falar.  
+  _English: I didn't hear anything. Press the space bar when you want to talk._
+- **talk**: Falar  
+  _English: Talk_
+- **helpTouch**: Pressione para começar. Depois pressione Falar para falar e de novo para ouvir a resposta; pressione a qualquer momento para interromper. Para encerrar, diga tchau.  
+  _English: Press to start. Then press Talk to talk, and again to get the answer; press it any time to interrupt. To end, say goodbye._
+- **greetingTouch**: Pressione Falar para falar e de novo para enviar. Pressione enquanto eu falo para me interromper. Diga tchau para encerrar, ou ajuda para ouvir as instruções. No celular, fones de ouvido podem ajudar a evitar que as vozes do leitor de tela e do assistente se sobreponham.  
+  _English: Press Talk to speak, and again to send. Press it while I’m speaking to interrupt. Say goodbye to finish, or help for instructions. On a phone, headphones can help keep the screen reader and assistant audio from overlapping._
+- **notHeardTouch**: Não ouvi nada. Pressione o botão Falar quando quiser falar.  
+  _English: I didn't hear anything. Press the Talk button when you want to talk._
+- **errRetryTouch**: Desculpe, algo deu errado. Pressione o botão Falar e fale de novo.  
+  _English: Sorry, something went wrong. Please press the Talk button and say that again._
+- **greetingShort**: Oi de novo. Pressione a barra de espaço para falar.  
+  _English: Welcome back. Press Space to talk._
+- **greetingShortTouch**: Oi de novo. Pressione Falar para falar.  
+  _English: Welcome back. Press Talk to speak._
+- **askPtVariant**: Prefere o português de Portugal ou o português do Brasil? Diga Portugal ou Brasil.
+- **ptVariantNotUnderstood**: Desculpe, não entendi. Diga Portugal ou Brasil.
+
+### Owner checklist for pt-BR
+
+1. Render → Environment → set `NEW_LANGUAGES` to `nl,pt,pt-BR` (or `pt,pt-BR`) → Save. Wait for **Live**.
+2. Optional: `FISH_VOICE_PT_BR` = the ID of a **Brazilian** Fish Audio voice.
+3. Open `/?lang=pt-BR`. The page must say "Idioma: português do Brasil" and use `lang="pt-BR"`. The Language list must show both "Português (Portugal)" and "Português (Brasil)".
+4. In a browser with no saved choice (a private window), set to Portuguese (Brazil), start a conversation. You must first hear the question "Portugal ou Brasil?". Answer "Brasil". The instructions that follow must be the Brazilian ones ("Diga tchau para encerrar"). Close and start again: the question must not come back.
+5. Listening test as in section 4, step 5, with a Brazilian speaker and Brazilian phrases ("Que horas são em São Paulo?", "tchau").
+6. To switch only Brazilian off, set `NEW_LANGUAGES` back to `nl,pt`.

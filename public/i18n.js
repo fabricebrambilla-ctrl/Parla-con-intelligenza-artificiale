@@ -2,17 +2,18 @@
 (function (root) {
   "use strict";
 
-  var ALL_LANGS = ["en", "it", "fr", "bg", "ru", "zh", "ja", "nl", "pt"];
+  var ALL_LANGS = ["en", "it", "fr", "bg", "ru", "zh", "ja", "nl", "pt", "pt-BR"];
   // Dutch and Portuguese (Portugal) are offered only once the owner has listened to their speech
   // recognition and voice: NEW_LANGUAGES=nl,pt on the server, which passes it to the page as
   // <body data-new-langs="nl pt">. Until then they are not offered anywhere.
-  var GATED = ["nl", "pt"];
+  // Brazilian Portuguese (pt-BR, 2026-11-19) has its own switch: NEW_LANGUAGES=nl,pt,pt-BR.
+  var GATED = ["nl", "pt", "pt-BR"];
   function enabledLangs() {
     var on = "";
     if (typeof document !== "undefined" && document.body) on = document.body.getAttribute("data-new-langs") || "";
     else if (typeof process !== "undefined" && process.env) on = process.env.NEW_LANGUAGES || "";
     var list = String(on).toLowerCase().split(/[\s,]+/);
-    return ALL_LANGS.filter(function (l) { return GATED.indexOf(l) === -1 || list.indexOf(l) !== -1; });
+    return ALL_LANGS.filter(function (l) { return GATED.indexOf(l) === -1 || list.indexOf(l.toLowerCase()) !== -1; });
   }
   var LANGS = enabledLangs();
 
@@ -27,7 +28,8 @@
     ru: { html: "ru", speech: "ru-RU", native: "Русский", english: "Russian" },
     zh: { html: "zh-Hans", speech: "zh-CN", native: "中文", english: "Simplified Chinese" },
     nl: { html: "nl", speech: "nl-NL", native: "Nederlands", english: "Dutch" },
-    pt: { html: "pt-PT", speech: "pt-PT", native: "Português", english: "European Portuguese (Portugal)" }
+    pt: { html: "pt-PT", speech: "pt-PT", native: "Português (Portugal)", english: "European Portuguese (Portugal)" },
+    "pt-BR": { html: "pt-BR", speech: "pt-BR", native: "Português (Brasil)", english: "Brazilian Portuguese (Brazil)" }
   };
 
   // Which supported language a piece of text is written in, so each reply is spoken
@@ -47,6 +49,12 @@
   for (var w in WORDS) WORD_SETS[w] = WORDS[w].split(" ");
 
   function detectLang(text, fallback) {
+    // The words cannot tell Portugal from Brazil: Portuguese text keeps the conversation's variant.
+    if (fallback === "pt-BR") { var found = detectText(text, "pt"); return found === "pt" ? "pt-BR" : found; }
+    return detectText(text, fallback);
+  }
+
+  function detectText(text, fallback) {
     fallback = META[fallback] ? fallback : "en";
     text = String(text || "").toLowerCase();
     var kana = (text.match(/[\u3041-\u3096\u30a1-\u30fa\u30fc\uff66-\uff9d]/g) || []).length;
@@ -654,11 +662,11 @@
       "h1": "Fale com a Inteligência Artificial",
       "start": "Iniciar conversa",
       "end": "Terminar conversa",
-      "langButton": "Língua: português. Mudar de língua",
+      "langButton": "Língua: português de Portugal. Mudar de língua",
       "help": "Prima para começar. Depois prima a barra de espaços para falar e outra vez para ouvir a resposta; prima a qualquer momento para interromper. Para terminar, diga adeus.",
       "greeting": "Prima a barra de espaços para falar e outra vez para enviar. Prima-a enquanto eu falo para me interromper. Diga adeus para terminar, ou ajuda para ouvir as instruções.",
       "farewell": "Adeus!",
-      "langChanged": "Está bem, vou falar português.",
+      "langChanged": "Está bem, vou falar português de Portugal.",
       "voiceHelp": "Pode dizer: repete, mudar de língua, mostra a última resposta, mudar de microfone, ou adeus.",
       "shortcutHelp": "Com o NVDA ou o JAWS, prima B para encontrar o botão e depois Espaço ou Enter. Alt+Shift+T também aciona Falar a partir de qualquer ponto desta página, se o navegador e o leitor de ecrã deixarem passar o atalho.",
       "errMic": "Não consigo usar o microfone. Permita o acesso ao microfone para este site e depois prima o botão para tentar de novo.",
@@ -680,14 +688,92 @@
       "notHeardTouch": "Não ouvi nada. Prima o botão Falar quando quiser falar.",
       "errRetryTouch": "Desculpe, algo correu mal. Prima o botão Falar e diga outra vez.",
       "greetingShort": "Olá de novo. Prima a barra de espaços para falar.",
-      "greetingShortTouch": "Olá de novo. Prima Falar para falar."
+      "greetingShortTouch": "Olá de novo. Prima Falar para falar.",
+      "askPtVariant": "Prefere o português de Portugal ou o português do Brasil? Diga Portugal ou Brasil.",
+      "ptVariantNotUnderstood": "Desculpe, não percebi. Diga Portugal ou Brasil."
+    },
+    "pt-BR": {
+      "lastButton": "Mostrar a última resposta",
+      "lastHeading": "Última resposta",
+      "copyButton": "Copiar",
+      "copied": "Copiado.",
+      "copyFailed": "Não foi possível copiar. Selecione o texto com o teclado e copie.",
+      "lastShown": "A última resposta está na página como texto, abaixo do título Última resposta, com um botão Copiar.",
+      "lastNone": "Ainda não há nenhuma resposta para mostrar.",
+      "lastHidden": "O texto das respostas está desativado.",
+      "agreeBefore": "Ao pressionar Iniciar, você aceita a ",
+      "agreePrivacy": "Política de Privacidade",
+      "agreeAnd": " e os ",
+      "agreeTerms": "Termos",
+      "agreeAfter": ".",
+      "agreeSpoken": "Ao iniciar, você aceita a política de privacidade e os termos; sua voz e o texto vão para serviços externos.",
+      "termsLink": "Termos",
+      "micGuide": "Para ouvir você, preciso do microfone. Agora o navegador vai pedir permissão.",
+      "micChoice": "Escolha Permitir.",
+      "micChoiceChrome": "Escolha o botão que permite o acesso em todas as visitas ao site. Em inglês ele se chama \"Allow while visiting the site\"; nas versões mais antigas do Chrome, \"Allow on every visit\". Só desta vez, em inglês \"Allow this time\", também funciona, mas depois o Chrome pergunta de novo.",
+      "micChoiceFirefox": "Escolha Permitir. Se você ouvir a caixa de seleção \"Lembrar esta decisão\", em inglês \"Remember this decision\", marque essa caixa antes, para o Firefox não perguntar de novo.",
+      "micShort": "O navegador está pedindo o microfone. Escolha Permitir.",
+      "micShortChrome": "O navegador está pedindo o microfone. Escolha o botão que permite o acesso em todas as visitas.",
+      "micShortFirefox": "O navegador está pedindo o microfone. Marque Lembrar esta decisão, se aparecer, e depois escolha Permitir.",
+      "errMicDenied": "O microfone está bloqueado para este site. Para liberar, abra o botão de informações do site, o ícone de cadeado ao lado do endereço. Com o teclado, vá para a barra de endereço e pressione Shift+Tab até chegar nele. Depois escolha Microfone e em seguida Permitir. Por fim, pressione Iniciar conversa de novo.",
+      "micButton": "Trocar de microfone",
+      "micFallback": "Não encontrei o microfone que você usou antes, então estou usando o microfone padrão.",
+      "micNow": "Agora vou usar este microfone:",
+      "micOnlyOne": "Só encontrei um microfone, então não há outro para trocar.",
+      "micGuideTouch": "Com um leitor de tela por toque, encontre Permitir e toque duas vezes.",
+      "micGuideKeyboard": "No pedido do navegador, use Tab ou Shift+Tab para passar pelas opções, Enter para ativar um botão e Espaço para marcar ou desmarcar uma caixa.",
+      "askWeatherPlace": "De qual cidade e de qual país você está falando? Também pode dizer uma cidade próxima.",
+      "liveInfoUnavailable": "Não consigo confirmar informações atuais neste momento. Tente mais tarde ou consulte uma fonte atualizada.",
+      "downloadUnavailable": "Não consigo baixar arquivos automaticamente neste site. Posso ajudar a encontrar uma fonte e explicar como salvar o arquivo.",
+      "voiceChangeUnavailable": "Ainda não consigo trocar entre voz masculina e feminina neste site. A voz depende do seu dispositivo e do serviço de voz disponível.",
+      "aiDisclosure": "Sou um assistente de inteligência artificial.",
+      "title": "Fale com a Inteligência Artificial – pressione o botão para começar",
+      "h1": "Fale com a Inteligência Artificial",
+      "start": "Iniciar conversa",
+      "end": "Encerrar conversa",
+      "langButton": "Idioma: português do Brasil. Mudar de idioma",
+      "help": "Pressione para começar. Depois pressione a barra de espaço para falar e de novo para ouvir a resposta; pressione a qualquer momento para interromper. Para encerrar, diga tchau.",
+      "greeting": "Pressione a barra de espaço para falar e de novo para enviar. Pressione enquanto eu falo para me interromper. Diga tchau para encerrar, ou ajuda para ouvir as instruções.",
+      "farewell": "Tchau!",
+      "langChanged": "Tudo bem, vou falar português do Brasil.",
+      "voiceHelp": "Você pode dizer: repete, mudar de idioma, mostra a última resposta, trocar de microfone ou tchau.",
+      "shortcutHelp": "Com o NVDA ou o JAWS, pressione B para encontrar o botão e depois Espaço ou Enter. Alt+Shift+T também aciona Falar de qualquer lugar desta página, se o navegador e o leitor de tela deixarem passar o atalho.",
+      "errMic": "Não consigo usar o microfone. Permita o acesso ao microfone para este site e depois pressione o botão para tentar de novo.",
+      "errConnection": "Algo deu errado e a conexão caiu. Recarregue a página e tente de novo.",
+      "errLimit": "A inteligência artificial atingiu o limite gratuito de hoje. Tente de novo amanhã.",
+      "errSupport": "Este navegador não consegue gravar áudio. Tente usar o Chrome, o Edge, o Firefox ou o Safari.",
+      "back": "Voltar para a página da conversa",
+      "searching": "Vou pesquisar.",
+      "errRetry": "Desculpe, algo deu errado. Pressione a barra de espaço e fale de novo.",
+      "privacyLink": "Aviso de privacidade",
+      "accessibilityLink": "Acessibilidade",
+      "aboutLink": "Sobre o projeto",
+      "askLanguage": "Qual idioma você quer usar? Diga depois do sinal.",
+      "langNotUnderstood": "Desculpe, não entendi. Diga de novo o nome do seu idioma.",
+      "notHeard": "Não ouvi nada. Pressione a barra de espaço quando quiser falar.",
+      "talk": "Falar",
+      "helpTouch": "Pressione para começar. Depois pressione Falar para falar e de novo para ouvir a resposta; pressione a qualquer momento para interromper. Para encerrar, diga tchau.",
+      "greetingTouch": "Pressione Falar para falar e de novo para enviar. Pressione enquanto eu falo para me interromper. Diga tchau para encerrar, ou ajuda para ouvir as instruções.",
+      "notHeardTouch": "Não ouvi nada. Pressione o botão Falar quando quiser falar.",
+      "errRetryTouch": "Desculpe, algo deu errado. Pressione o botão Falar e fale de novo.",
+      "greetingShort": "Oi de novo. Pressione a barra de espaço para falar.",
+      "greetingShortTouch": "Oi de novo. Pressione Falar para falar.",
+      "askPtVariant": "Prefere o português de Portugal ou o português do Brasil? Diga Portugal ou Brasil.",
+      "ptVariantNotUnderstood": "Desculpe, não entendi. Diga Portugal ou Brasil."
     }
   };
 
   // First supported language from a list of tags like ["it-IT", "en"].
+  // Portuguese keeps its region: pt-BR gets Brazilian Portuguese, pt-PT (and a bare "pt") Portugal's,
+  // each falling back to the other when only one is switched on.
   function pick(list) {
     for (var i = 0; i < (list || []).length; i++) {
-      var base = String(list[i] || "").toLowerCase().split(/[-_]/)[0];
+      var parts = String(list[i] || "").toLowerCase().split(/[-_]/), base = parts[0];
+      if (base === "pt") {
+        var order = parts[1] === "br" ? ["pt-BR", "pt"] : ["pt", "pt-BR"];
+        for (var j = 0; j < 2; j++) if (LANGS.indexOf(order[j]) !== -1) return order[j];
+        continue;
+      }
       if (LANGS.indexOf(base) !== -1) return base;
     }
     return "en";
@@ -714,7 +800,8 @@
     "ja": "スマートフォンでは、イヤホンを使うとスクリーンリーダーとアシスタントの音声の重なりを減らせることがあります。",
     "zh": "在手机上，使用耳机有助于减少屏幕阅读器和助手的声音相互干扰。",
     "nl": "Op een telefoon kan een hoofdtelefoon helpen voorkomen dat de schermlezer en de assistent door elkaar praten.",
-    "pt": "Num telemóvel, os auscultadores podem ajudar a evitar que as vozes do leitor de ecrã e do assistente se sobreponham."
+    "pt": "Num telemóvel, os auscultadores podem ajudar a evitar que as vozes do leitor de ecrã e do assistente se sobreponham.",
+    "pt-BR": "No celular, fones de ouvido podem ajudar a evitar que as vozes do leitor de tela e do assistente se sobreponham."
 };
   Object.keys(PHONE_HEADPHONES).forEach(function (code) {
     S[code].phoneHeadphones = PHONE_HEADPHONES[code];
@@ -723,7 +810,7 @@
   });
 
 
-  var api = { LANGS: LANGS, ALL_LANGS: ALL_LANGS, GATED: GATED, META: META, S: S, pick: pick, t: t, applyPage: applyPage, detectLang: detectLang };
+  var api = { detectText: detectText, LANGS: LANGS, ALL_LANGS: ALL_LANGS, GATED: GATED, META: META, S: S, pick: pick, t: t, applyPage: applyPage, detectLang: detectLang };
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.I18N = api;
 })(this);

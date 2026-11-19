@@ -49,7 +49,8 @@ const TTS_ENABLED = process.env.GROQ_TTS === "on";
 const FISH_URL = process.env.FISH_BASE_URL || "https://api.fish.audio/v1/tts";
 const FISH_MODEL = process.env.FISH_MODEL || "s2.1-pro-free";
 // A voice from the Fish Audio voice library for each language (FISH_VOICE_IT, ...), or one for all (FISH_VOICE).
-const fishVoice = (lang) => process.env["FISH_VOICE_" + lang.toUpperCase()] || process.env.FISH_VOICE || "";
+// Brazilian Portuguese (pt-BR) reads FISH_VOICE_PT_BR.
+const fishVoice = (lang) => process.env["FISH_VOICE_" + lang.toUpperCase().replace("-", "_")] || process.env.FISH_VOICE || "";
 // Set when Groq refuses Orpheus for this key (e.g. its terms were not accepted); then it is
 // never called again until the server restarts, so it causes no more errors in the Groq logs.
 let orpheusBlocked = false;
@@ -309,7 +310,8 @@ app.post(
       const form = new FormData();
       form.append("file", new Blob([buf], { type: "audio/wav" }), "speech.wav");
       form.append("model", STT_MODEL);
-      if (!auto) form.append("language", pickLang(req.query.lang));
+      // Whisper takes only the language ("pt"), not the country: pt-BR is sent as "pt".
+      if (!auto) form.append("language", pickLang(req.query.lang).split("-")[0]);
       form.append("response_format", "verbose_json");
       form.append("temperature", "0");
 
@@ -641,7 +643,11 @@ function systemPrompt(lang, context, agent = false) {
       `"aceder" and "acedam" (not "acessar", "acessem"), "utilizador", "equipa", "contacto", "registo", "autocarro", "comboio", ` +
       `"pequeno-almoço", "casa de banho", "aplicação", "facto". Grammar: "estar a" plus the infinitive ("está a fazer", never ` +
       `"está fazendo"); pronouns after the verb in statements ("diga-me", "chama-se", not "me diga", "se chama"). ` +
-      `Address the user politely in the third person without "você" (for example "Pode dizer-me…?", "Quer que continue?").\n` : "") +
+      `Address the user politely in the third person without "você" (for example "Pode dizer-me…?", "Quer que continue?").\n` :
+     lang === "pt-BR" ? `Write Brazilian Portuguese (pt-BR, as spoken in Brazil), not Portugal's Portuguese. ` +
+      `Words: "tela", "celular", "arquivo", "baixar", "acessar", "usuário", "equipe", "contato", "registro", "ônibus", "trem", ` +
+      `"café da manhã", "banheiro", "aplicativo", "fato". Grammar: the gerund ("está fazendo", not "está a fazer"). ` +
+      `Address the user as "você", kindly and naturally (for example "Você quer que eu continue?").\n` : "") +
     `How to talk: like a kind, knowledgeable friend on the phone. Use natural, everyday spoken language, short sentences and ` +
     `contractions where the language has them. Answer in 2 to 4 sentences, then, when useful, offer to say more or ask one short ` +
     `follow-up question. Exact times from a timetable and a page you are reading aloud may be longer. Remember what was said earlier in the conversation. Don't start with filler like "Great question" or ` +

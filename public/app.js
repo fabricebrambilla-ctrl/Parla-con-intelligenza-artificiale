@@ -201,7 +201,8 @@
     ja: /nanami|keita|kyoko|otoya|haruka|ichiro|sayaka|google 日本語/,
     zh: /xiaoxiao|xiaoyi|yunxi|yunjian|tingting|lili|google 普通话|google 中文/,
     nl: /colette|fenna|maarten|xander|claire|google nederlands/,
-    pt: /raquel|duarte|fernanda|joana|catarina|google português de portugal/
+    pt: /raquel|duarte|fernanda|joana|catarina|google português de portugal/,
+    "pt-BR": /francisca|antonio|thalita|luciana|felipe|google português do brasil/
   };
 
   function pickVoice(code) {
@@ -214,8 +215,8 @@
       var n = String(v.name || "").toLowerCase();
       var s = 0;
       if (vl === want) s += 2;
-      // Portugal was chosen for Portuguese: a Brazilian voice only when there is no Portuguese one.
-      if (code === "pt" && vl !== want) s -= 9;
+      // Portugal's Portuguese gets a Portugal voice and Brazilian a Brazilian one; the other only when there is none.
+      if ((code === "pt" || code === "pt-BR") && vl !== want) s -= 9;
       if (/natural|neural/.test(n)) s += 8;          // Edge online voices, Windows 11 natural voices
       if (/premium|enhanced|siri/.test(n)) s += 6;   // Apple high-quality voices
       if (/google/.test(n)) s += 4;                  // Chrome and Android voices
@@ -842,7 +843,7 @@
     nl: ["オランダ語", "dutch", "olandese", "néerlandais", "neerlandais", "нидерландск", "холандски", "голландск", "荷兰语", "荷兰",
          "nederlands", "hollands", "neerlandês", "neerlandes", "holandês", "holandes"],
     pt: ["ポルトガル語", "portuguese", "portoghese", "portugais", "португалски", "португальск", "葡萄牙语", "葡萄牙",
-         "português", "portugues", "portugees"]
+         "português", "portugues", "portugees", "brasileiro", "brazilian"]
   };
   var WHISPER_LANGS = { japanese: "ja", english: "en", italian: "it", french: "fr", bulgarian: "bg", russian: "ru", chinese: "zh",
                         dutch: "nl", portuguese: "pt" };
@@ -856,12 +857,36 @@
         if (p !== -1 && p < bestPos) { best = code; bestPos = p; }
       });
     });
+    if (best === "pt") return portugueseVariant(t);
     // A language that is not switched on yet (NEW_LANGUAGES) is not chosen.
     if (best) return I.LANGS.indexOf(best) !== -1 ? best : null;
     // Just a word or two in some language ("Italiano", "Русский"): use the language it was spoken in.
     var short = t.trim().split(/\s+/).length <= 3;
     var spoken = short && WHISPER_LANGS[String(detected || "").toLowerCase()];
+    if (spoken === "pt") return portugueseVariant(t);
     return spoken && I.LANGS.indexOf(spoken) !== -1 ? spoken : null;
+  }
+
+  // ---------- Portugal or Brazil (2026-11-19) ----------
+  // "Português do Brasil" / "brasileiro" is Brazilian, "português de Portugal" / "europeu" Portugal's.
+  // Just "português": the variant in use, else the one chosen before, else the browser's.
+  function ptNamed(text) {
+    var br = /brasil|brazil/.test(text), pt = /portugal|europeu|europeia|european/.test(text);
+    return br && !pt ? "pt-BR" : pt && !br ? "pt" : null;
+  }
+  function portugueseVariant(text) {
+    var want = ptNamed(text) ||
+      (lang === "pt" || lang === "pt-BR" ? lang : I.LANGS.indexOf(get("ptVariant")) !== -1 ? get("ptVariant") :
+       I.pick(navigator.languages || [navigator.language]));
+    if (want !== "pt" && want !== "pt-BR") want = "pt";
+    if (I.LANGS.indexOf(want) !== -1) return want;
+    var other = want === "pt" ? "pt-BR" : "pt";
+    return I.LANGS.indexOf(other) !== -1 ? other : null;
+  }
+  // A short answer to "Portugal ou Brasil?" ("Brasil", "do Brasil", "português de Portugal", "brasileiro").
+  function ptVariantAnswer(text) {
+    var t = String(text || "").toLowerCase().replace(/[.,!?;:"“”]/g, " ").replace(/\s+/g, " ").trim();
+    return t && t.split(" ").length <= 6 ? ptNamed(t) : null;
   }
 
   // ---------- changing language by voice, during a conversation ----------
@@ -948,7 +973,9 @@
     var hasSwitch = SWITCH_WORDS.some(function (w) { return padded.indexOf(" " + w + " ") !== -1; });
     // The language must come at the end ("talk about Italian food" is not a request).
     var words = clean.replace(/ (please|per favore|s'il vous plaît|s'il te plaît|моля|пожалуйста|alsjeblieft|alstublieft|por favor)$/, "").split(" ");
-    var code = hasSwitch ? matchLanguage(words[words.length - 1]) : null;
+    var tail = words.slice(-3).join(" ");
+    var code = !hasSwitch ? null :
+      /(^| )(portugu[eê]s (do brasil|de portugal|europeu|brasileiro)|(brazilian|european) portuguese)$/.test(tail) ? portugueseVariant(tail) : matchLanguage(words[words.length - 1]);
     if (code) return code;
     return CHANGE_LANG.some(function (w) { return padded.indexOf(" " + w + " ") !== -1; }) ? "ask" : null;
   }
@@ -966,7 +993,7 @@
     }
     else {
       if (cmd === "ask") await chooseLanguage(my);
-      else { lang = cmd; set("lang", lang); set("langChosen", "1"); renderTexts(); }
+      else { lang = cmd; set("lang", lang); set("langChosen", "1"); if (/^pt/.test(lang)) set("ptVariant", lang); renderTexts(); }
       if (my !== session) return;
       reply = tt("langChanged");
     }
@@ -1018,6 +1045,34 @@
     }
     // Asked once; the language button can still change it later.
     set("langChosen", "1");
+    choosing = false;
+  }
+
+  async function choosePortuguese(my) {
+    choosing = true;
+    for (var attempt = 0; attempt < 2; attempt++) {
+      // Pressing Space/Talk during the question goes straight to answering.
+      await say(tt(attempt ? "ptVariantNotUnderstood" : "askPtVariant"));
+      if (my !== session) return;
+      var wav = await recordOnce();
+      if (my !== session) return;
+      if (!wav) continue;
+      startThinking();
+      var r;
+      try {
+        r = await api("/api/transcribe?lang=pt", { method: "POST", headers: { "Content-Type": "audio/wav" }, body: wav });
+      } catch (e) {
+        stopThinking();
+        if (e.code === "errLimit") { choosing = false; throw e; }
+        continue;
+      }
+      stopThinking();
+      if (my !== session) return;
+      var found = ptVariantAnswer(r.text);
+      if (found) { lang = found; set("lang", lang); renderTexts(); break; }
+    }
+    // Asked once; "fala português do Brasil" and the language button can still change it.
+    set("ptVariant", lang);
     choosing = false;
   }
 
@@ -1171,6 +1226,12 @@
     // Start in the selected/browser language; spoken language changes remain available.
     set("langChosen", "1");
 
+    // Portugal or Brazil, asked once when both are switched on.
+    if ((lang === "pt" || lang === "pt-BR") && I.LANGS.indexOf("pt") !== -1 && I.LANGS.indexOf("pt-BR") !== -1 && !get("ptVariant")) {
+      try { await choosePortuguese(my); } catch (e) { if (my === session) giveUp(e.code || "errConnection"); return; }
+      if (my !== session) return;
+    }
+
     // Identity was disclosed once before microphone access. Keep the remaining
     // instructions brief, with a shorter return-visit version.
     var intro = get("introHeard") ? tk("greetingShort") : tk("greeting");
@@ -1269,6 +1330,7 @@
     if (!b) return;
     lang = b.getAttribute("data-set-lang");
     set("lang", lang);
+    if (/^pt/.test(lang)) set("ptVariant", lang);
     set("langChosen", "1");
     langsBox.hidden = true;
     langBtn.setAttribute("aria-expanded", "false");

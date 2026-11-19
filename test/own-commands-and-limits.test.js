@@ -73,7 +73,7 @@ test("ordinary sentences are not mistaken for claims, in several languages", () 
 });
 
 test("questions about changing the language open the language list, in more wordings", () => {
-  const c = vm.createContext({ lang: "en" });
+  const c = vm.createContext({ lang: "en", get: () => null, navigator: { languages: ["en"] } });
   vm.runInContext(app.slice(app.indexOf("  var LANG_WORDS = {"), app.indexOf("  async function runCommand")), c);
   for (const p of ["How do I change the language?", "Come cambio la lingua?", "Comment changer la langue ?", "Как сменить язык?",
     "怎么换语言？", "言語を変えるにはどうすればいいですか"]) assert.equal(c.voiceCommand(p), "ask", p);
@@ -81,13 +81,14 @@ test("questions about changing the language open the language list, in more word
 });
 
 test("the spoken help names every page command, in every language, and each named phrase works", () => {
-  const c = vm.createContext({ lang: "en" });
+  const c = vm.createContext({ lang: "en", get: () => null, navigator: { languages: ["en"] } });
   vm.runInContext(app.slice(app.indexOf("  var LANG_WORDS = {"), app.indexOf("  async function runCommand")), c);
   const said = { en: ["repeat", "change language", "show the last answer", "change microphone"], it: ["ripeti", "cambia lingua", "mostra l'ultima risposta", "cambia microfono"],
     fr: ["répète", "changer de langue", "affiche la dernière réponse", "changer de microphone"], bg: ["повтори", "смени езика", "покажи последния отговор", "смени микрофона"],
     ru: ["повтори", "смени язык", "покажи последний ответ", "сменить микрофон"], zh: ["再说一遍", "换语言", "显示上一个回答", "换麦克风"],
     ja: ["もう一度", "言語を変更", "最後の回答を表示", "マイクを変更"],
-    nl: ["herhaal", "taal wijzigen", "laatste antwoord tonen", "microfoon wijzigen"], pt: ["repete", "mudar de língua", "mostra a última resposta", "mudar de microfone"] };
+    nl: ["herhaal", "taal wijzigen", "laatste antwoord tonen", "microfoon wijzigen"], pt: ["repete", "mudar de língua", "mostra a última resposta", "mudar de microfone"],
+    "pt-BR": ["repete", "mudar de idioma", "mostra a última resposta", "trocar de microfone"] };
   for (const lang of I18N.ALL_LANGS) {
     const help = I18N.t(lang, "voiceHelp");
     for (const phrase of said[lang]) {

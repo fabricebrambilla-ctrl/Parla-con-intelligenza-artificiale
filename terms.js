@@ -181,4 +181,40 @@ module.exports = {
     "updated": "Última atualização:",
     "back": "Voltar à página da conversa"
   },
+  "pt-BR": {
+    "title": "Termos: Fale com a Inteligência Artificial",
+    "h1": "Termos",
+    "sections": [
+      [
+        "O serviço",
+        "Fale com a Inteligência Artificial é um assistente de voz gratuito. Não há conta, senha nem pagamento. {owner} administra o serviço como projeto pessoal a partir da Suíça. Ao pressionar Iniciar, você aceita estes termos e a política de privacidade."
+      ],
+      [
+        "Sua voz e o texto vão para serviços externos",
+        "Quando você fala, o áudio vai para o nosso servidor e para a Groq, que o transforma em texto (transcrição) e escreve a resposta. Para informações atuais, uma pergunta de pesquisa e os endereços das páginas da web a serem lidas vão para a Tavily. A resposta pode ser lida em voz alta pela Fish Audio ou pelo seu próprio dispositivo. Não guardamos suas gravações nem suas conversas. A política de privacidade traz os detalhes."
+      ],
+      [
+        "As respostas podem estar erradas",
+        "Você está falando com uma inteligência artificial, não com uma pessoa. As respostas podem estar erradas, incompletas ou desatualizadas, mesmo quando citam uma fonte. Não é um serviço médico, jurídico, financeiro nem de emergência. Confirme as informações importantes antes de confiar nelas."
+      ],
+      [
+        "Uso adequado",
+        "Não use o serviço para violar a lei nem para prejudicar outras pessoas. Não informe dados privados de outras pessoas. Não tente sobrecarregar nem atacar o serviço."
+      ],
+      [
+        "Disponibilidade",
+        "O serviço é gratuito e não tem nenhuma garantia. Ele pode ficar lento, ser limitado durante o dia, ser alterado ou encerrado a qualquer momento, inclusive porque os serviços externos têm seus próprios limites."
+      ],
+      [
+        "Responsabilidade",
+        "Na medida permitida pela lei, {owner} não se responsabiliza por danos resultantes do uso do serviço ou da confiança nas respostas. Os direitos que a lei garante a você e que não podem ser excluídos continuam valendo."
+      ],
+      [
+        "Alterações e contato",
+        "Estes termos podem mudar. A data abaixo mostra a versão atual, e o seu navegador lembra a versão que você aceitou. Perguntas: {email}."
+      ]
+    ],
+    "updated": "Última atualização:",
+    "back": "Voltar para a página da conversa"
+  },
 };

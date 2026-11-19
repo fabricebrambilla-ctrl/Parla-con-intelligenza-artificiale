@@ -104,6 +104,24 @@ PAGES.pt = {
   "phoneLabel": "Telefone"
 };
 
+PAGES["pt-BR"] = {
+  "organizationsTitle": "Projetos-piloto e parcerias",
+  "generalContactTitle": "Contato",
+  "generalContact": "Tem perguntas sobre o projeto? Me mande um e-mail ou me ligue.",
+  "title": "Sobre o Talk with AI",
+  "intro": "Tenho 17 anos e estou no ensino médio na Suíça. Quero estudar engenharia.",
+  "storyTitle": "Por que criei isto",
+  "story": "Minha tia nasceu cega e usa o JAWS. Ela achava difícil usar as ferramentas de inteligência artificial mais conhecidas, principalmente para pesquisar na internet. Comecei este projeto para tornar isso mais simples.",
+  "missionTitle": "Pergunte com a voz. Explore a web.",
+  "mission": "O Talk with AI é um assistente de voz gratuito para perguntas e pesquisas na web. Você fala, ouve a resposta e faz outra pergunta. Estou desenvolvendo o projeto para quem usa leitores de tela, como o JAWS e o NVDA.",
+  "pilotsTitle": "Projetos-piloto em andamento",
+  "pilotCountry": "Itália",
+  "contactTitle": "Para organizações",
+  "contact": "Se a sua organização apoia pessoas que usam leitores de tela, eu gostaria de conversar sobre um projeto-piloto gratuito ou uma parceria, para melhorarmos o aplicativo juntos. Me mande um e-mail ou me ligue para marcarmos uma conversa rápida.",
+  "emailLabel": "E-mail",
+  "phoneLabel": "Telefone"
+};
+
 function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }

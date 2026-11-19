@@ -24,7 +24,7 @@ before(async () => { off = start(OFF, {}); on = start(ON, { NEW_LANGUAGES: "nl,p
 after(() => { off.kill(); on.kill(); });
 
 test("every interface string exists in Dutch and Portuguese and is really translated", () => {
-  assert.deepEqual(I.GATED, NEW);
+  assert.deepEqual(I.GATED, [...NEW, "pt-BR"]); // pt-BR (2026-11-19) has its own switch; see brazilian-portuguese.test.js
   for (const lang of NEW) {
     assert.ok(I.META[lang]);
     for (const key of Object.keys(I.S.en)) {
@@ -75,7 +75,7 @@ test("switched on: pages in Dutch and Portuguese, buttons kept, the browser's la
   assert.match(nl, /<html lang="nl">/);
   assert.match(nl, /data-new-langs="nl pt"/);
   assert.match(nl, />Gesprek starten</);
-  assert.match(nl, /<button type="button" lang="pt-PT" data-set-lang="pt">Português<\/button>/);
+  assert.match(nl, /<button type="button" lang="pt-PT" data-set-lang="pt">Português \(Portugal\)<\/button>/);
   const pt = await (await fetch(base + "/?lang=pt")).text();
   assert.match(pt, /<html lang="pt-PT">/);
   assert.match(pt, />Iniciar conversa</);
@@ -90,7 +90,7 @@ test("switched on: pages in Dutch and Portuguese, buttons kept, the browser's la
 });
 
 test("spoken commands and language switching work in Dutch and Portuguese", () => {
-  const c = vm.createContext({ lang: "nl", I: { LANGS: I.ALL_LANGS } });
+  const c = vm.createContext({ lang: "nl", I: { LANGS: I.ALL_LANGS, pick: I.pick }, get: () => null, navigator: { languages: ["nl-NL"] } });
   vm.runInContext(app.slice(app.indexOf("  var GOODBYE"), app.indexOf("  // ---------- conversation controls")), c);
   vm.runInContext(app.slice(app.indexOf("  var LANG_WORDS = {"), app.indexOf("  async function runCommand")), c);
   const cases = [["Spreek Nederlands", "nl"], ["Speak Dutch", "nl"], ["Fala português, por favor", "pt"], ["Parla portoghese", "pt"],
@@ -138,5 +138,6 @@ test("the instructions ask for Portugal's Portuguese, not Brazilian", () => {
   const c = { I18N: I };
   vm.runInNewContext(source.slice(source.indexOf("function systemPrompt("), source.indexOf("function forSpeech(")), c);
   assert.match(c.systemPrompt("pt", ""), /reply in European Portuguese \(Portugal\)[\s\S]*Portugal's Portuguese, not Brazilian/);
-  assert.doesNotMatch(c.systemPrompt("nl", ""), /Brazilian/);
+  // The variant instruction is only for Portuguese (the list of languages may name Brazilian Portuguese).
+  assert.doesNotMatch(c.systemPrompt("nl", ""), /Portugal's Portuguese, not Brazilian|Write Brazilian Portuguese/);
 });

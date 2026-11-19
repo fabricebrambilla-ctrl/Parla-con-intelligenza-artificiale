@@ -243,13 +243,14 @@ ACCESSIBILITY.pt = {
     ],
     [
       "Como usar",
-      "A página tem um título e um botão grande. Prima-o para começar. Na primeira vez, o assistente pergunta que língua quer usar: basta dizê-la. Depois prima a barra de espaços (ou o botão) para começar a falar, e outra vez quando terminar, para ouvir a resposta. Se não falar durante sete segundos, o assistente responde na mesma. Premir a barra de espaços enquanto o assistente fala interrompe-o. Para terminar a conversa, diga adeus. Para mudar de língua, diga-o a qualquer momento, por exemplo \"fala inglês\", ou use o botão Língua. Num telemóvel ou tablet, use o botão Falar em vez da barra de espaços. Pode terminar a qualquer momento com o botão Terminar conversa, que fica logo a seguir ao botão Falar."
+      "A página tem um título e um botão grande. Prima-o para começar. Na primeira vez, se as duas versões do português estiverem disponíveis, o assistente pergunta se prefere o português de Portugal ou o do Brasil: basta dizer Portugal ou Brasil. Depois prima a barra de espaços (ou o botão) para começar a falar, e outra vez quando terminar, para ouvir a resposta. Se não falar durante sete segundos, o assistente responde na mesma. Premir a barra de espaços enquanto o assistente fala interrompe-o. Para terminar a conversa, diga adeus. Para mudar de língua, diga-o a qualquer momento, por exemplo \"fala inglês\", ou use o botão Língua. Num telemóvel ou tablet, use o botão Falar em vez da barra de espaços. Pode terminar a qualquer momento com o botão Terminar conversa, que fica logo a seguir ao botão Falar."
     ],
     [
       "O que pode dizer",
       [
         "“Repete”: ouvir de novo a última resposta.",
         "“Mudar de língua”, ou por exemplo “fala inglês”: mudar de língua.",
+        "“Fala português de Portugal” ou “fala português do Brasil”: mudar a versão do português.",
         "“Mostra a última resposta”: a última resposta como texto na página, com um botão Copiar; “esconde a resposta” desliga-o.",
         "“Mudar de microfone”: usar o microfone seguinte.",
         "“Ajuda”: ouvir o que pode dizer.",
@@ -283,6 +284,64 @@ ACCESSIBILITY.pt = {
   ],
   "updated": "Última atualização:",
   "back": "Voltar à página da conversa"
+};
+
+// Brazilian Portuguese, 2026-11-19 (switched on with NEW_LANGUAGES=...,pt-BR).
+ACCESSIBILITY["pt-BR"] = {
+  "title": "Declaração de acessibilidade: Fale com a Inteligência Artificial",
+  "h1": "Declaração de acessibilidade",
+  "sections": [
+    [
+      "Permissão do microfone e atalho de teclado",
+      "Aguardando o acesso ao microfone. Se o navegador perguntar, escolha Permitir no pedido de permissão do microfone. Esses controles ficam fora desta página. Alt+Shift+T também aciona Falar de qualquer lugar desta página, se o navegador e o leitor de tela deixarem passar o atalho."
+    ],
+    [
+      "Nosso objetivo",
+      "Este site foi feito para ser usado inteiramente por voz e com leitores de tela. Buscamos cumprir as Diretrizes de Acessibilidade para Conteúdo Web (WCAG) 2.2, nível AA, e a norma europeia EN 301 549."
+    ],
+    [
+      "Como usar",
+      "A página tem um título e um botão grande. Pressione o botão para começar. Na primeira vez, se as duas versões do português estiverem disponíveis, o assistente pergunta se você prefere o português de Portugal ou o do Brasil: basta dizer Portugal ou Brasil. Depois pressione a barra de espaço (ou o botão) para começar a falar, e de novo quando terminar, para ouvir a resposta. Se você ficar sete segundos sem falar, o assistente responde mesmo assim. Pressionar a barra de espaço enquanto o assistente fala interrompe a fala. Para encerrar a conversa, diga tchau. Para mudar de idioma, diga isso a qualquer momento, por exemplo \"fala inglês\", ou use o botão Idioma. No celular ou no tablet, use o botão Falar em vez da barra de espaço. Você pode encerrar a qualquer momento com o botão Encerrar conversa, que fica logo depois do botão Falar."
+    ],
+    [
+      "O que você pode dizer",
+      [
+        "“Repete”: ouvir de novo a última resposta.",
+        "“Mudar de idioma”, ou por exemplo “fala inglês”: mudar de idioma.",
+        "“Fala português de Portugal” ou “fala português do Brasil”: trocar a versão do português.",
+        "“Mostra a última resposta”: a última resposta como texto na página, com um botão Copiar; “esconde a resposta” desativa.",
+        "“Trocar de microfone”: usar o próximo microfone.",
+        "“Ajuda”: ouvir o que você pode dizer.",
+        "“Tchau”: encerrar a conversa."
+      ]
+    ],
+    [
+      "Comandos para o seu leitor de tela",
+      [
+        "NVDA: a página abre no botão Iniciar conversa. Pressione Espaço ou Enter. Funciona no modo de navegação; não é preciso o modo de foco. Se você saiu do botão, pressione B para ir ao próximo botão, ou Shift+B para voltar. Escape encerra a conversa. Pressione Control para calar o NVDA enquanto o assistente fala.",
+        "JAWS: igual ao NVDA. Espaço ou Enter no botão funciona com o cursor virtual, B e Shift+B pulam entre botões, Escape encerra a conversa e Control cala o JAWS.",
+        "Narrador: no modo de verificação, pressione Espaço ou Enter no botão; B pula para o próximo botão. Caps Lock+Espaço liga e desliga o modo de verificação.",
+        "VoiceOver no Mac: pressione Control+Option+Espaço no botão, ou Espaço quando o foco do teclado estiver nele. Tab passa de um botão para outro.",
+        "VoiceOver no iPhone e no iPad: deslize para a direita até o botão Iniciar conversa e toque duas vezes. Depois toque duas vezes no botão Falar para falar, e de novo para ouvir a resposta. O botão Encerrar conversa fica logo depois.",
+        "TalkBack no Android: igual ao VoiceOver no iPhone: deslize para a direita até o botão e toque duas vezes.",
+        "Orca no Linux: pressione Espaço ou Enter no botão; B pula para o próximo botão. Orca+A alterna entre o modo de navegação e o modo de foco."
+      ]
+    ],
+    [
+      "Leitores de tela e dispositivos compatíveis",
+      "Foi pensado para o JAWS, o NVDA e o Narrador no Windows, o VoiceOver no Mac e no iPhone, o TalkBack no Android e o Orca no Linux, com versões atuais do Chrome, Edge, Firefox e Safari. Não são necessários fones de ouvido nem configurações especiais."
+    ],
+    [
+      "Limitações conhecidas",
+      "A voz depende do seu dispositivo e dos serviços ativados pelo responsável; uma voz natural não está disponível em todas as configurações. Foram feitas verificações automáticas, mas os testes completos em dispositivos reais com o JAWS, o NVDA e o VoiceOver ainda não foram feitos. A versão em português do Brasil ainda não foi testada por usuários brasileiros. Não é possível interromper o assistente falando; pressione o botão."
+    ],
+    [
+      "Comentários",
+      "Se alguma coisa não funcionar para você, escreva para {email}. Todas as mensagens são lidas."
+    ]
+  ],
+  "updated": "Última atualização:",
+  "back": "Voltar para a página da conversa"
 };
 
 // Keep microphone help available to read again without starting capture.
