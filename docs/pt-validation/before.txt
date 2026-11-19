@@ -1,0 +1,113 @@
+TAP version 13
+# Subtest: Brazilian forms are found, and the certain ones are changed to Portugal's Portuguese
+not ok 1 - Brazilian forms are found, and the certain ones are changed to Portugal's Portuguese
+  ---
+  duration_ms: 129.368247
+  type: 'test'
+  location: '/home/user/Parla-con-intelligenza-artificiale/test/portuguese-pt-pt.test.js:39:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Cannot find module '../pt-pt.js'
+    Require stack:
+    - /home/user/Parla-con-intelligenza-artificiale/test/portuguese-pt-pt.test.js
+  code: 'MODULE_NOT_FOUND'
+  stack: |-
+    Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+    defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    Function._load (node:internal/modules/cjs/loader:1216:25)
+    wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    Module.require (node:internal/modules/cjs/loader:1527:12)
+    require (node:internal/modules/helpers:147:16)
+    TestContext.<anonymous> (/home/user/Parla-con-intelligenza-artificiale/test/portuguese-pt-pt.test.js:40:42)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+  ...
+# Subtest: the instructions spell out Portugal's words, 'estar a' and polite address without 'você'
+not ok 2 - the instructions spell out Portugal's words, 'estar a' and polite address without 'você'
+  ---
+  duration_ms: 4.368455
+  type: 'test'
+  location: '/home/user/Parla-con-intelligenza-artificiale/test/portuguese-pt-pt.test.js:51:1'
+  failureType: 'testCodeFailure'
+  error: '"ficheiro"'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/user/Parla-con-intelligenza-artificiale/test/portuguese-pt-pt.test.js:56:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: switched on: a Portuguese answer reaches the user in pt-PT
+not ok 3 - switched on: a Portuguese answer reaches the user in pt-PT
+  ---
+  duration_ms: 74.821144
+  type: 'test'
+  location: '/home/user/Parla-con-intelligenza-artificiale/test/portuguese-pt-pt.test.js:60:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /acedam/. Input:
+    
+    'Para acessem o arquivo, o senhor está fazendo isso na tela do celular. Estou procurando o contato da equipe.'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'Para acessem o arquivo, o senhor está fazendo isso na tela do celular. Estou procurando o contato da equipe.'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/user/Parla-con-intelligenza-artificiale/test/portuguese-pt-pt.test.js:63:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: switched off: nothing changes (Portuguese is not offered, the text is left alone)
+ok 4 - switched off: nothing changes (Portuguese is not offered, the text is left alone)
+  ---
+  duration_ms: 66.579628
+  type: 'test'
+  ...
+# Subtest: speech recognition sends Whisper the code pt when Portuguese is on, and never when it is off
+ok 5 - speech recognition sends Whisper the code pt when Portuguese is on, and never when it is off
+  ---
+  duration_ms: 18.097839
+  type: 'test'
+  ...
+# Subtest: spoken commands in Portugal's everyday and polite forms
+not ok 6 - spoken commands in Portugal's everyday and polite forms
+  ---
+  duration_ms: 2.464081
+  type: 'test'
+  location: '/home/user/Parla-con-intelligenza-artificiale/test/portuguese-pt-pt.test.js:82:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Diga outra vez
+    
+    null !== 'repeat'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'repeat'
+  actual: ~
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/user/Parla-con-intelligenza-artificiale/test/portuguese-pt-pt.test.js:92:46)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 2
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 402.558812

@@ -735,7 +735,8 @@
   // (\b does not work for Cyrillic, so match whole words by padding with spaces)
   var GOODBYE = ["goodbye", "good bye", "bye", "stop", "arrivederci", "ciao ciao", "basta", "au revoir",
                  "arrête", "arrete", "довиждане", "чао", "стоп", "до свидания", "пока", "хватит",
-                 "tot ziens", "doei", "dag dag", "stoppen", "adeus", "tchau", "até logo", "até à próxima", "parar"];
+                 "tot ziens", "doei", "dag dag", "stoppen", "adeus", "tchau", "até logo", "até à próxima", "parar",
+                 "xau", "adeusinho", "até já", "até amanhã"];
   function isGoodbye(text) {
     var clean = text.toLowerCase().replace(/[.,!?¡¿;:。，！？«»"“”]/g, " ").replace(/\s+/g, " ").trim();
     var compact = clean.replace(/[\s「」『』。]/g, "");
@@ -871,7 +872,8 @@
                       "parle", "parlez", "parler", "parlons", "passe", "passez", "passons", "utilise", "changer", "réponds", "répondez",
                       "говори", "говорете", "говорим", "премини", "преминем", "смени", "отговаряй", "отговори",
                       "говорите", "говорить", "перейди", "перейдите", "переключи", "переключись", "давай", "отвечай", "ответь", "разговаривай",
-                      "spreek", "praat", "schakel", "gebruik", "antwoord", "fala", "fale", "falar", "muda", "mude", "usa", "responde", "responda"];
+                      "spreek", "praat", "schakel", "gebruik", "antwoord", "fala", "fale", "falar", "muda", "mude", "usa", "responde", "responda",
+                      "fala-me", "fale-me", "responde-me", "responda-me", "troca", "troque"];
   var CHANGE_LANG = ["change language", "change the language", "switch language", "another language", "different language",
                      "other language", "cambia lingua", "cambiare lingua", "cambia la lingua", "altra lingua",
                      "cambio la lingua", "cambio lingua", "cambiare la lingua", "lingua diversa",
@@ -879,7 +881,8 @@
                      "смени езика", "смяна на езика", "друг език", "смени язык", "сменить язык", "поменяй язык",
                      "другой язык", "换语言", "换一种语言", "切换语言", "更改语言", "改变语言",
                      "taal wijzigen", "taal veranderen", "verander de taal", "andere taal", "wijzig de taal",
-                     "mudar de língua", "mudar a língua", "mudar de idioma", "mudar o idioma", "outra língua", "outro idioma"];
+                     "mudar de língua", "mudar a língua", "mudar de idioma", "mudar o idioma", "outra língua", "outro idioma",
+                     "muda de língua", "mude de língua", "muda a língua", "mude a língua", "muda de idioma", "mude de idioma", "trocar de língua"];
   var JA_SWITCH = /^(日本語|英語|イタリア語|フランス語|ブルガリア語|ロシア語|中国語|オランダ語|ポルトガル語)(?:で|に)(?:話して|話してください|答えて|答えてください|切り替えて|切り替えてください|変更して|して)(?:ください)?$/;
   var ZH_SWITCH = /(说|讲|切换到|切换成|换成|换到|改成|改用)\s*(中文|汉语|普通话|英语|英文|意大利语|法语|法文|俄语|俄文|保加利亚语|日语|日文|日本語|荷兰语|葡萄牙语)/;
 
@@ -893,27 +896,32 @@
           "другой микрофон", "换麦克风", "更换麦克风", "切换麦克风", "换一个麦克风",
           "マイクを変更", "マイクを変更して", "マイクを変更してください", "マイクを変えて", "マイクを変えてください", "マイクを切り替えて",
           "microfoon wijzigen", "wijzig de microfoon", "andere microfoon", "verander de microfoon", "volgende microfoon",
-          "mudar de microfone", "mudar o microfone", "muda o microfone", "outro microfone", "trocar de microfone", "troca o microfone"],
+          "mudar de microfone", "mudar o microfone", "muda o microfone", "outro microfone", "trocar de microfone", "troca o microfone",
+          "mude de microfone", "mude o microfone", "troque de microfone", "troque o microfone", "usa outro microfone", "use outro microfone"],
     show: ["show the last answer", "show last answer", "show me the last answer", "show the answer", "show me the answer", "show answers",
            "mostra l'ultima risposta", "mostrami l'ultima risposta", "mostra la risposta", "mostrami la risposta",
            "affiche la dernière réponse", "montre la dernière réponse", "montre-moi la dernière réponse", "affiche la réponse", "montre la réponse",
            "покажи последния отговор", "покажи отговора", "покажи последний ответ", "покажи ответ", "покажите ответ",
            "显示上一个回答", "显示最后的回答", "显示回答", "显示答案", "最後の回答を表示", "最後の回答を表示して", "回答を表示", "回答を表示して", "回答を見せて",
            "laatste antwoord tonen", "toon het laatste antwoord", "laat het laatste antwoord zien", "toon het antwoord", "laat het antwoord zien",
-           "mostra a última resposta", "mostrar a última resposta", "mostra-me a última resposta", "mostra a resposta", "mostrar a resposta"],
+           "mostra a última resposta", "mostrar a última resposta", "mostra-me a última resposta", "mostra a resposta", "mostrar a resposta",
+           "mostre a última resposta", "mostre a resposta", "mostra-me a resposta", "mostre-me a resposta", "mostre-me a última resposta"],
     hide: ["hide the last answer", "hide the answer", "hide answers", "hide the answers", "nascondi l'ultima risposta", "nascondi la risposta", "nascondi le risposte",
            "masque la réponse", "cache la réponse", "masque les réponses", "скрий отговора", "скрий отговорите", "скрой ответ", "скрыть ответ", "скрой ответы",
            "隐藏回答", "隐藏答案", "回答を隠して", "回答を非表示", "回答を非表示にして",
-           "verberg het antwoord", "verberg het laatste antwoord", "antwoord verbergen", "esconde a resposta", "esconder a resposta", "esconde a última resposta"],
+           "verberg het antwoord", "verberg het laatste antwoord", "antwoord verbergen", "esconde a resposta", "esconder a resposta", "esconde a última resposta",
+           "esconda a resposta", "esconda a última resposta", "oculta a resposta", "oculte a resposta"],
     repeat: ["repeat", "repeat that", "repeat it", "say that again", "say it again", "can you repeat that", "could you repeat that",
              "what did you say", "again", "ripeti", "ripetilo", "puoi ripetere", "ripeti per favore", "come hai detto", "cosa hai detto",
              "répète", "répétez", "tu peux répéter", "vous pouvez répéter", "pardon", "повтори", "повторете", "кажи пак", "кажете пак",
              "повторите", "ещё раз", "еще раз", "что ты сказал", "再说一遍", "再说一次", "重复", "重复一遍", "没听清", "もう一度", "もう一度お願いします", "繰り返して", "繰り返してください", "もう一度言って", "もう一度言ってください", "もう一度話して", "もう一度話してください",
-             "herhaal", "herhaal dat", "nog een keer", "kun je dat herhalen", "wat zei je", "repete", "repita", "podes repetir", "pode repetir", "diz outra vez", "o que disseste"],
+             "herhaal", "herhaal dat", "nog een keer", "kun je dat herhalen", "wat zei je", "repete", "repita", "podes repetir", "pode repetir", "diz outra vez", "o que disseste",
+             "diga outra vez", "outra vez", "repete isso", "repita isso", "podes repetir isso", "pode repetir isso", "o que disse", "o que é que disse", "o que é que disseste"],
     help: ["repeat the instructions", "ripeti le istruzioni", "répète les instructions", "повтори инструкциите", "повтори инструкции", "重复使用说明", "使い方をもう一度教えて", "herhaal de instructies", "repete as instruções", "help", "what can i say", "instructions", "how does this work", "aiuto", "cosa posso dire", "istruzioni",
            "aide", "à l'aide", "que puis-je dire", "qu'est-ce que je peux dire", "помощ", "какво мога да кажа", "инструкции",
            "помощь", "помогите", "что я могу сказать", "инструкция", "帮助", "我能说什么", "我可以说什么", "说明", "怎么用", "ヘルプ", "使い方", "操作方法", "使い方を教えて", "使い方を教えてください",
-           "help", "hulp", "wat kan ik zeggen", "uitleg", "ajuda", "o que posso dizer", "instruções"]
+           "help", "hulp", "wat kan ik zeggen", "uitleg", "ajuda", "o que posso dizer", "instruções",
+           "repita as instruções", "o que é que posso dizer", "como funciona", "como é que funciona"]
   };
   // Commands the assistant can ask the page to carry out (server tool page_command).
   var PAGE_COMMANDS = { choose_language: "ask", show_last_answer: "show", change_microphone: "mic" };

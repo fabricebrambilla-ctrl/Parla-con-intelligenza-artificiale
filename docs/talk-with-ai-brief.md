@@ -419,6 +419,7 @@ Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public 
 
 ### Current state of the code (keep this up to date)
 
+- 2026-11-19 pt-PT readiness for ACAPO Viseu (Portuguese still OFF; switch is `NEW_LANGUAGES=nl,pt` on Render). Every pt interface and page string audited: already European Portuguese, no string changed. AI answers: stronger pt-PT system prompt (vocabulary, "estar a" + infinitive, enclitic pronouns, polite address without "você"), plus `pt-pt.js`, a server-side check run on each Portuguese answer only when pt is enabled: it corrects certain Brazilian forms (acessem→acedam, na tela→no ecrã, está fazendo→está a fazer, contato, equipe, usuário, trem, ônibus…) and only logs (form names, never the answer) forms that need rewriting (você, baixar, arquivo…). No extra provider call, so nothing new in limits.js. More pt-PT spoken commands in `public/app.js` (repete/repita, mostra-me, mude de microfone, até já…). Whisper receives `pt` when on, `en` when off (tested). Review document for the native speaker and owner switch-on checklist: `docs/portuguese-review.md`. New test `test/portuguese-pt-pt.test.js`: 4 of 6 failed before (log `docs/pt-validation/before.txt`), 2 were guards. Full suite 285 passed, 0 failed, in both states; headless Chromium: off → no Português button, lang en; on → button present, `/?lang=pt` has lang="pt-PT" and "Iniciar conversa" (`docs/pt-validation/`). Implemented, awaiting real-user confirmation. Assumptions (owner said no questions): deterministic correction instead of a second model call; "tchau" kept as a recognised goodbye; the Accessibility page "How to use" still says the assistant asks for the language on first use, which is outdated since H in all nine languages, left unchanged for the owner to decide.
 - 2026-11-18 H: shorter first-use flow starts in the browser/selected language without a second language-recording step. “Repeat the instructions” is recognized locally in all nine languages and help repeats operating instructions plus commands. Existing privacy and permission safeguards remain. Three regressions failed before implementation. Both complete suites (default and NEW_LANGUAGES=nl,pt) passed: 278 passed, one optional Redis test skipped in each. Initial synced-folder startup timeouts were resolved by running the identical checkout in a local temporary folder; logs are in docs/h-validation. Implemented, awaiting real-user confirmation. The separately authorized hands-free redesign follows this commit.
 
 
@@ -545,6 +546,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Change | Files |
 |---|---|---|
+| 2026-11-19 | pt-PT readiness: pt-PT prompt, server-side Brazilian-form correction (`pt-pt.js`), more pt-PT commands, native-speaker review and owner checklist. Portuguese still off. Implemented, awaiting real-user confirmation. | `pt-pt.js`, `server.js`, `public/app.js`, `test/portuguese-pt-pt.test.js`, `docs/portuguese-review.md`, `docs/pt-validation/`, brief |
 | 2026-11-18 | H: remove first-use language interview and make instructions repeatable. Implemented, awaiting real-user confirmation. | `public/app.js`, onboarding tests, H validation, brief |
 | 2026-11-15 | G: touch recording delay, speech-time UI deferral, ready-state focus recovery and localized optional phone advice. Implemented, awaiting real-user confirmation. | `public/app.js`, `public/i18n.js`, phone/VM regression tests, phone report and evidence, this brief |
 | 2026-11-15 | F: Dutch and Portuguese (Portugal) in every part of the site, switched off until `NEW_LANGUAGES=nl,pt`; accessibility statements list the new commands. Implemented, not switched on: recognition, voice and translations not checked by ear or by native speakers. | `public/i18n.js`, `public/app.js`, `public/index.html`, `server.js`, `page-text.js`, `terms.js`, `privacy-notice.js`, `legal.js`, `about.js`, `test/dutch-portuguese.test.js`, older tests, this brief |
@@ -607,6 +609,8 @@ Deviations from this brief (decided with the owner, see §13):
 ---
 
 ## 13. User preferences (newest first; these override the rest of the brief)
+
+2026-11-19: Portuguese means Portugal's Portuguese (pt-PT) for ACAPO Viseu; keep it switched off until the owner sets `NEW_LANGUAGES` on Render after a native-speaker review. Owner asked whether European and Brazilian Portuguese can be told apart, possibly by asking the user; a pt-BR variant is a new feature and awaits the owner's decision.
 
 2026-11-18: Complete, test and push H before the new hands-free work. Owner chose to KEEP the existing accessibility-page headphones sentence unchanged; the optional spoken phone advice remains. The later hands-free prompt overrides older push-to-talk and no-speed-control preferences; implement it separately after H.
 
