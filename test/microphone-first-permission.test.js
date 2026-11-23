@@ -15,7 +15,7 @@ function micHarness({ permission, labels = false, userAgent = "Mozilla/5.0 Chrom
   const talkBtn = { focus() { events.push("focus Talk"); document.activeElement = this; } };
   document.activeElement = talkBtn;
   const track = { stop() {}, label: "", getSettings: () => ({ sampleRate: 48000 }) };
-  const c = vm.createContext({ active: true, session: 1, state: "processing", rec: null, document, talkBtn, IS_TOUCH: false,
+  const c = vm.createContext({C:require("../public/app-capabilities"),device:{},paused:false,continuous:false,speed:1,spokenEcho:"",echoUntil:0,micShortText:()=>I.t("en","micShortFirefox"), active: true, session: 1, state: "processing", rec: null, document, talkBtn, IS_TOUCH: false,
     micPermission: { textContent: "", focus() { events.push("focus explanation: " + this.textContent); document.activeElement = this; } },
     ctx: { createMediaStreamSource: () => ({ connect() {}, disconnect() {} }), audioWorklet: { addModule: async () => {} },
       createGain: () => ({ gain: {}, connect() { return this; }, disconnect() {} }), destination: {} },
@@ -79,8 +79,8 @@ test("what to choose is named per browser, and nothing is promised that a site c
 
 function start(saved = {}, state = "prompt") {
   const events = [], values = { ...saved };
-  const c = vm.createContext({ IS_TOUCH: false, active: false, session: 0, lang: "en", aiVoiceLangs: [], failures: 0, pendingTalk: false,
-    choosing: false, transcript: [], context: "", lastSaid: "", alertBox: { textContent: "" }, window: { AudioWorkletNode: function () {} },
+  const c = vm.createContext({C:require("../public/app-capabilities"),device:{},paused:false,continuous:false,speed:1,spokenEcho:"",echoUntil:0,micShortText:()=>I.t("en","micShortFirefox"), IS_TOUCH: false, active: false, session: 0, lang: "en", aiVoiceLangs: [], failures: 0, pendingTalk: false,
+    choosing: false, transcript: [], context: "", lastSaid: "", alertBox: { textContent: "" }, window: { AudioContext:function(){}, AudioWorkletNode: function () {} },
     microphonePermissionState: async () => state, micBrowser: () => "Firefox", navigator: { mediaDevices: { getUserMedia() {} } },
     ensureContext() {}, showConversationControls() {}, setState() {}, get: k => values[k], set: (k, v) => { values[k] = v; },
     tt: k => I.t("en", k), tk: k => I.t("en", k), api: async () => ({ aiVoice: [] }),
@@ -106,7 +106,8 @@ test("a returning user who already heard the guide hears one short line", async 
   await f.c.startConversation();
   const spoken = f.events[0][1];
   assert.match(spoken, /choose Allow/);
-  assert.ok(spoken.length < first.events[0][1].length / 2, "much shorter than the first guide");
+  assert.equal(spoken.split(I.t("en", "micShortFirefox")).length - 1, 1, "one short browser-specific line");
+  assert.doesNotMatch(spoken, /outside services/, "return visit does not repeat the privacy notice");
   assert.doesNotMatch(spoken, /Tab or Shift/);
 });
 

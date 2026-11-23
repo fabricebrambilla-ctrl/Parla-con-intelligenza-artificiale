@@ -119,7 +119,7 @@ test("replies in Dutch or Portuguese are spoken with a Dutch or Portuguese voice
 
 test("research words in Dutch and Portuguese trigger live search and page reading", () => {
   const c = {};
-  vm.runInNewContext(source.slice(source.indexOf("function liveResearchPlan("), source.indexOf("function unsupportedAction(")), c);
+  vm.runInNewContext(source.slice(source.indexOf("function liveResearchPlan("), source.indexOf("function unsupportedAction(")), Object.assign(c, {appCapabilities:require('../public/app-capabilities')}));
   const plan = (q) => c.liveResearchPlan([{ role: "user", content: q }], "2026-11-15");
   assert.equal(plan("Hoe is het weer morgen in Utrecht?").required, true);
   assert.equal(plan("Kun je dat weer zeggen?").required, false, "'weer' as 'again' is not the weather");
@@ -136,7 +136,7 @@ test("research words in Dutch and Portuguese trigger live search and page readin
 
 test("the instructions ask for Portugal's Portuguese, not Brazilian", () => {
   const c = { I18N: I };
-  vm.runInNewContext(source.slice(source.indexOf("function systemPrompt("), source.indexOf("function forSpeech(")), c);
+  vm.runInNewContext(source.slice(source.indexOf("function systemPrompt("), source.indexOf("function forSpeech(")), Object.assign(c, {appCapabilities:require('../public/app-capabilities')}));
   assert.match(c.systemPrompt("pt", ""), /reply in European Portuguese \(Portugal\)[\s\S]*Portugal's Portuguese, not Brazilian/);
   assert.doesNotMatch(c.systemPrompt("nl", ""), /Brazilian/);
 });

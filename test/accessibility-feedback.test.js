@@ -29,7 +29,7 @@ test('microphone explanation receives focus before the browser permission reques
 });
 test('denial clears guidance and selects actionable recovery',async()=>{
  const {c,request}=microphone();const done=c.openMic();await settle();request.reject(Object.assign(new Error('denied'),{name:'NotAllowedError'}));await assert.rejects(done,{name:'NotAllowedError'});assert.equal(c.micPermission.textContent,'');assert.equal(c.document.activeElement,c.talkBtn);
- vm.runInContext(app.slice(app.indexOf('  function micErrorKey'),app.indexOf('  function isSpace')),c);assert.equal(c.micErrorKey({name:'NotAllowedError'}),'errMicDenied');assert.match(I.t('en','errMicDenied'),/lock.*Microphone.*Allow/);
+ vm.runInContext(app.slice(app.indexOf('  function micErrorKey'),app.indexOf('  ["keydown", "focusin"')),c);assert.equal(c.micErrorKey({name:'NotAllowedError'}),'errMicDenied');assert.match(I.t('en','errMicDenied'),/lock.*Microphone.*Allow/);
 });
 test('granted permission does not repeat guidance',async()=>{
  const {c,request,media,events}=microphone('granted');const done=c.openMic();await settle();await Promise.resolve();assert.equal(c.micPermission.textContent,'');request.resolve(media);await done;assert.deepEqual(events,['request microphone']);
@@ -100,14 +100,14 @@ test('shortcut repeats suppressed; other modifier combinations rejected',()=>{
  const c=keyboard(),e={key:'T',code:'KeyT',altKey:true,shiftKey:true,repeat:true,preventDefault(){}};c.handler(e);assert.equal(c.talked,undefined);assert.equal(c.isTalkShortcut({...e,ctrlKey:true}),false);
 });
 test('all languages and HTML expose permission guidance and shortcut',()=>{
- for(const lang of ['en','it','fr','bg','ru','zh'])for(const key of ['micShort','errMicDenied','shortcutHelp'])assert.ok(I.S[lang][key],`${lang}/${key}`);
+ for(const lang of ['en','it','fr','bg','ru','zh'])for(const key of ['micShort','errMicDenied','pause'])assert.ok(I.S[lang][key],`${lang}/${key}`);
  const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');const guidance=html.match(/<div id="micPermission"[^>]*>/)[0];
  assert.match(guidance,/tabindex="-1"/);assert.doesNotMatch(guidance,/role=|aria-live=|aria-atomic=/);assert.match(html,/aria-keyshortcuts="Alt\+Shift\+T"/);
 });
 
 test('changing the page language keeps About and legal links in that language',()=>{
- const elements=Object.fromEntries(['helpText','privacyLink','termsLink','accessibilityLink','aboutLink','lastHeading'].map(id=>[id,{}]));
- const c=vm.createContext({afterSpeech:()=>false,micBtn:{},lastBtn:{},copyBtn:{},I:{applyPage(){}},lang:'fr',tk:()=>'',tt:key=>key,IS_TOUCH:false,
+ const elements=Object.fromEntries(['helpText','privacyLink','termsLink','accessibilityLink','aboutLink','instructionsLink','lastHeading'].map(id=>[id,{}]));
+ const c=vm.createContext({active:false,paused:false,afterSpeech:()=>false,micBtn:{},lastBtn:{},copyBtn:{},I:{applyPage(){}},lang:'fr',tk:()=>'',tt:key=>key,IS_TOUCH:false,
   micPermission:{textContent:''},talkBtn:{},talkLabel:false,endBtn:{},langsBox:{querySelectorAll:()=>[]},
   $:id=>elements[id]});
  vm.runInContext(app.slice(app.indexOf('  function renderTexts()'),app.indexOf('  // ---------- state ----------')),c);

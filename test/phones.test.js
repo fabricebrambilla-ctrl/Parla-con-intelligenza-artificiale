@@ -8,14 +8,14 @@ function harness(touch=true){
  const doc={body:{setAttribute(){}},documentElement:{},hasFocus:()=>true,activeElement:null};
  const el=()=>({hidden:false,textContent:'unchanged',setAttribute(){events.push('attribute');},removeAttribute(){events.push('attribute');},focus(){events.push('focus');doc.activeElement=this;},contains:()=>false});
  const talkBtn=el(),endBtn=el(),lastBox=el(),lastBtn=el(),lastText=el(),copyStatus=el();doc.activeElement=talkBtn;
- const c=vm.createContext({IS_TOUCH:touch,IS_IOS:false,active:true,session:1,state:'ready',talkLabel:true,pendingTalk:false,stream:{},rec:null,
+ const c=vm.createContext({C:require("../public/app-capabilities"),device:{},paused:false,continuous:false,speed:1,spokenEcho:"",echoUntil:0,mics:[],IS_TOUCH:touch,IS_IOS:false,active:true,session:1,state:'ready',talkLabel:true,pendingTalk:false,stream:{},rec:null,
  document:doc,talkBtn,endBtn,lastBox,lastBtn,lastText,copyStatus,alertBox:el(),lastAnswer:'answer',navigator:{clipboard:{writeText:async()=>{}}},
  tt:k=>I.t('en',k),tk:k=>I.t('en',touch&&I.S.en[k+'Touch']?k+'Touch':k),set:(k,v)=>values[k]=v,
  performance:{now:()=>now},setTimeout:(fn,ms)=>{timers.push({fn,ms});},sounds:{turn:()=>events.push('tone')},buzz:()=>events.push('buzz'),
- ensureMic:async()=>{},fail:()=>events.push('error'),micErrorKey:()=> 'errMic',stopSpeaking:null});
+ ensureMic:async()=>{if(!c.stream)throw Error("microphone unavailable");},fail:()=>events.push('error'),micErrorKey:()=> 'errMic',stopSpeaking:null});
  const load=(a,b)=>vm.runInContext(app.slice(app.indexOf(a),app.indexOf(b,app.indexOf(a))),c);
  load('  function setState(', '  // ---------- mute gate');
- load('  var muteUntil', '  // The space bar works');
+ load('  var muteUntil', '  // Preserve native controls');
  load('  function announce(', '  // ---------- audio context');
  load('  function showConversationControls(', '  function buzz(');
  load('  function goReady(', '  var recResolve');
@@ -65,13 +65,13 @@ test('G4 headphones advice exists only in touch first-use/help in all nine langu
  assert.match(app,/reply = tk\("voiceHelp"\)/);
 });
 
-test('G1 microphone removed during phone delay returns ready without a false cue',async()=>{
+test('G1 microphone removed during phone delay reports failure without a false cue',async()=>{
  const h=harness();const p=h.c.startRecording(false);h.c.stream=null;await h.tick();await p;
- assert.equal(h.c.state,'ready');assert.equal(h.c.rec,null);assert.deepEqual(h.events,[]);
+ assert.equal(h.c.rec,null);assert.deepEqual(h.events,['error']);
 });
 for(const path of ['normal','nothing heard','retry','language','show','page command','interruption']) {
  test('G3 actual completion path returns lost focus: '+path,async()=>{
-  const h=harness(),c=h.c;c.document.activeElement=c.document.body;
+  const h=harness(false),c=h.c;c.document.activeElement=c.document.body;
   Object.assign(c,{lang:'en',I,transcript:[],context:'',readingPage:null,failures:0,lastSaid:'',lastSaidLang:null,
     startThinking(){},stopThinking(){},isGoodbye:()=>false,voiceCommand:()=>null,renderTexts(){},
     say:async()=>{c.setState('speaking');c.setState('processing');},

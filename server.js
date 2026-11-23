@@ -11,6 +11,9 @@ const PAGE = require("./page-text.js");
 // Test only: prints which pages were searched and read (never what the user said beyond the search query).
 const TRACE_RESEARCH = process.env.TRACE_RESEARCH === "1";
 const stats = require("./stats.js");
+const deviceStats = require("./device-stats.js");
+const INSTRUCTIONS = require("./instructions.js");
+const appCapabilities = require("./public/app-capabilities.js");
 const qa = require("./synthetic-qa.js");
 const { ProviderKeys } = require("./provider-keys.js");
 const groqKeys = new ProviderKeys(["GROQ_API_KEY", "GROQ_API_KEY_2", "GROQ_API_KEY_3"]);
@@ -163,6 +166,8 @@ ${body}${pages === LEGAL.TERMS ? `\n    <p><a href="/privacy?lang=${lang}">${esc
 
 // Private usage statistics (beacons and the password-protected /stats page).
 app.use(stats.router);
+app.use(deviceStats.router);
+app.get("/instructions", renderLegal(INSTRUCTIONS));
 
 app.get("/", renderPage("index"));
 // History is no longer saved; old links go to the main page.
@@ -170,6 +175,24 @@ app.get("/history", (req, res) => res.redirect(301, I18N.LANGS.includes(req.quer
 app.get("/privacy", renderLegal(LEGAL.PRIVACY));
 app.get("/terms", renderLegal(LEGAL.TERMS));
 app.get("/accessibility", renderLegal(LEGAL.ACCESSIBILITY));
+// First-party text only: no remote URL, HTML, tracking or provider request.
+app.get("/api/site-page/:page", (req, res) => {
+  const lang = requestLang(req), key = req.params.page;
+  let text;
+  const pages = { privacy:LEGAL.PRIVACY, terms:LEGAL.TERMS, accessibility:LEGAL.ACCESSIBILITY, instructions:INSTRUCTIONS };
+  if (pages[key]) {
+    const page = pages[key][lang] || pages[key].en;
+    text = [page.h1, ...page.sections.flatMap(([heading,body]) => [heading,...(Array.isArray(body)?body:[body])])].join(". ")
+      .replace(/\{owner\}/g, process.env.OWNER_NAME || "Fabrice Brambilla")
+      .replace(/\{email\}/g, process.env.OWNER_EMAIL || "brambillafabrice@gmail.com");
+  } else if (key === "footer") {
+    text = ["aboutLink","accessibilityLink","instructionsLink"].map(k=>I18N.t(lang,k)).join(". ");
+  } else if (key === "about") {
+    const p = ABOUT.PAGES[lang] || ABOUT.PAGES.en;
+    text = [p.title,p.intro,p.story,p.mission,p.generalContact,ABOUT.CONTACT.email].join(". ");
+  } else return res.status(404).json({error:"not found"});
+  res.json({text});
+});
 app.get("/about", (req, res) => {
   const lang = requestLang(req);
   sendHtml(res, lang, ABOUT.render(lang));
@@ -336,8 +359,9 @@ app.post(
 );
 
 // ---------- natural voice ----------
-async function fishSpeak(text, lang) {
+async function fishSpeak(text, lang, speed = 1) {
   const body = { text, format: "mp3" };
+  if (speed !== 1) body.prosody = { speed: appCapabilities.clampSpeed(speed) };
   if (fishVoice(lang)) body.reference_id = fishVoice(lang);
   const r = await fetch(FISH_URL, {
     method: "POST",
@@ -376,7 +400,7 @@ app.post("/api/speak", express.json({ limit: "4kb" }), limit({ requests: 1 }), a
   if (!text || !aiVoiceLangs().includes(lang)) return res.status(404).json({ error: "no voice" });
   let audio = null;
   if (process.env.FISH_API_KEY) {
-    try { audio = await fishSpeak(text, lang); } catch (err) { logFailure("speak (Fish)", err); }
+    try { audio = await fishSpeak(text, lang, Number(req.body?.speed) || 1); } catch (err) { logFailure("speak (Fish)", err); }
   }
   if (!audio && lang === "en" && orpheusUsable()) {
     try { audio = await groqSpeak(text); } catch (err) { logFailure("speak (Groq)", err); }
@@ -610,7 +634,7 @@ const TOOLS = [
         "answer as text, or switch to the next microphone. Say only a short lead-in, the page does the rest.",
       parameters: {
         type: "object",
-        properties: { command: { type: "string", enum: ["choose_language", "show_last_answer", "change_microphone"] } },
+        properties: { command: { type: "string", enum: appCapabilities.commands } },
         required: ["command"],
       },
     },
@@ -663,11 +687,7 @@ function systemPrompt(lang, context, agent = false) {
     `is fine. For a study article with questions, answer each question briefly in your own words from what the article says. ` +
     `If the user wants the whole text word for word, say plainly that you cannot read it out word for word, and offer a ` +
     `summary or a close retelling part by part. If you could not find or read the text, say so instead of guessing.\n` +
-    `What this page can do: the user speaks after pressing the Talk button. Spoken commands the page carries out itself: ` +
-    `"change language" (lists the languages) or "speak" plus a language: ${I18N.LANGS.map(l => I18N.META[l].english).join(", ")}; ` +
-    `"show the last answer" and "hide the last answer" (the answer as text on the page, with a Copy button); "change microphone"; ` +
-    `"repeat"; "help"; "goodbye" ends the conversation. When the user asks how to do one of these, say the command; when they ` +
-    `want it done now, call page_command. ` +
+    appCapabilities.description() + " Languages offered: " + I18N.LANGS.map(l => I18N.META[l].english).join(", ") + ".\n" +
     `Limits: you can talk, search the web, read web pages and put text on the page. You cannot create, save, send or download ` +
     `files, documents, images, 3D models, games or apps, cannot control the device or other apps, cannot send email, cannot ` +
     `see the screen, and cannot switch the voice between male and female. Never say you made, saved, sent or attached ` +
@@ -838,7 +858,7 @@ function validReading(r) {
 // `stop` (an AbortSignal) cancels it; `onSearching` is called once when a web search starts;
 // `agent` keeps the model's text as written instead of cleaning it for speech;
 // `reading` is the page being read aloud in parts, if any.
-async function runChat({ lang, context = "", messages: history, stop = null, onSearching = () => {}, agent = false, reading = null }) {
+async function runChat({ lang, context = "", messages: history, stop = null, onSearching = () => {}, agent = false, reading = null, device = null }) {
   const cleaned = cleanMessages(history).slice(-20);
   const question = cleaned.filter(m => m.role === "user").at(-1)?.content || "";
   const action = unsupportedAction(question);
@@ -846,6 +866,7 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
   const plan = liveResearchPlan(cleaned);
   if (plan.vaguePlace) return { text: I18N.t(lang, "askWeatherPlace"), end: false };
   let system = systemPrompt(lang, context, agent);
+  if (!agent && device) system += "\n" + appCapabilities.description(device);
   const resume = validReading(reading);
   let rulesSent = plan.required || plan.readAloud || !!resume;
   if (rulesSent) system += "\n" + READING_RULES;
@@ -944,7 +965,7 @@ async function runChat({ lang, context = "", messages: history, stop = null, onS
         farewell = clean(args.farewell) || I18N.t(lang, "farewell");
         result = { ok: true };
       } else if (call.function?.name === "page_command") {
-        const wanted = ["choose_language", "show_last_answer", "change_microphone"].includes(args.command) ? args.command : null;
+        const wanted = appCapabilities.commands.includes(args.command) ? args.command : null;
         if (agent) result = { error: "There is no page in this conversation." };
         else if (!wanted) result = { error: "Unknown command." };
         else { command = wanted; result = { ok: true, note: "The page does this right after your reply. Say only a short lead-in." }; }
@@ -1048,6 +1069,7 @@ app.post("/api/chat", express.json({ limit: "200kb" }), limit({ requests: 1 }), 
       context: String(req.body?.context || "").slice(0, 2000),
       messages: history,
       reading: req.body?.reading,
+      device: req.body?.device,
       onSearching: () => send({ type: "searching" }),
     });
     // The language the reply is actually written in, so the browser speaks it with a voice of

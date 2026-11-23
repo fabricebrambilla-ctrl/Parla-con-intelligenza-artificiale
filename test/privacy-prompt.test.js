@@ -16,7 +16,7 @@ function fixture() {
       return { choices: [{ message: { content: "Fixture answer." } }] };
     },
   };
-  vm.runInNewContext(promptAndChat, context);
+  vm.runInNewContext(promptAndChat, Object.assign(context, {appCapabilities:require('../public/app-capabilities')}));
   return { calls, run: context.runChat };
 }
 

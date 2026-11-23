@@ -92,7 +92,7 @@ test("a page is read with Tavily Extract's advanced setting and every read is co
     fetch: async (url, opts) => { order.push("fetch"); bodies.push(JSON.parse(opts.body));
       return { ok: true, status: 200, json: async () => ({ results: [{ title: "Timetable", raw_content: "L.A. Union Station 6:38" }] }) }; },
   };
-  vm.runInNewContext(source.slice(source.indexOf("async function tavilySearch("), source.indexOf("async function compoundSearch(")), c);
+  vm.runInNewContext(source.slice(source.indexOf("async function tavilySearch("), source.indexOf("async function compoundSearch(")), Object.assign(c, {appCapabilities:require('../public/app-capabilities')}));
   const page = await c.tavilyExtract("https://metrolinktrains.com/timetable.pdf");
   assert.equal(page.raw, "L.A. Union Station 6:38");
   assert.deepEqual(bodies[0], { urls: ["https://metrolinktrains.com/timetable.pdf"], extract_depth: "advanced", format: "markdown" });
@@ -118,7 +118,7 @@ test("DAILY_TAVILY_EXTRACTS limits page reads, and reads are counted when no lim
 
 function reader(raw) {
   const c = { PAGE, URL, Date, Map, logFailure() {}, tavilyExtract: async () => ({ title: "T", raw }), extracts: 0 };
-  vm.runInNewContext(source.slice(source.indexOf("const pageCache = new Map();"), source.indexOf("async function compoundSearch(")), c);
+  vm.runInNewContext(source.slice(source.indexOf("const pageCache = new Map();"), source.indexOf("async function compoundSearch(")), Object.assign(c, {appCapabilities:require('../public/app-capabilities')}));
   return c;
 }
 
@@ -170,7 +170,7 @@ function turn({ script, pages = {}, results = [{ title: "Timetable", website: "m
     webSearch: async (...args) => { searches.push(args); return { results: structuredClone(results) }; },
     readPage: async (url, opts) => { reads.push({ url, ...opts }); return structuredClone(pages[url] || { url, text: "L.A. Union Station 6:38", dates: [] }); },
   };
-  vm.runInNewContext(source.slice(source.indexOf("function systemPrompt("), source.indexOf("// The answer is streamed as lines of JSON")), c);
+  vm.runInNewContext(source.slice(source.indexOf("function systemPrompt("), source.indexOf("// The answer is streamed as lines of JSON")), Object.assign(c, {appCapabilities:require('../public/app-capabilities')}));
   const run = (messages, extra = {}) => c.runChat({ lang: "en", messages, ...extra });
   return { c, calls, reads, searches, run };
 }
@@ -326,7 +326,7 @@ function groq(responses) {
     groqChat: async (body) => { models.push(body.model); const r = responses.shift(); if (r && r.status) throw r; return r; } };
   const start = source.indexOf("function providerError("), end = source.indexOf("function errorCode(");
   const a = source.indexOf("async function groqAnswer("), b = source.indexOf("\n}\n", a) + 3;
-  vm.runInNewContext(source.slice(start, end) + source.slice(a, b), c);
+  vm.runInNewContext(source.slice(start, end) + source.slice(a, b), Object.assign(c, {appCapabilities:require('../public/app-capabilities')}));
   return { c, models };
 }
 

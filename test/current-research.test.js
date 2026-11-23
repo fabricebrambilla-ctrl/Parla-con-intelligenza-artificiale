@@ -11,7 +11,7 @@ function fixture({tool=true,error=false,result={results:[{title:'Forecast',conte
     groqAnswer:async body=>{calls.push(structuredClone(body));if(error)throw Object.assign(Error('bad tools'),{status:400});
       return {choices:[{message:calls.length===1&&tool?{tool_calls:[searchCall]}:{content:'Fixture answer.'}}]};},
     webSearch:async(...args)=>{searches.push(args);onSearch();return result;}};
-  vm.runInNewContext(code,c);return {c,calls,searches,run:(text,extra={})=>c.runChat({lang:'en',messages:[{role:'user',content:text}],...extra})};
+  vm.runInNewContext(code,Object.assign(c,{appCapabilities:require('../public/app-capabilities')}));return {c,calls,searches,run:(text,extra={})=>c.runChat({lang:'en',messages:[{role:'user',content:text}],...extra})};
 }
 for(const [lang,text] of Object.entries({en:'Weather in Bassano?',it:'Meteo a Bassano?',fr:'Météo à Bassano ?',bg:'Каква е прогнозата за времето в София?',ru:'Какая погода в Москве?',zh:'北京天气怎么样？'})) {
   test(`${lang}: recognized weather requires live results before answering`,async()=>{
@@ -121,7 +121,7 @@ test('organization pages retain contacts without regional listings or logos',()=
 test('Tavily keeps basic search and applies recency only when requested',async()=>{
   const bodies=[];const c={tavilyKeys:new (require('../provider-keys.js').ProviderKeys)(['TAVILY_API_KEY'],{env:{TAVILY_API_KEY:'fixture'}}),qa:{current:()=>null,searchAvailable:()=>true,search(){}},takeTavilySearch:async()=>true,
     TAVILY_URL:'https://fixture.invalid',AbortSignal,URL,logFailure(){},fetch:async(url,opts)=>{bodies.push(JSON.parse(opts.body));return {ok:true,json:async()=>({results:[]})};}};
-  vm.runInNewContext(source.slice(source.indexOf('async function tavilySearch('),source.indexOf('async function compoundSearch(')),c);
+  vm.runInNewContext(source.slice(source.indexOf('async function tavilySearch('),source.indexOf('async function compoundSearch(')),Object.assign(c,{appCapabilities:require('../public/app-capabilities')}));
   await c.tavilySearch('fixture',{timeRange:'week'});await c.tavilySearch('fixture');
   assert.equal(bodies[0].time_range,'week');assert.equal(bodies[0].search_depth,'basic');assert.equal(bodies[1].time_range,undefined);
 });

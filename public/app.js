@@ -1,13 +1,17 @@
 (function () {
   "use strict";
   var I = window.I18N;
+  var C = window.AppCapabilities;
   var $ = function (id) { return document.getElementById(id); };
 
   // iPhone/iPad (also iPadOS, which reports itself as a Mac with touch).
   var IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  // Phones and tablets without a keyboard or mouse: instructions say "the Talk button", not "the space bar".
+  // Coarse-pointer devices use the main button to pause.
   var IS_TOUCH = !!(window.matchMedia && matchMedia("(pointer: coarse)").matches && !matchMedia("(any-pointer: fine)").matches);
+
+  var device = C.detectDevice(navigator, IS_TOUCH);
+  var paused = false, continuous = false, speed = 1, spokenEcho = "", echoUntil = 0;
 
   // ---------- storage (never required to work) ----------
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -49,13 +53,14 @@
     I.applyPage(lang);
     $("helpText").textContent = tk("help") + (IS_TOUCH ? "" : " " + tt("shortcutHelp"));
     if (micPermission.textContent) micPermission.textContent = micShortText();
-    talkBtn.textContent = talkLabel ? tt("talk") : tt("start");
+    talkBtn.textContent = active ? tt(paused ? "resume" : "pause") : tt("start");
     endBtn.textContent = tt("end");
     micBtn.textContent = tt("micButton");
     lastBtn.textContent = tt("lastButton");
     copyBtn.textContent = tt("copyButton");
     $("lastHeading").textContent = tt("lastHeading");
     // Keep the chosen language on the other pages too.
+    $("instructionsLink").href = "/instructions?lang=" + lang;
     $("aboutLink").href = "/about?lang=" + lang;
     $("privacyLink").href = "/privacy?lang=" + lang;
     $("termsLink").href = "/terms?lang=" + lang;
@@ -70,13 +75,13 @@
   // ---------- state ----------
   var active = false;      // a conversation is running
   var session = 0;         // increases on every start/end, to drop stale async work
-  var state = "idle";      // idle | ready (waiting for the space bar) | listening | processing | speaking
+  var state = "idle";      // idle | ready (waiting for microphone readiness) | listening | processing | speaking
   var transcript = [];     // [{role, content}] kept in memory only
   var context = "";        // always empty: conversations are not saved
   var failures = 0;        // failed turns in a row
   var choosing = false;    // the assistant is asking which language to use
   var talkLabel = false;   // the button reads "Talk" (from the first time the assistant waits for the user)
-  var pendingTalk = false; // the space bar interrupted the assistant: start recording when it has stopped
+  var pendingTalk = false; // speech interrupted the assistant: start recording when it has stopped
   var aiVoiceLangs = [];   // languages with the natural AI voice (from the server)
   var readingPage = null;  // the page being read aloud in parts ({url, part, parts}), in memory only
   var lastAnswer = "";     // text of the last answer (or the long content the assistant put in the box), in memory only
@@ -104,7 +109,7 @@
   function muteFor(ms) {
     muteUntil = Math.max(muteUntil, performance.now() + ms);
   }
-  // The space bar works as the talk button even when focus is somewhere else on the page.
+  // Preserve native controls and screen-reader keyboard combinations.
   function isOtherControl(el) {
     return !!(el && el.closest && el !== talkBtn && el.closest("button, a, input, select, textarea, [contenteditable]"));
   }
@@ -115,12 +120,11 @@
   function micErrorKey(e) {
     return e && (e.name === "NotAllowedError" || e.name === "PermissionDeniedError") ? "errMicDenied" : "errMic";
   }
-  function isSpace(e) { return e.key === " " || e.key === "Spacebar"; }
   ["keydown", "focusin", "click", "pointerdown", "touchstart"].forEach(function (ev) {
     document.addEventListener(ev, function (e) {
-      // The screen reader says little when the talk button or the space bar is pressed,
+      // The screen reader says little when the main control is pressed,
       // so only pause the mic briefly then.
-      var talk = e.target === talkBtn || (e.type === "keydown" && (isTalkShortcut(e) || (isSpace(e) && !isOtherControl(e.target))));
+      var talk = e.target === talkBtn || (e.type === "keydown" && isTalkShortcut(e));
       muteFor(talk && !IS_TOUCH ? 300 : 1500);
     }, { capture: true, passive: true });
   });
@@ -259,14 +263,17 @@
     return new Promise(function (resolve) {
       if (!window.speechSynthesis || !chunks.length) return resolve();
       var voice = pickVoice(code);
-      var i = 0, watchdog = null;
+      var i = 0, watchdog = null, cancelPoll = null;
+      function finish() { clearTimeout(watchdog); clearInterval(cancelPoll); resolve(); }
+      cancelPoll = setInterval(function () { if (isCancelled()) finish(); }, 50);
       function next() {
         clearTimeout(watchdog);
-        if (isCancelled()) return resolve();
-        if (i >= chunks.length) return resolve();
+        if (isCancelled()) return finish();
+        if (i >= chunks.length) return finish();
         var chunk = chunks[i++];
         var u = new SpeechSynthesisUtterance(chunk);
         u.lang = I.META[code].speech;
+        u.rate = speed;
         if (voice) u.voice = voice;
         u.onend = next;
         u.onerror = next;
@@ -289,24 +296,29 @@
       signal: ctl.signal
     }).then(function (r) {
       if (!r.ok) throw new Error("voice " + r.status);
-      return r.arrayBuffer();
-    }).then(function (buf) {
-      return new Promise(function (ok, bad) { ctx.decodeAudioData(buf, ok, bad); });
+      return r.blob();
     }).finally(function () { clearTimeout(timer); });
   }
 
   function playBuffer(buffer, isCancelled) {
-    return new Promise(function (resolve) {
+    return new Promise(function (resolve, reject) {
       if (isCancelled()) return resolve();
-      ensureContext();
-      var src = ctx.createBufferSource();
-      src.buffer = buffer;
-      src.connect(ctx.destination);
-      var done = false;
-      function finish() { if (!done) { done = true; clearInterval(poll); resolve(); } }
-      src.onended = finish;
-      var poll = setInterval(function () { if (isCancelled()) { try { src.stop(); } catch (e) {} finish(); } }, 100);
-      src.start();
+      var url = URL.createObjectURL(buffer), audio = new Audio(url), done = false;
+      audio.playbackRate = speed;
+      audio.preservesPitch = true;
+      audio.webkitPreservesPitch = true;
+      var poll, watchdog;
+      function finish(error) {
+        if (done) return; done = true;
+        clearInterval(poll); clearTimeout(watchdog); audio.pause();
+        audio.removeAttribute("src"); audio.load(); URL.revokeObjectURL(url);
+        if (error) reject(error); else resolve();
+      }
+      audio.onended = function () { finish(); };
+      audio.onerror = function () { finish(new Error("Audio playback failed")); };
+      poll = setInterval(function () { if (isCancelled()) finish(); }, 50);
+      watchdog = setTimeout(function () { finish(new Error("Audio playback timeout")); }, 120000);
+      audio.play().catch(finish);
     });
   }
 
@@ -321,7 +333,7 @@
       }
       // Fetch the next sentence while this one plays.
       if (i + 1 < chunks.length) { next = fetchAiVoice(chunks[i + 1], code); next.catch(function () {}); }
-      await playBuffer(buffer, isCancelled);
+      try { await playBuffer(buffer, isCancelled); } catch (e) { return chunks.slice(i); }
       if (isCancelled()) return [];
     }
     aiVoiceFailures = 0;
@@ -342,8 +354,9 @@
       if (window.speechSynthesis) speechSynthesis.cancel();
     };
     setState("speaking");
-    // iPhone: release the microphone while talking, or the voice comes out of the earpiece.
-    if (IS_IOS) closeMic();
+    // Keep input available for interruption. AEC and a conservative text filter mitigate echo.
+    spokenEcho = text; echoUntil = performance.now() + 120000;
+    if (continuous && !paused && stream) rec = { auto:false, frames:[], elapsed:0, voiced:0, silence:0, speechFrames:0, speechStarted:false };
 
     var rest = splitSentences(text, 220);
     if (aiVoiceLangs.indexOf(code) !== -1 && aiVoiceFailures < 3) {
@@ -360,8 +373,7 @@
   // ---------- microphone + voice activity detection ----------
   var stream = null, source = null, node = null, sink = null, workletCtx = null;
 
-  // One recording = one turn: it starts with the space bar (or the button) and ends
-  // with the next press, or by itself after 7 s of silence.
+  // Continuous listening: a turn ends after a pause in speech.
   var rec = null;
   var noise = 0.004;   // background noise level, learned while recording
 
@@ -609,12 +621,12 @@
   // (low sensitivity, short pauses allowed); 300 ms before that are kept.
   var SEVEN_SECONDS = 350, MAX_FRAMES = 1500;  // 30 s
   function onFrame(frame) {
-    if (state !== "listening" || !rec) return;
+    if (paused || (state !== "listening" && state !== "speaking") || !rec) return;
     if (performance.now() < muteUntil) return;
     var sum = 0;
     for (var i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
     var rms = Math.sqrt(sum / frame.length);
-    var threshold = Math.max(noise * 3, 0.012);
+    var threshold = Math.max(noise * (state === "speaking" ? 5 : 3), state === "speaking" ? 0.025 : 0.012);
     rec.elapsed++;
 
     if (!rec.speechStarted) {
@@ -625,9 +637,16 @@
         rec.voiced = Math.max(0, rec.voiced - 2);
         noise = Math.min(0.05, noise * 0.95 + rms * 0.05);
       }
-      if (rec.voiced >= 10) { rec.speechStarted = true; rec.speechFrames = rec.voiced; }
+      if (rec.voiced >= (state === "speaking" ? 15 : 10)) {
+        rec.speechStarted = true; rec.speechFrames = rec.voiced;
+        if (state === "speaking") {
+          session++; // Invalidate the interrupted answer and its pending page command.
+          if (stopSpeaking) stopSpeaking();
+          stopThinking(); setState("listening");
+        }
+      }
       // Nothing said: after 7 s (or 7 s for the language question too) stop waiting.
-      else if (rec.elapsed >= SEVEN_SECONDS) finishRecording();
+      else if (rec.elapsed >= SEVEN_SECONDS) { rec.elapsed = 0; }
       return;
     }
 
@@ -635,7 +654,7 @@
     if (rms > threshold * 0.7) { rec.silence = 0; rec.speechFrames++; }
     else rec.silence++;
     // The language question ends by itself after a short pause; a normal turn after 7 s of silence.
-    if (rec.silence >= (rec.auto ? 60 : SEVEN_SECONDS) || rec.frames.length >= MAX_FRAMES) finishRecording();
+    if (rec.silence >= (rec.auto ? 60 : 75) || rec.frames.length >= MAX_FRAMES) finishRecording();
   }
 
   function encodeWav(frames, rate) {
@@ -766,15 +785,16 @@
   function buzz(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
 
   // ---------- conversation ----------
-  // Waiting for the user to press the space bar (or the button) to talk.
+  // Return directly to listening, with no second activation.
   function goReady() {
-    if (!active) return;
+    if (!active || paused || state === "listening") return;
     setState("ready");
-    if (!talkLabel) { talkLabel = true; talkBtn.textContent = tt("talk"); }
+    if (!talkLabel) { talkLabel = true; talkBtn.textContent = tt("pause"); }
     // Only recover lost page focus. End, Copy, Language and all chosen controls win.
     if (document.hasFocus() && (document.activeElement === document.body ||
         document.activeElement === document.documentElement)) talkBtn.focus({ preventScroll: true });
-    if (pendingTalk) { pendingTalk = false; return startRecording(false); }
+    pendingTalk = false;
+    return startRecording(false);
   }
 
   async function startRecording(auto) {
@@ -782,7 +802,8 @@
     if (!stream) {
       setState("processing");
       try { await ensureMic(); } catch (e) { if (my === session) fail(micErrorKey(e)); return; }
-      if (!active || my !== session) return;
+      if (!active || paused || my !== session) return;
+      if (!stream) { fail("errMic"); return; }
     }
     if (IS_TOUCH) {
       rec = null;
@@ -792,13 +813,13 @@
       muteFor(1500);
       do {
         await new Promise(function (resolve) { setTimeout(resolve, Math.max(0, muteUntil - performance.now())); });
-        if (!active || my !== session || request !== startRecording.request) return;
+        if (!active || paused || my !== session || request !== startRecording.request) return;
       } while (performance.now() < muteUntil);
     }
-    if (!active || my !== session || request !== startRecording.request) return;
+    if (!active || paused || my !== session || request !== startRecording.request) return;
     if (IS_TOUCH && !stream) {
       if (auto && recResolve) { var done = recResolve; recResolve = null; done(null); }
-      else goReady();
+      else fail("errMic");
       return;
     }
     rec = { auto: auto, frames: [], elapsed: 0, voiced: 0, silence: 0, speechFrames: 0, speechStarted: false };
@@ -916,7 +937,13 @@
            "help", "hulp", "wat kan ik zeggen", "uitleg", "ajuda", "o que posso dizer", "instruções"]
   };
   // Commands the assistant can ask the page to carry out (server tool page_command).
-  var PAGE_COMMANDS = { choose_language: "ask", show_last_answer: "show", change_microphone: "mic" };
+  var PAGE_COMMANDS = { choose_language: "ask", show_last_answer: "show", change_microphone: "mic", list_microphones: "mics", speed_up: "faster", slow_down: "slower", pause: "pause", resume: "resume", read_footer: "page:footer", repeat_instructions: "help", install_app: "install", read_privacy: "page:privacy", read_terms: "page:terms", read_about: "page:about", read_accessibility: "page:accessibility", read_instructions: "page:instructions" };
+  COMMANDS.resume = ["resume", "riprendi", "reprends", "продължи", "продолжить", "继续", "再開", "hervatten", "retomar"];
+  COMMANDS.pause = ["pause", "pausa", "пауза", "暂停", "一時停止", "pauze", "pausar"];
+  COMMANDS.faster = ["talk faster", "speak faster", "parla più velocemente", "parla più veloce", "parle plus vite", "говори по-бързо", "говори быстрее", "说快一点", "もっと速く話して", "praat sneller", "fala mais depressa"];
+  COMMANDS.slower = ["talk slower", "speak slower", "parla più lentamente", "parle plus lentement", "говори по-бавно", "говори медленнее", "说慢一点", "もっとゆっくり話して", "praat langzamer", "fala mais devagar"];
+  COMMANDS.mics = ["list microphones", "elenca i microfoni", "liste les microphones", "списък с микрофони", "список микрофонов", "列出麦克风", "マイクの一覧", "microfoons weergeven", "lista os microfones"];
+  COMMANDS.install = ["install the app", "installa l'app", "installe l'application", "инсталирай приложението", "установи приложение", "安装应用", "アプリをインストール", "installeer de app", "instala a aplicação"];
   var POLITE = /^(ok|okay|oké|please|per favore|s'il te plaît|s'il vous plaît|моля|пожалуйста|请|alsjeblieft|alstublieft|por favor) | (please|per favore|s'il te plaît|s'il vous plaît|моля|пожалуйста|alsjeblieft|alstublieft|por favor)$/g;
 
   // Returns "repeat", "help", a language code, "ask" (ask the language again), or null.
@@ -947,7 +974,27 @@
 
   async function runCommand(cmd) {
     var my = session, reply;
-    if (cmd === "repeat") { if (lastSaid) { await say(lastSaid, lastSaidLang); if (my === session) goReady(); return; } reply = tk("voiceHelp"); }
+    if (cmd === "pause") return togglePause();
+    if (cmd === "resume") return paused ? togglePause() : goReady();
+    if (cmd === "faster" || cmd === "slower") {
+      speed = C.clampSpeed(speed + (cmd === "faster" ? .1 : -.1));
+      reply = tt("speedLabel") + ": " + Math.round(speed * 100) + "%.";
+    }
+    else if (cmd === "mics") {
+      await refreshMics(); if (my !== session) return;
+      reply = mics.map(function(m) { return m.label; }).join(". ") || tt("micOnlyOne");
+    }
+    else if (cmd.indexOf("mic:") === 0) {
+      var target = mics.find(function(m) { return m.label.toLowerCase() === cmd.slice(4); });
+      if (target) { chooseMic(target); closeMic(); await ensureMic(); reply = tt("micNow") + " " + target.label; }
+      else reply = tt("micOnlyOne");
+    }
+    else if (cmd === "install") { reply = window.requestAppInstall ? window.requestAppInstall(lang) : tt("installLabel"); }
+    else if (cmd.indexOf("page:") === 0) {
+      var page = await api("/api/site-page/" + cmd.slice(5) + "?lang=" + lang, { method:"GET" });
+      if (my !== session) return; reply = page.text;
+    }
+    else if (cmd === "repeat") { if (lastSaid) { await say(lastSaid, lastSaidLang); if (my === session) goReady(); return; } reply = tk("voiceHelp"); }
     else if (cmd === "help") reply = tk("greeting") + " " + tk("voiceHelp");
     else if (cmd === "show") reply = showLast() ? tt("lastShown") : tt("lastNone");
     else if (cmd === "hide") { hideLast(true); reply = tt("lastHidden"); }
@@ -974,7 +1021,7 @@
   async function chooseLanguage(my) {
     choosing = true;
     for (var attempt = 0; attempt < 2; attempt++) {
-      // Pressing Space/Talk during the question skips the list and goes straight to answering.
+      // Activating Pause during the question skips the list and goes straight to answering.
       var skipped = await say(attempt ? tt("langNotUnderstood") : tt("askLanguage"));
       if (my !== session) return;
       if (!attempt && !skipped) {
@@ -1023,8 +1070,13 @@
       });
       if (my !== session) return;
       var text = String(r1.text || "").trim();
-      if (!text) { stopThinking(); return nothingHeard(); }
+      if (performance.now() < echoUntil) text = C.stripEcho(text, spokenEcho);
+      if (!text) { stopThinking(); return goReady(); }
       var cmd = voiceCommand(text);
+      // A named microphone is selected only when the entire utterance matches its label.
+      var requestedMic = text.toLowerCase().replace(/^(?:use|switch to|usa|utilise|utilisez|използвай|используй|使用|使って|gebruik|usa o)\s+/u, "").trim();
+      var named = mics.find(function(m) { return m.label.toLowerCase() === requestedMic; });
+      if (named) cmd = "mic:" + named.label.toLowerCase();
       if (cmd) { stopThinking(); return runCommand(cmd); }
       transcript.push({ role: "user", content: text });
 
@@ -1037,7 +1089,7 @@
 
       // If the assistant searches the web, say so instead of staying silent.
       var searching = Promise.resolve();
-      var r2 = await chat({ lang: lang, context: context, messages: transcript.slice(-20), reading: readingPage || undefined }, function () {
+      var r2 = await chat({ lang: lang, device: { os:device.os, browser:device.browser, major:device.major }, context: context, messages: transcript.slice(-20), reading: readingPage || undefined }, function () {
         if (my !== session) return;
         stopThinking();
         searching = say(tt("searching")).then(function () {
@@ -1079,11 +1131,12 @@
 
   async function startConversation(withContext) {
     if (active) return;
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.AudioWorkletNode) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.AudioWorkletNode || !(window.AudioContext || window.webkitAudioContext)) {
       return announce("errSupport");
     }
     alertBox.textContent = "";
     active = true;
+    paused = false; continuous = false;
     failures = 0;
     pendingTalk = false;
     choosing = false;
@@ -1123,7 +1176,7 @@
     // Agreement by pressing Start (the line with the Privacy Policy and Terms links sits
     // before the button). The agreed version is saved at the press; one short sentence
     // is spoken with the AI disclosure, before any microphone access, until it was heard.
-    var AGREEMENT_VERSION = "2026-11-15";
+    var AGREEMENT_VERSION = "2026-11-23";
     set("agreedVersion", AGREEMENT_VERSION);
     var firstPrivacyNotice = get("agreementHeard") !== AGREEMENT_VERSION;
     var permissionState = await microphonePermissionState();
@@ -1137,11 +1190,10 @@
     // Not allowed yet: the first time, say what to choose in this browser; a returning
     // user who already heard that hears one short line.
     var micAsk = permissionState !== "granted";
-    var firstMicGuide = micAsk && get("micPermissionGuide") !== "2026-11-15";
-    var micWords = !micAsk ? "" : !firstMicGuide ? tt("micShort" + micBrowser()) :
-      tt("micGuide") + " " + tt("micChoice" + micBrowser()) + " " + tt(IS_TOUCH ? "micGuideTouch" : "micGuideKeyboard");
-    var disclosure = tt("aiDisclosure") + (firstPrivacyNotice ? " " + tt("agreeSpoken") : "") + (micWords ? " " + micWords : "");
-    var disclosureInterrupted = await say(disclosure);
+    var firstMicGuide = micAsk && get("micPermissionGuide") !== "2026-11-23";
+    var micWords = micAsk ? micShortText() : "";
+    var disclosure = (firstPrivacyNotice ? tt("aiDisclosure") + " " + tt("agreeSpoken") : "") + (micWords ? " " + micWords : "");
+    var disclosureInterrupted = disclosure.trim() ? await say(disclosure) : false;
     if (my !== session) return;
     if (firstPrivacyNotice && !disclosureInterrupted) set("agreementHeard", AGREEMENT_VERSION);
     setState("processing");
@@ -1149,13 +1201,14 @@
     micFallbackSaid = false;
     try {
       await ensureMic();
-      if (my === session && firstMicGuide && !disclosureInterrupted) set("micPermissionGuide", "2026-11-15");
+      if (my === session && firstMicGuide && !disclosureInterrupted) set("micPermissionGuide", "2026-11-23");
     } catch (e) {
       if (my === session) giveUp(micErrorKey(e));
       return;
     }
     if (my !== session) return;
 
+    continuous = true;
     sounds.start();
     await new Promise(function (r) { setTimeout(r, 500); });
     if (my !== session) return;
@@ -1170,12 +1223,14 @@
     lastSaid = intro;
     await say(intro);
     if (my !== session) return;
+    continuous = true;
     goReady();
   }
 
   function endConversation(silent) {
     if (!active) return;
     active = false;
+    paused = false; continuous = false;
     session++;
     choosing = false;
     pendingTalk = false;
@@ -1202,21 +1257,29 @@
   }
 
   // ---------- buttons ----------
-  // The talk button and the space bar: press to start talking, press again to get the answer.
+  async function togglePause() {
+    if (!active) return;
+    if (paused) {
+      paused = false; continuous = true; renderTexts();
+      return startRecording(false);
+    }
+    paused = true; session++; startRecording.request = (startRecording.request || 0) + 1;
+    if (stopSpeaking) stopSpeaking();
+    stopThinking(); closeMic(); rec = null;
+    if (recResolve) { var done = recResolve; recResolve = null; done(null); }
+    setState("paused"); renderTexts();
+    var my = session;
+    await say(tt("paused"));
+    if (my === session && paused) setState("paused");
+  }
   function onTalkPress() {
     if (!active) return startConversation(false);
-    if (choosing) {
-      // Skip the question / finish saying the language.
-      if (state === "speaking" && stopSpeaking) stopSpeaking();
-      else if (state === "listening") finishRecording();
-      return;
-    }
-    // While the assistant talks: interrupt it and start recording.
-    if (state === "speaking") { pendingTalk = true; if (stopSpeaking) stopSpeaking(); return; }
-    if (state === "ready") return startRecording(false);
-    if (state === "listening") return finishRecording();
-    // Waiting for the answer: nothing to do.
+    return togglePause();
   }
+  var ctrlTap = C.createCtrlTap(function () { if (active) togglePause(); });
+  document.addEventListener("keydown", ctrlTap.keydown);
+  document.addEventListener("keyup", ctrlTap.keyup);
+  window.addEventListener("blur", ctrlTap.reset);
 
   talkBtn.addEventListener("click", onTalkPress);
   endBtn.addEventListener("click", function () { endConversation(); });
@@ -1232,9 +1295,7 @@
     }
     // Escape ends the conversation (when the screen reader lets the key through).
     if (active && e.key === "Escape" && !e.repeat) { endConversation(); return; }
-    if (!active || !isSpace(e) || e.repeat || e.target === talkBtn || isOtherControl(e.target)) return;
-    e.preventDefault();
-    onTalkPress();
+
   });
 
   langBtn.addEventListener("click", function toggleLanguages() {
@@ -1377,5 +1438,6 @@
   renderTexts();
   // Wake a sleeping free server early so the first answer is not slow.
   fetch("/health").catch(function () {});
+  fetch("/api/device-count", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({os:device.os,browser:device.browser,major:device.major}) }).catch(function () {});
 })();
 

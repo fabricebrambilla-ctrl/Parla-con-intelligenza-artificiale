@@ -59,8 +59,8 @@ test("the privacy notice also covers what the browser now remembers", () => {
 
 function start(saved = {}) {
   const events = [], values = { ...saved };
-  const c = vm.createContext({ IS_TOUCH: false, active: false, session: 0, lang: "en", aiVoiceLangs: [], failures: 0, pendingTalk: false,
-    choosing: false, transcript: [], context: "", lastSaid: "", alertBox: { textContent: "" }, window: { AudioWorkletNode: function () {} },
+  const c = vm.createContext({C:require("../public/app-capabilities"),device:{},paused:false,continuous:false,speed:1,spokenEcho:"",echoUntil:0,micShortText:()=>I.t("en","micShortFirefox"), IS_TOUCH: false, active: false, session: 0, lang: "en", aiVoiceLangs: [], failures: 0, pendingTalk: false,
+    choosing: false, transcript: [], context: "", lastSaid: "", alertBox: { textContent: "" }, window: { AudioContext:function(){}, AudioWorkletNode: function () {} },
     microphonePermissionState: async () => "granted", micBrowser: () => "", navigator: { mediaDevices: { getUserMedia() {} } },
     ensureContext() {}, showConversationControls() {}, setState() {}, get: k => values[k], set: (k, v) => { values[k] = v; },
     tt: k => I.t("en", k), tk: k => I.t("en", k), api: async () => ({ aiVoice: [] }),
@@ -79,6 +79,6 @@ test("pressing Start saves the agreed version; one short sentence and the AI dis
   assert.match(f.values.agreedVersion, /^\d{4}-\d{2}-\d{2}$/);
   const again = start({ ...f.values, langChosen: "1" });
   await again.c.startConversation();
-  assert.equal(again.events[0], "I'm an AI assistant.");
+  assert.deepEqual(again.events, [I.t("en", "greetingShort")]);
   assert.equal(again.values.agreedVersion, f.values.agreedVersion);
 });

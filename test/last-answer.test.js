@@ -99,7 +99,7 @@ test("long content the assistant puts in the box reaches the page, not the voice
     groqAnswer: async (body) => { calls.push(body); return { choices: [{ message: calls.length === 1
       ? { tool_calls: [{ id: "b", function: { name: "put_in_text_box", arguments: JSON.stringify({ text: "1. Open Blender.\n2. Add a cube." }) } }] }
       : { content: "I've put the eight steps on the page under Last answer." } }] }; } };
-  vm.runInNewContext(source.slice(source.indexOf("function systemPrompt("), source.indexOf("// The answer is streamed as lines of JSON")), c);
+  vm.runInNewContext(source.slice(source.indexOf("function systemPrompt("), source.indexOf("// The answer is streamed as lines of JSON")), Object.assign(c, {appCapabilities:require('../public/app-capabilities')}));
   const voice = await c.runChat({ lang: "en", messages: [{ role: "user", content: "Give me a guide to model a cup in Blender" }] });
   assert.equal(voice.box, "1. Open Blender.\n2. Add a cube.");
   assert.equal(voice.text, "I've put the eight steps on the page under Last answer.");

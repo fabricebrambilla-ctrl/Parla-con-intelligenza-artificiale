@@ -15,7 +15,7 @@ function turn(script) {
     readPage: async (url, opts) => { reads.push(opts); return { url, part: opts.part, parts: 8, text: "**1.** Domanda? Testo.", more: true }; },
     webSearch: async () => ({ results: [{ title: "Articolo", url: "https://www.jw.org/it/articolo" }] }),
     groqAnswer: async (body) => { calls.push(structuredClone(body)); return { choices: [{ message: script[calls.length - 1] || { content: "Fine." } }] }; } };
-  vm.runInNewContext(source.slice(source.indexOf("function systemPrompt("), source.indexOf("// The answer is streamed as lines of JSON")), c);
+  vm.runInNewContext(source.slice(source.indexOf("function systemPrompt("), source.indexOf("// The answer is streamed as lines of JSON")), Object.assign(c, {appCapabilities:require('../public/app-capabilities')}));
   return { c, calls, reads, run: (content, extra = {}) => c.runChat({ lang: "it", messages: [{ role: "user", content }], ...extra }) };
 }
 

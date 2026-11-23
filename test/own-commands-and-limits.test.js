@@ -11,7 +11,7 @@ function turn(script) {
   const calls = [];
   const c = { I18N, CHAT_MODEL: "mock", TOOLS: [], TRACE_RESEARCH: false, qa: { lastModelCall: () => false }, pageUrl: () => null,
     groqAnswer: async (body) => { calls.push(structuredClone(body)); return { choices: [{ message: script[calls.length - 1] || { content: "Fallback." } }] }; } };
-  vm.runInNewContext(source.slice(source.indexOf("function systemPrompt("), source.indexOf("// The answer is streamed as lines of JSON")), c);
+  vm.runInNewContext(source.slice(source.indexOf("function systemPrompt("), source.indexOf("// The answer is streamed as lines of JSON")), Object.assign(c, {appCapabilities:require('../public/app-capabilities')}));
   return { c, calls, run: (content, extra = {}) => c.runChat({ lang: "en", messages: [{ role: "user", content }], ...extra }) };
 }
 const call = (name, args) => ({ tool_calls: [{ id: name, function: { name, arguments: JSON.stringify(args) } }] });
@@ -40,7 +40,7 @@ test("the assistant can ask the page to open the language list, show the last an
 });
 
 test("the browser carries out the command after the spoken reply", () => {
-  assert.match(app, /var PAGE_COMMANDS = \{ choose_language: "ask", show_last_answer: "show", change_microphone: "mic" \};/);
+  assert.match(app, /var PAGE_COMMANDS = \{ choose_language: "ask", show_last_answer: "show", change_microphone: "mic",/);
   assert.match(app, /var pageCmd = PAGE_COMMANDS\[r2\.command\];\s*if \(pageCmd\) return runCommand\(pageCmd\);/);
   assert.match(source, /\.\.\.\(command \? \{ command \} : \{\}\)/);
 });

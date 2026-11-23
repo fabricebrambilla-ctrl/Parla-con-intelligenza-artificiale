@@ -30,7 +30,7 @@ function fixture(database=false, failInsert=false) {
     }
   }
   const env={STATS_PASSWORD:'fixture-password', ...(database?{DATABASE_URL:'postgres://fixture@db.example.org/test?sslmode=no-verify'}:{})};
-  const context=vm.createContext({require:n=>n==='pg'?{Pool}:require(n),module:{exports:{}},process:{env},console:{log(){},error(){}},Buffer,URL,Date:ClockDate,
+  const context=vm.createContext({require:n=>n==='pg'?{Pool}:n==='./device-stats.js'?{readCounts:async()=>({rows:[],visits:0,persistent:false,incomplete:false})}:require(n),module:{exports:{}},process:{env},console:{log(){},error(){}},Buffer,URL,Date:ClockDate,
     setTimeout(){return{unref(){}};},setInterval(){return{unref(){}};}});
   vm.runInContext(source,context);
   return {stats:context.module.exports,calls,getOptions:()=>options, values, setNow:value=>{currentTime=new Date(value).getTime();}};

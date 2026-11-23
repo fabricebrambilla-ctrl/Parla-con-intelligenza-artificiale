@@ -171,12 +171,12 @@ test("the original local portrait is served without external image or font reque
   assert.doesNotMatch(html, /(?:src|href)="https:\/\/(?!uicite\.it\/)/);
 });
 
-test("home has two footer links; Privacy Policy and Terms sit next to Start (never more than three footer links)", async () => {
+test("home has three footer links; Privacy Policy and Terms sit next to Start (never more than three footer links)", async () => {
   for (const lang of I18N.LANGS) {
     const html = await (await fetch(`${BASE}/?lang=${lang}`)).text();
     const footer = html.match(/<footer>([\s\S]*?)<\/footer>/)[1];
-    assert.equal((footer.match(/<a\b/g) || []).length, 2);
-    for (const page of ["about", "accessibility"]) assert.ok(footer.includes(`href="/${page}?lang=${lang}"`));
+    assert.equal((footer.match(/<a\b/g) || []).length, 3);
+    for (const page of ["about", "accessibility", "instructions"]) assert.ok(footer.includes(`href="/${page}?lang=${lang}"`));
     for (const page of ["privacy", "terms"]) assert.ok(html.includes(`href="/${page}?lang=${lang}"`));
   }
 });

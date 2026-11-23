@@ -39,6 +39,9 @@ A free, voice-only AI assistant that blind people can use **without sighted help
 
 ## 2. User experience (exact flow)
 
+**Current behavior, 2026-11-24:** the hands-free owner attachment supersedes the historical steps below wherever they differ. Start once, allow the microphone if requested, hear the short first-use/returning script, and speak freely. The main control becomes Pause, then Resume; End/Escape/goodbye ends the session. A lone Ctrl tap toggles pause without overriding chords. Instructions is the third footer link. See §12 and the hands-free report for the maintained behavior and verification limits.
+
+
 ### 2.1 First visit
 
 1. Page loads. The screen reader announces the page `<title>`, then (with default settings) starts reading the page from the top.
@@ -419,6 +422,8 @@ Also: iPhone Safari + VoiceOver. And ask the owner's aunt to test before public 
 
 ### Current state of the code (keep this up to date)
 
+- 2026-11-24 hands-free update: implemented, awaiting real-user confirmation. Start opens continuous listening; sustained speech interrupts; main control/lone Ctrl pauses speech and closes the microphone, with button/Ctrl resume. Custom global talk shortcut removed, native activation preserved. Short localized first-use and returning scripts, repeatable instructions, bounded session speed, device-aware AI capabilities, own-site reading, named microphone selection, anonymous seven-day OS/browser/major page-visit counts and updated privacy. Third footer link is Instructions; installable PWA assets and offline-only informational cache. Headphones sentence unchanged. See `docs/hands-free-2026-11-24.md` for research, test evidence and physical-device/audio limits. Browser checks use simulated input, not NVDA/JAWS confirmation.
+
 - 2026-11-18 H: shorter first-use flow starts in the browser/selected language without a second language-recording step. “Repeat the instructions” is recognized locally in all nine languages and help repeats operating instructions plus commands. Existing privacy and permission safeguards remain. Three regressions failed before implementation. Both complete suites (default and NEW_LANGUAGES=nl,pt) passed: 278 passed, one optional Redis test skipped in each. Initial synced-folder startup timeouts were resolved by running the identical checkout in a local temporary folder; logs are in docs/h-validation. Implemented, awaiting real-user confirmation. The separately authorized hands-free redesign follows this commit.
 
 
@@ -545,6 +550,7 @@ Deviations from this brief (decided with the owner, see §13):
 
 | Date | Change | Files |
 |---|---|---|
+| 2026-11-24 | Hands-free conversation, pause/resume, speed, device context/aggregate counts, instructions and PWA. Implemented, awaiting real-user confirmation. | app, shared capabilities, server, privacy/accessibility, stats, instructions, PWA assets, tests and validation report |
 | 2026-11-18 | H: remove first-use language interview and make instructions repeatable. Implemented, awaiting real-user confirmation. | `public/app.js`, onboarding tests, H validation, brief |
 | 2026-11-15 | G: touch recording delay, speech-time UI deferral, ready-state focus recovery and localized optional phone advice. Implemented, awaiting real-user confirmation. | `public/app.js`, `public/i18n.js`, phone/VM regression tests, phone report and evidence, this brief |
 | 2026-11-15 | F: Dutch and Portuguese (Portugal) in every part of the site, switched off until `NEW_LANGUAGES=nl,pt`; accessibility statements list the new commands. Implemented, not switched on: recognition, voice and translations not checked by ear or by native speakers. | `public/i18n.js`, `public/app.js`, `public/index.html`, `server.js`, `page-text.js`, `terms.js`, `privacy-notice.js`, `legal.js`, `about.js`, `test/dutch-portuguese.test.js`, older tests, this brief |
@@ -607,6 +613,8 @@ Deviations from this brief (decided with the owner, see §13):
 ---
 
 ## 13. User preferences (newest first; these override the rest of the brief)
+
+2026-11-24 implementation of the latest hands-free attachment: **owner's latest words override the old brief**. Older push-to-talk, no-speed-change and first-language-question requirements below are superseded. Keep native assistive-technology activation; remove the custom global talk shortcut. Pause closes the microphone, so voice resume while paused is impossible: button or Ctrl resumes. Keep the headphones sentence unchanged. Device categories are aggregate only and are not people or linked conversations. Speed is session-only, 0.6–1.6, default 1.0. Browser pitch-preserving playback is selected on engineering grounds; physical listening comparison remains pending, not claimed. Native permission/install consent still needs user activation. Do not claim zero echo or complete screen-reader compatibility from simulated tests. H was pushed before this phase.
 
 2026-11-18: Complete, test and push H before the new hands-free work. Owner chose to KEEP the existing accessibility-page headphones sentence unchanged; the optional spoken phone advice remains. The later hands-free prompt overrides older push-to-talk and no-speed-control preferences; implement it separately after H.
 

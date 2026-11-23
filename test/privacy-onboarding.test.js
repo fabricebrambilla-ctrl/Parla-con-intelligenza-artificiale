@@ -5,8 +5,8 @@ const I = require("../public/i18n.js"), privacy = require("../privacy-notice.js"
 const app = fs.readFileSync(path.join(__dirname,"../public/app.js"),"utf8");
 function start(saved={}, cancel=false) {
   const events=[], values={...saved};
-  const c=vm.createContext({IS_TOUCH:false,active:false,session:0,lang:"en",aiVoiceLangs:[],failures:0,pendingTalk:false,choosing:false,
-    transcript:[],context:"",lastSaid:"",alertBox:{textContent:""},window:{AudioWorkletNode:function(){}},
+  const c=vm.createContext({C:require("../public/app-capabilities"),device:{},paused:false,continuous:false,speed:1,spokenEcho:"",echoUntil:0,micShortText:()=>I.t("en","micShortFirefox"),IS_TOUCH:false,active:false,session:0,lang:"en",aiVoiceLangs:[],failures:0,pendingTalk:false,choosing:false,
+    transcript:[],context:"",lastSaid:"",alertBox:{textContent:""},window:{AudioContext:function(){},AudioWorkletNode:function(){}},
     microphonePermissionState:async()=>"unknown",micBrowser:()=>"Firefox",navigator:{mediaDevices:{getUserMedia(){}}},ensureContext(){},showConversationControls(){},setState(){},
     get:k=>values[k],set:(k,v)=>{values[k]=v;},tt:k=>I.t("en",k),tk:k=>I.t("en",k),
     api:async()=>({aiVoice:[]}),say:async text=>{events.push(["say",text]);if(cancel)c.session++;return false;},
@@ -24,17 +24,17 @@ test("first disclosure precedes microphone; no language recording is required",a
   assert.equal(spoken.match(/AI assistant/g).length,1);
   assert.ok(f.values.agreementHeard);
 });
-test("return greeting keeps one AI disclosure without repeating the full privacy notice",async()=>{
-  const f=start({introHeard:"1",agreementHeard:"2026-11-15",langChosen:"1"});await f.c.startConversation();
+test("return greeting skips heard disclosure and instructions",async()=>{
+  const f=start({introHeard:"1",agreementHeard:"2026-11-23",langChosen:"1"});await f.c.startConversation();
   const spoken=f.events.filter(e=>e[0]==="say").map(e=>e[1]).join(" ");
-  assert.equal(spoken.match(/AI assistant/g).length,1);assert.doesNotMatch(spoken,/outside services/);
+  assert.doesNotMatch(spoken,/AI assistant|outside services/);assert.ok(spoken.endsWith(I.t("en","greetingShort")));
 });
 test("ending during disclosure never opens the microphone",async()=>{
   const f=start({},true);await f.c.startConversation();
   assert.equal(f.events.filter(e=>e[0]==="microphone").length,0);assert.equal(f.values.agreementHeard,undefined);
 });
 test("ending clears conversation memory; finishing a recording preserves existing context",()=>{
-  const c=vm.createContext({refreshMics:async()=>[],renderMics(){},active:true,session:1,choosing:false,pendingTalk:false,stopThinking(){},stopSpeaking:null,
+  const c=vm.createContext({C:require("../public/app-capabilities"),device:{},paused:false,continuous:false,speed:1,spokenEcho:"",echoUntil:0,micShortText:()=>I.t("en","micShortFirefox"),refreshMics:async()=>[],renderMics(){},active:true,session:1,choosing:false,pendingTalk:false,stopThinking(){},stopSpeaking:null,
     closeMic(){},rec:{},recResolve:null,transcript:[{content:"private fixture"}],context:"private fixture",lastSaid:"private fixture",lastSaidLang:"en",
     setState(){},showConversationControls(){},sounds:{end(){}}});
   vm.runInContext(app.slice(app.indexOf("  function endConversation"),app.indexOf("  function fail(")),c);
@@ -55,23 +55,23 @@ test("all six notices name the Swiss operator and distinguish aggregate counts f
 
 test("microphone guide finishes before browser permission, and repeats after a failed request",async()=>{
   const f=start();await f.c.startConversation();
-  assert.match(f.events[0][1], /browser will now ask for permission/);
-  assert.equal(f.values.micPermissionGuide,"2026-11-15");
+  assert.match(f.events[0][1], /choose Allow/);
+  assert.equal(f.values.micPermissionGuide,"2026-11-23");
   const denied=start();denied.c.ensureMic=async()=>{throw Error("denied");};
   denied.c.micErrorKey=()=>"errMicDenied";denied.c.announce=()=>{};
   await denied.c.startConversation();assert.equal(denied.values.micPermissionGuide,undefined);
 });
 test("known guide is not repeated and touch guidance precedes the browser prompt",async()=>{
-  const returning=start({micPermissionGuide:"2026-11-15"});await returning.c.startConversation();
-  assert.doesNotMatch(returning.events[0][1],/browser will now ask for permission/);
+  const returning=start({micPermissionGuide:"2026-11-23"});await returning.c.startConversation();
+  assert.match(returning.events[0][1],/choose Allow/);
   const touch=start();touch.c.IS_TOUCH=true;await touch.c.startConversation();
-  assert.match(touch.events[0][1],/double-tap/);
+  assert.match(touch.events[0][1],/choose Allow/);
   const canceled=start({},true);await canceled.c.startConversation();assert.equal(canceled.values.micPermissionGuide,undefined);
 });
 
 for (const state of ["granted", "prompt", "denied", "unknown"]) {
   test(`return visit respects actual ${state} permission, not the stored guide`, async () => {
-    const f = start({micPermissionGuide:"2026-11-15",langChosen:"1"});
+    const f = start({micPermissionGuide:"2026-11-23",langChosen:"1"});
     f.c.microphonePermissionState = async () => state;
     const errors=[];f.c.announce = key => errors.push(key);
     await f.c.startConversation();
@@ -92,7 +92,7 @@ test("ending while permission is checked does not speak or capture",async()=>{
  await f.c.startConversation();assert.deepEqual(f.events,[]);
 });
 test("permission query rejection and missing support fall back safely",async()=>{
- const c=vm.createContext({navigator:{}});
+ const c=vm.createContext({C:require("../public/app-capabilities"),device:{},paused:false,continuous:false,speed:1,spokenEcho:"",echoUntil:0,micShortText:()=>I.t("en","micShortFirefox"),navigator:{}});
  vm.runInContext(app.slice(app.indexOf("  async function microphonePermissionState"),app.indexOf("  async function startConversation")),c);
  assert.equal(await c.microphonePermissionState(),"unknown");
  c.navigator.permissions={query:async()=>{throw TypeError("unsupported");}};
@@ -100,3 +100,5 @@ test("permission query rejection and missing support fall back safely",async()=>
  c.navigator.permissions.query=async()=>({state:"granted"});
  assert.equal(await c.microphonePermissionState(),"granted");
 });
+
+test("returning with granted microphone hears only the welcome",async()=>{const f=start({introHeard:"1",agreementHeard:"2026-11-23"});f.c.microphonePermissionState=async()=>"granted";await f.c.startConversation();assert.deepEqual(f.events.filter(e=>e[0]==="say").map(e=>e[1]),[I.t("en","greetingShort")]);});
