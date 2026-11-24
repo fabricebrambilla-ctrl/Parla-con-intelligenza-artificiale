@@ -1,0 +1,4 @@
+{"NEW_LANGUAGES":"(unset)","browser":"pt-BR","htmlLang":"en","languageButton":"Language: English. Change language","portugueseButtons":[]}
+{"NEW_LANGUAGES":"nl,pt","browser":"pt-BR","htmlLang":"pt-PT","languageButton":"Língua: português. Mudar de língua","portugueseButtons":["Português (Portugal)"]}
+{"NEW_LANGUAGES":"nl,pt,pt-BR","browser":"pt-BR","htmlLang":"pt-BR","languageButton":"Idioma: português do Brasil. Mudar de idioma","portugueseButtons":["Português (Portugal)","Português (Brasil)"]}
+{"NEW_LANGUAGES":"nl,pt,pt-BR","browser":"pt-PT","htmlLang":"pt-PT","languageButton":"Língua: português. Mudar de língua","portugueseButtons":["Português (Portugal)","Português (Brasil)"]}

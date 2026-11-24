@@ -84,9 +84,9 @@ test('storage failure leaves useful in-memory totals and never rejects a visit',
   assert.equal(counts.visits,1);assert.equal(counts.persistent,false);assert.equal(counts.incomplete,true);
   assert.equal((await f.stats.readCounts()).visits,1);
 });
-test('all nine privacy notices describe device aggregates and preserve provider disclosures',()=>{
+test('all supported privacy notices describe device aggregates and preserve provider disclosures',()=>{
   const notices=require('../privacy-notice');
-  assert.equal(Object.keys(notices).length,9);
+  assert.equal(Object.keys(notices).length,10);
   for(const notice of Object.values(notices)) {
     assert.match(notice.sections[4][1],/Europe\/Zurich/);
     assert.match(notice.sections[5][1],/Render/);

@@ -1,11 +1,11 @@
 ### Result
-{"scans":[{"path":"/?lang=en","violations":[],"incomplete":[]},{"path":"/instructions?lang=en","violations":[],"incomplete":[]},{"path":"/privacy?lang=en","violations":[],"incomplete":[]}],"manifestErrors":[],"offlineFallback":true}
+{"scans":[{"path":"/?lang=en","violations":[],"incomplete":[]},{"path":"/instructions?lang=en","violations":[],"incomplete":[]},{"path":"/privacy?lang=en","violations":[],"incomplete":[]},{"path":"/instructions?lang=pt-BR","violations":[],"incomplete":[]},{"path":"/privacy?lang=pt-BR","violations":[],"incomplete":[]}],"manifestErrors":[],"offlineFallback":true}
 ### Ran Playwright code
 ```js
 await (async(page)=>{
  const cdp=await page.context().newCDPSession(page);await cdp.send('Page.setBypassCSP',{enabled:true});
  const scans=[];
- for(const path of ['/?lang=en','/instructions?lang=en','/privacy?lang=en']){
+ for(const path of ['/?lang=en','/instructions?lang=en','/privacy?lang=en','/instructions?lang=pt-BR','/privacy?lang=pt-BR']){
   await page.goto('http://127.0.0.1:4177'+path);
   await page.addScriptTag({path:'/private/tmp/a11y-tools/node_modules/axe-core/axe.min.js'});
   const result=await page.evaluate(async()=>{const r=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}});return {violations:r.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>n.target)})),incomplete:r.incomplete.map(v=>v.id)};});
@@ -26,4 +26,4 @@ await (async(page)=>{
 - Page URL: http://127.0.0.1:4177/
 - Page Title: Talk with AI — Offline
 ### Events
-- New console entries: .playwright-cli/console-2026-11-23T08-05-04-796Z.log#L1-L3
+- New console entries: .playwright-cli/console-2026-11-24T07-54-30-647Z.log#L1-L3

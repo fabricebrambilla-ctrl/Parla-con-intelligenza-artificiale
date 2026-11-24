@@ -48,3 +48,15 @@ test('new controls remain local and all locales have nonempty hands-free labels'
  const {c,load}=harness();load('  var LANG_WORDS', '  async function runCommand');for(const [text,cmd]of [['talk faster','faster'],['parle plus lentement','slower'],['pause','pause'],['安装应用','install'],['マイクの一覧','mics']])assert.equal(c.voiceCommand(text),cmd);
  for(const l of I.ALL_LANGS)for(const k of ['pause','resume','paused','instructionsLink','installLabel'])assert.ok(I.t(l,k),l+'/'+k);
 });
+test('a language-choice prompt cannot arm automatic interruption while waiting for its dedicated recording',async()=>{
+ const {c,load}=harness();Object.assign(c,{choosing:true,aiVoiceLangs:[],aiVoiceFailures:0,splitSentences:t=>[t],window:{},speakBrowser:async()=>{assert.equal(c.rec,null);}});
+ load('  async function say(', '  // ---------- microphone + voice activity detection');
+ await c.say('Portugal ou Brasil?');assert.equal(c.session,1);assert.equal(c.rec,null);
+ c.choosing=false;c.speakBrowser=async()=>{assert.ok(c.rec);};await c.say('Talk freely.');assert.ok(c.rec);
+});
+test('Brazilian hands-free instructions name commands that work without a provider request',()=>{
+ const {c,load}=harness();load('  var LANG_WORDS', '  async function runCommand');
+ for(const [words,command] of [['fale mais rápido','faster'],['fale mais devagar','slower'],['mude o microfone','mic'],['instale o aplicativo','install']])assert.equal(c.voiceCommand(words),command);
+ const pages=require('../instructions');assert.ok(pages['pt-BR']);
+ for(const l of I.ALL_LANGS){assert.notEqual(I.S[l].errRetry,I.S[l].greetingShort);assert.doesNotMatch(I.S[l].greeting,/spacebar|barra de espaço/i);}
+});

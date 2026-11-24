@@ -1,0 +1,1787 @@
+
+> talk-with-ai@1.0.0 test
+> node --test
+
+TAP version 13
+# Subtest: light theme text and active controls retain readable contrast
+ok 1 - light theme text and active controls retain readable contrast
+  ---
+  duration_ms: 1.10989
+  type: 'test'
+  ...
+# Subtest: light focus outline is visible against the page background
+ok 2 - light focus outline is visible against the page background
+  ---
+  duration_ms: 0.270405
+  type: 'test'
+  ...
+# Subtest: dark theme text and active controls retain readable contrast
+ok 3 - dark theme text and active controls retain readable contrast
+  ---
+  duration_ms: 0.228492
+  type: 'test'
+  ...
+# Subtest: dark focus outline is visible against the page background
+ok 4 - dark focus outline is visible against the page background
+  ---
+  duration_ms: 0.081821
+  type: 'test'
+  ...
+# Subtest: microphone explanation receives focus before the browser permission request; grant restores Talk
+ok 5 - microphone explanation receives focus before the browser permission request; grant restores Talk
+  ---
+  duration_ms: 7.687812
+  type: 'test'
+  ...
+# Subtest: denial clears guidance and selects actionable recovery
+ok 6 - denial clears guidance and selects actionable recovery
+  ---
+  duration_ms: 1.80003
+  type: 'test'
+  ...
+# Subtest: granted permission does not repeat guidance
+ok 7 - granted permission does not repeat guidance
+  ---
+  duration_ms: 1.64068
+  type: 'test'
+  ...
+# Subtest: ending while prompt is pending stops late microphone stream
+ok 8 - ending while prompt is pending stops late microphone stream
+  ---
+  duration_ms: 1.31307
+  type: 'test'
+  ...
+# Subtest: permission completion preserves an explicit user focus change
+ok 9 - permission completion preserves an explicit user focus change
+  ---
+  duration_ms: 4.294504
+  type: 'test'
+  ...
+# Subtest: Firefox returning permission focus to the document restores Talk, not an empty guidance node
+ok 10 - Firefox returning permission focus to the document restores Talk, not an empty guidance node
+  ---
+  duration_ms: 2.771768
+  type: 'test'
+  ...
+# Subtest: a delayed Firefox document-focus return waits until the browser prompt has closed
+ok 11 - a delayed Firefox document-focus return waits until the browser prompt has closed
+  ---
+  duration_ms: 1.651766
+  type: 'test'
+  ...
+# Subtest: focus restoration waits while the browser permission prompt owns focus
+ok 12 - focus restoration waits while the browser permission prompt owns focus
+  ---
+  duration_ms: 1.309954
+  type: 'test'
+  ...
+# Subtest: denial waits for window return without taking focus from the browser prompt
+ok 13 - denial waits for window return without taking focus from the browser prompt
+  ---
+  duration_ms: 2.955772
+  type: 'test'
+  ...
+# Subtest: a window return preserves focus explicitly moved away from the explanation
+ok 14 - a window return preserves focus explicitly moved away from the explanation
+  ---
+  duration_ms: 2.468374
+  type: 'test'
+  ...
+# Subtest: ending during the prompt defers restoration; an old result cannot steal newer session focus
+ok 15 - ending during the prompt defers restoration; an old result cannot steal newer session focus
+  ---
+  duration_ms: 1.815587
+  type: 'test'
+  ...
+# Subtest: a late permission query cannot show or focus explanation after cancellation
+ok 16 - a late permission query cannot show or focus explanation after cancellation
+  ---
+  duration_ms: 1.716407
+  type: 'test'
+  ...
+# Subtest: an unfocused page never pulls focus back to show the explanation
+ok 17 - an unfocused page never pulls focus back to show the explanation
+  ---
+  duration_ms: 1.219192
+  type: 'test'
+  ...
+# Subtest: old permission result cannot close a new session microphone
+ok 18 - old permission result cannot close a new session microphone
+  ---
+  duration_ms: 2.561088
+  type: 'test'
+  ...
+# Subtest: old permission completion cannot clear or refocus a newer pending explanation
+ok 19 - old permission completion cannot clear or refocus a newer pending explanation
+  ---
+  duration_ms: 4.531926
+  type: 'test'
+  ...
+# Subtest: Talk shortcut works from footer; Space stays native on links
+ok 20 - Talk shortcut works from footer; Space stays native on links
+  ---
+  duration_ms: 0.973488
+  type: 'test'
+  ...
+# Subtest: shortcut repeats suppressed; other modifier combinations rejected
+ok 21 - shortcut repeats suppressed; other modifier combinations rejected
+  ---
+  duration_ms: 0.747529
+  type: 'test'
+  ...
+# Subtest: all languages and HTML expose permission guidance and shortcut
+ok 22 - all languages and HTML expose permission guidance and shortcut
+  ---
+  duration_ms: 0.767325
+  type: 'test'
+  ...
+# Subtest: changing the page language keeps About and legal links in that language
+ok 23 - changing the page language keeps About and legal links in that language
+  ---
+  duration_ms: 0.923707
+  type: 'test'
+  ...
+# Subtest: an allowlisted return-link language wins over browser preferences; invalid values stay out
+ok 24 - an allowlisted return-link language wins over browser preferences; invalid values stay out
+  ---
+  duration_ms: 2.895476
+  type: 'test'
+  ...
+# Thu, 19 Nov 2026 11:25:49 GMT router deprecated handlers that are Promise-like are deprecated, use a native Promise instead at node_modules/router/lib/route.js:157:13
+# Subtest: expired API chats cannot be read even if no new chat triggers a sweep
+ok 25 - expired API chats cannot be read even if no new chat triggers a sweep
+  ---
+  duration_ms: 69.591074
+  type: 'test'
+  ...
+# Subtest: periodic cleanup removes idle chats without incoming requests
+ok 26 - periodic cleanup removes idle chats without incoming requests
+  ---
+  duration_ms: 14.921441
+  type: 'test'
+  ...
+# Subtest: full busy chat store rejects creation rather than exceeding its capacity
+ok 27 - full busy chat store rejects creation rather than exceeding its capacity
+  ---
+  duration_ms: 29.161362
+  type: 'test'
+  ...
+# Subtest: the main page does not mention the agent API
+ok 28 - the main page does not mention the agent API
+  ---
+  duration_ms: 122.470726
+  type: 'test'
+  ...
+# Subtest: GET /api/agent describes the API
+ok 29 - GET /api/agent describes the API
+  ---
+  duration_ms: 4.852865
+  type: 'test'
+  ...
+# Subtest: create, reply with history, read, and text kept as written
+ok 30 - create, reply with history, read, and text kept as written
+  ---
+  duration_ms: 119.621838
+  type: 'test'
+  ...
+# Subtest: empty chat, then web search is reported
+ok 31 - empty chat, then web search is reported
+  ---
+  duration_ms: 25.444611
+  type: 'test'
+  ...
+# Subtest: stop cancels a reply and the chat can continue
+ok 32 - stop cancels a reply and the chat can continue
+  ---
+  duration_ms: 332.962927
+  type: 'test'
+  ...
+# Subtest: goodbye ends the chat; delete removes it
+ok 33 - goodbye ends the chat; delete removes it
+  ---
+  duration_ms: 22.50542
+  type: 'test'
+  ...
+# Subtest: bad input is refused and costs nothing
+ok 34 - bad input is refused and costs nothing
+  ---
+  duration_ms: 13.005977
+  type: 'test'
+  ...
+# Subtest: the agents' daily budget is enforced
+ok 35 - the agents' daily budget is enforced
+  ---
+  duration_ms: 43.413249
+  type: 'test'
+  ...
+# Subtest: voice site: a reply in another language says which language to speak it in
+ok 36 - voice site: a reply in another language says which language to speak it in
+  ---
+  duration_ms: 9.915528
+  type: 'test'
+  ...
+# Subtest: when the main model is rate-limited, the answer comes from gpt-oss-20b
+ok 37 - when the main model is rate-limited, the answer comes from gpt-oss-20b
+  ---
+  duration_ms: 9.372994
+  type: 'test'
+  ...
+# Subtest: the agreement line with Privacy Policy and Terms links comes before the Start button, in every language
+ok 38 - the agreement line with Privacy Policy and Terms links comes before the Start button, in every language
+  ---
+  duration_ms: 141.036562
+  type: 'test'
+  ...
+# Subtest: the Terms page exists in every language and says what the site really does
+ok 39 - the Terms page exists in every language and says what the site really does
+  ---
+  duration_ms: 19.999975
+  type: 'test'
+  ...
+# Subtest: the privacy notice also covers what the browser now remembers
+ok 40 - the privacy notice also covers what the browser now remembers
+  ---
+  duration_ms: 1.480726
+  type: 'test'
+  ...
+# Subtest: pressing Start saves the agreed version; one short sentence and the AI disclosure are spoken once
+ok 41 - pressing Start saves the agreed version; one short sentence and the AI disclosure are spoken once
+  ---
+  duration_ms: 5.288607
+  type: 'test'
+  ...
+# Subtest: the browser's region is respected: pt-BR gets Brazilian, pt-PT and bare pt get Portugal's
+ok 42 - the browser's region is respected: pt-BR gets Brazilian, pt-PT and bare pt get Portugal's
+  ---
+  duration_ms: 230.494792
+  type: 'test'
+  ...
+# Subtest: every interface string exists in Brazilian Portuguese, in Brazilian wording
+ok 43 - every interface string exists in Brazilian Portuguese, in Brazilian wording
+  ---
+  duration_ms: 0.665312
+  type: 'test'
+  ...
+# Subtest: a Brazilian browser gets the Brazilian page and both Portuguese buttons when both are on
+ok 44 - a Brazilian browser gets the Brazilian page and both Portuguese buttons when both are on
+  ---
+  duration_ms: 19.581862
+  type: 'test'
+  ...
+# Subtest: with Brazilian off, a Brazilian browser gets Portugal's Portuguese (pt only) or English (all off)
+ok 45 - with Brazilian off, a Brazilian browser gets Portugal's Portuguese (pt only) or English (all off)
+  ---
+  duration_ms: 9.112993
+  type: 'test'
+  ...
+# Subtest: Brazilian chat: Brazilian instructions, answer not turned into Portugal's Portuguese, Brazilian voice
+ok 46 - Brazilian chat: Brazilian instructions, answer not turned into Portugal's Portuguese, Brazilian voice
+  ---
+  duration_ms: 116.02032
+  type: 'test'
+  ...
+# Subtest: Brazilian speech recognition sends Whisper the language pt, not pt-BR
+ok 47 - Brazilian speech recognition sends Whisper the language pt, not pt-BR
+  ---
+  duration_ms: 16.158071
+  type: 'test'
+  ...
+# Subtest: spoken: Portugal or Brazil can be named, and a question about Brazil is not a command
+ok 48 - spoken: Portugal or Brazil can be named, and a question about Brazil is not a command
+  ---
+  duration_ms: 14.69355
+  type: 'test'
+  ...
+# Subtest: a Portuguese user is asked Portugal or Brazil once, before the instructions, when both are on
+ok 49 - a Portuguese user is asked Portugal or Brazil once, before the instructions, when both are on
+  ---
+  duration_ms: 9.2346
+  type: 'test'
+  ...
+# Subtest: the question records once, transcribes as Portuguese and remembers the answer
+ok 50 - the question records once, transcribes as Portuguese and remembers the answer
+  ---
+  duration_ms: 6.530253
+  type: 'test'
+  ...
+# Subtest: the Brazilian voice is preferred for Brazilian Portuguese, and Portugal's for Portugal
+ok 51 - the Brazilian voice is preferred for Brazilian Portuguese, and Portugal's for Portugal
+  ---
+  duration_ms: 1.730379
+  type: 'test'
+  ...
+# Subtest: the instructions say never to refuse only because a text is copyrighted, and how to answer instead
+ok 52 - the instructions say never to refuse only because a text is copyrighted, and how to answer instead
+  ---
+  duration_ms: 5.15397
+  type: 'test'
+  ...
+# Subtest: the tester's sentence makes the assistant read the whole article part by part, starting at part 1
+ok 53 - the tester's sentence makes the assistant read the whole article part by part, starting at part 1
+  ---
+  duration_ms: 19.48042
+  type: 'test'
+  ...
+# Subtest: other wordings of "answers to the questions" count too, in several languages
+ok 54 - other wordings of "answers to the questions" count too, in several languages
+  ---
+  duration_ms: 6.110172
+  type: 'test'
+  ...
+# Subtest: en: recognized weather requires live results before answering
+ok 55 - en: recognized weather requires live results before answering
+  ---
+  duration_ms: 27.752618
+  type: 'test'
+  ...
+# Subtest: it: recognized weather requires live results before answering
+ok 56 - it: recognized weather requires live results before answering
+  ---
+  duration_ms: 6.307309
+  type: 'test'
+  ...
+# Subtest: fr: recognized weather requires live results before answering
+ok 57 - fr: recognized weather requires live results before answering
+  ---
+  duration_ms: 1.160949
+  type: 'test'
+  ...
+# Subtest: bg: recognized weather requires live results before answering
+ok 58 - bg: recognized weather requires live results before answering
+  ---
+  duration_ms: 6.815573
+  type: 'test'
+  ...
+# Subtest: ru: recognized weather requires live results before answering
+ok 59 - ru: recognized weather requires live results before answering
+  ---
+  duration_ms: 0.998551
+  type: 'test'
+  ...
+# Subtest: zh: recognized weather requires live results before answering
+ok 60 - zh: recognized weather requires live results before answering
+  ---
+  duration_ms: 5.855147
+  type: 'test'
+  ...
+# Subtest: current sports search carries current date and recency filter
+ok 61 - current sports search carries current date and recency filter
+  ---
+  duration_ms: 1.1984
+  type: 'test'
+  ...
+# Subtest: ordinary Italian research wording cannot return an unsearched answer: Mi dai informazioni sportive?
+ok 62 - ordinary Italian research wording cannot return an unsearched answer: Mi dai informazioni sportive?
+  ---
+  duration_ms: 1.758548
+  type: 'test'
+  ...
+# Subtest: ordinary Italian research wording cannot return an unsearched answer: Che tempo fa a Thiene?
+ok 63 - ordinary Italian research wording cannot return an unsearched answer: Che tempo fa a Thiene?
+  ---
+  duration_ms: 1.783338
+  type: 'test'
+  ...
+# Subtest: ordinary Italian research wording cannot return an unsearched answer: Novità nella ricerca per la cecità?
+ok 64 - ordinary Italian research wording cannot return an unsearched answer: Novità nella ricerca per la cecità?
+  ---
+  duration_ms: 2.348351
+  type: 'test'
+  ...
+# Subtest: colloquial weather without a location asks instead of guessing
+ok 65 - colloquial weather without a location asks instead of guessing
+  ---
+  duration_ms: 0.83414
+  type: 'test'
+  ...
+# Subtest: en: research requires actual sources without a one-day publication cutoff
+ok 66 - en: research requires actual sources without a one-day publication cutoff
+  ---
+  duration_ms: 0.956569
+  type: 'test'
+  ...
+# Subtest: it: research requires actual sources without a one-day publication cutoff
+ok 67 - it: research requires actual sources without a one-day publication cutoff
+  ---
+  duration_ms: 0.815861
+  type: 'test'
+  ...
+# Subtest: fr: research requires actual sources without a one-day publication cutoff
+ok 68 - fr: research requires actual sources without a one-day publication cutoff
+  ---
+  duration_ms: 0.871615
+  type: 'test'
+  ...
+# Subtest: bg: research requires actual sources without a one-day publication cutoff
+ok 69 - bg: research requires actual sources without a one-day publication cutoff
+  ---
+  duration_ms: 0.912164
+  type: 'test'
+  ...
+# Subtest: ru: research requires actual sources without a one-day publication cutoff
+ok 70 - ru: research requires actual sources without a one-day publication cutoff
+  ---
+  duration_ms: 1.023361
+  type: 'test'
+  ...
+# Subtest: zh: research requires actual sources without a one-day publication cutoff
+ok 71 - zh: research requires actual sources without a one-day publication cutoff
+  ---
+  duration_ms: 0.979047
+  type: 'test'
+  ...
+# Subtest: ja: research requires actual sources without a one-day publication cutoff
+ok 72 - ja: research requires actual sources without a one-day publication cutoff
+  ---
+  duration_ms: 0.834717
+  type: 'test'
+  ...
+# Subtest: model ignoring the forced search cannot return an unverified current answer
+ok 73 - model ignoring the forced search cannot return an unverified current answer
+  ---
+  duration_ms: 0.858815
+  type: 'test'
+  ...
+# Subtest: malformed forced tool call cannot fall back to a stale plain completion
+ok 74 - malformed forced tool call cannot fall back to a stale plain completion
+  ---
+  duration_ms: 0.92642
+  type: 'test'
+  ...
+# Subtest: unusable research null is disclosed
+ok 75 - unusable research null is disclosed
+  ---
+  duration_ms: 0.916105
+  type: 'test'
+  ...
+# Subtest: unusable research {"error":"unavailable"} is disclosed
+ok 76 - unusable research {"error":"unavailable"} is disclosed
+  ---
+  duration_ms: 0.833448
+  type: 'test'
+  ...
+# Subtest: unusable research {"results":[]} is disclosed
+ok 77 - unusable research {"results":[]} is disclosed
+  ---
+  duration_ms: 1.704863
+  type: 'test'
+  ...
+# Subtest: unusable research {"report":"Unsupported claimed live answer"} is disclosed
+ok 78 - unusable research {"report":"Unsupported claimed live answer"} is disclosed
+  ---
+  duration_ms: 1.071561
+  type: 'test'
+  ...
+# Subtest: vague weather location asks for place and country without spending provider quota
+ok 79 - vague weather location asks for place and country without spending provider quota
+  ---
+  duration_ms: 0.787795
+  type: 'test'
+  ...
+# Subtest: weather follow-up preserves a previously supplied town
+ok 80 - weather follow-up preserves a previously supplied town
+  ---
+  duration_ms: 2.532229
+  type: 'test'
+  ...
+# Subtest: short contextual follow-up still requires research
+ok 81 - short contextual follow-up still requires research
+  ---
+  duration_ms: 1.343579
+  type: 'test'
+  ...
+# Subtest: historical requests and stable explanations do not get a current-date search restriction
+ok 82 - historical requests and stable explanations do not get a current-date search restriction
+  ---
+  duration_ms: 3.002477
+  type: 'test'
+  ...
+# Subtest: a stopped request cannot answer after research finishes
+ok 83 - a stopped request cannot answer after research finishes
+  ---
+  duration_ms: 1.281485
+  type: 'test'
+  ...
+# Subtest: QA with no model allowance refuses unverifiable current answers
+ok 84 - QA with no model allowance refuses unverifiable current answers
+  ---
+  duration_ms: 0.750875
+  type: 'test'
+  ...
+# Subtest: ordinary conversation remains a single model call
+ok 85 - ordinary conversation remains a single model call
+  ---
+  duration_ms: 1.014996
+  type: 'test'
+  ...
+# Subtest: Vicenza exact singular result wording and transcription typo must still search
+ok 86 - Vicenza exact singular result wording and transcription typo must still search
+  ---
+  duration_ms: 0.793489
+  type: 'test'
+  ...
+# Subtest: weather search retains Sandrigo even when the model proposes a different city
+ok 87 - weather search retains Sandrigo even when the model proposes a different city
+  ---
+  duration_ms: 0.986852
+  type: 'test'
+  ...
+# Subtest: a third follow-up retains its research topic and the complete dialogue
+ok 88 - a third follow-up retains its research topic and the complete dialogue
+  ---
+  duration_ms: 1.76653
+  type: 'test'
+  ...
+# Subtest: voice and automatic-download requests never pretend to execute unsupported controls
+ok 89 - voice and automatic-download requests never pretend to execute unsupported controls
+  ---
+  duration_ms: 2.522164
+  type: 'test'
+  ...
+# Subtest: every language has microphone guidance, current-data fallback and location clarification
+ok 90 - every language has microphone guidance, current-data fallback and location clarification
+  ---
+  duration_ms: 0.369491
+  type: 'test'
+  ...
+# Subtest: organization pages retain contacts without regional listings or logos
+ok 91 - organization pages retain contacts without regional listings or logos
+  ---
+  duration_ms: 1.245442
+  type: 'test'
+  ...
+# Subtest: Tavily keeps basic search and applies recency only when requested
+ok 92 - Tavily keeps basic search and applies recency only when requested
+  ---
+  duration_ms: 2.045156
+  type: 'test'
+  ...
+# Subtest: every interface string exists in Dutch and Portuguese and is really translated
+ok 93 - every interface string exists in Dutch and Portuguese and is really translated
+  ---
+  duration_ms: 126.562194
+  type: 'test'
+  ...
+# Subtest: every page has a Dutch and a Portuguese version
+ok 94 - every page has a Dutch and a Portuguese version
+  ---
+  duration_ms: 3.162839
+  type: 'test'
+  ...
+# Subtest: switched off (the default): not offered on the page, by the server or by voice
+ok 95 - switched off (the default): not offered on the page, by the server or by voice
+  ---
+  duration_ms: 12.700539
+  type: 'test'
+  ...
+# Subtest: switched on: pages in Dutch and Portuguese, buttons kept, the browser's language followed
+ok 96 - switched on: pages in Dutch and Portuguese, buttons kept, the browser's language followed
+  ---
+  duration_ms: 24.494733
+  type: 'test'
+  ...
+# Subtest: spoken commands and language switching work in Dutch and Portuguese
+ok 97 - spoken commands and language switching work in Dutch and Portuguese
+  ---
+  duration_ms: 2.783378
+  type: 'test'
+  ...
+# Subtest: replies in Dutch or Portuguese are spoken with a Dutch or Portuguese voice
+ok 98 - replies in Dutch or Portuguese are spoken with a Dutch or Portuguese voice
+  ---
+  duration_ms: 1.582215
+  type: 'test'
+  ...
+# Subtest: research words in Dutch and Portuguese trigger live search and page reading
+ok 99 - research words in Dutch and Portuguese trigger live search and page reading
+  ---
+  duration_ms: 16.0954
+  type: 'test'
+  ...
+# Subtest: the instructions ask for Portugal's Portuguese, not Brazilian
+ok 100 - the instructions ask for Portugal's Portuguese, not Brazilian
+  ---
+  duration_ms: 1.38149
+  type: 'test'
+  ...
+# Subtest: Japanese URL and browser preference render all pages without English fallback
+ok 101 - Japanese URL and browser preference render all pages without English fallback
+  ---
+  duration_ms: 131.968648
+  type: 'test'
+  ...
+# Subtest: Japanese speech recognition sends ISO language ja instead of silently using English
+ok 102 - Japanese speech recognition sends ISO language ja instead of silently using English
+  ---
+  duration_ms: 48.938776
+  type: 'test'
+  ...
+# Subtest: Japanese chat uses Japanese instructions and returns the matching speech language
+ok 103 - Japanese chat uses Japanese instructions and returns the matching speech language
+  ---
+  duration_ms: 31.056398
+  type: 'test'
+  ...
+# Subtest: Japanese output uses the Japanese voice reference and existing TTS route
+ok 104 - Japanese output uses the Japanese voice reference and existing TTS route
+  ---
+  duration_ms: 5.989373
+  type: 'test'
+  ...
+# Subtest: capabilities and agent documentation expose Japanese as supported
+ok 105 - capabilities and agent documentation expose Japanese as supported
+  ---
+  duration_ms: 4.975606
+  type: 'test'
+  ...
+# Subtest: Japanese selection and all public-page translations are complete
+ok 106 - Japanese selection and all public-page translations are complete
+  ---
+  duration_ms: 1.20202
+  type: 'test'
+  ...
+# Subtest: kana answers use Japanese speech and Han-only Japanese keeps its context
+ok 107 - kana answers use Japanese speech and Han-only Japanese keeps its context
+  ---
+  duration_ms: 0.543815
+  type: 'test'
+  ...
+# Subtest: spoken language selection and switching work without Latin word boundaries
+ok 108 - spoken language selection and switching work without Latin word boundaries
+  ---
+  duration_ms: 2.882401
+  type: 'test'
+  ...
+# Subtest: Japanese repeat, help and goodbye avoid consuming ordinary questions
+ok 109 - Japanese repeat, help and goodbye avoid consuming ordinary questions
+  ---
+  duration_ms: 1.173614
+  type: 'test'
+  ...
+# Subtest: Japanese voice ranking never picks a voice from another language
+ok 110 - Japanese voice ranking never picks a voice from another language
+  ---
+  duration_ms: 1.214168
+  type: 'test'
+  ...
+# Subtest: Japanese current questions require research and vague places ask for location
+ok 111 - Japanese current questions require research and vague places ask for location
+  ---
+  duration_ms: 21.014533
+  type: 'test'
+  ...
+# Subtest: the page has the button, a heading, plain text and a Copy button, all hidden by default
+ok 112 - the page has the button, a heading, plain text and a Copy button, all hidden by default
+  ---
+  duration_ms: 0.976636
+  type: 'test'
+  ...
+# Subtest: off by default: answers are remembered but nothing appears until asked
+ok 113 - off by default: answers are remembered but nothing appears until asked
+  ---
+  duration_ms: 1.315446
+  type: 'test'
+  ...
+# Subtest: "show the last answer" shows the text, keeps focus on Talk, and the button stays from then on
+ok 114 - "show the last answer" shows the text, keeps focus on Talk, and the button stays from then on
+  ---
+  duration_ms: 0.859753
+  type: 'test'
+  ...
+# Subtest: Copy puts the text on the clipboard and says so; a refused clipboard says how to copy by hand
+ok 115 - Copy puts the text on the clipboard and says so; a refused clipboard says how to copy by hand
+  ---
+  duration_ms: 2.059462
+  type: 'test'
+  ...
+# Subtest: "hide the last answer" turns it off again, and focus inside the box goes back to Talk
+ok 116 - "hide the last answer" turns it off again, and focus inside the box goes back to Talk
+  ---
+  duration_ms: 0.853834
+  type: 'test'
+  ...
+# Subtest: the spoken commands are recognised in every language and never sent to the assistant
+ok 117 - the spoken commands are recognised in every language and never sent to the assistant
+  ---
+  duration_ms: 2.135299
+  type: 'test'
+  ...
+# Subtest: long content the assistant puts in the box reaches the page, not the voice
+ok 118 - long content the assistant puts in the box reaches the page, not the voice
+  ---
+  duration_ms: 21.764995
+  type: 'test'
+  ...
+# Subtest: request limit blocks everything once reached, and a new ID does not help
+ok 119 - request limit blocks everything once reached, and a new ID does not help
+  ---
+  duration_ms: 190.532415
+  type: 'test'
+  ...
+# Subtest: speech minutes are charged from the audio and capped
+ok 120 - speech minutes are charged from the audio and capped
+  ---
+  duration_ms: 273.153267
+  type: 'test'
+  ...
+# Subtest: only real 16 kHz mono WAV is accepted
+ok 121 - only real 16 kHz mono WAV is accepted
+  ---
+  duration_ms: 220.078614
+  type: 'test'
+  ...
+# Subtest: burst limit per minute
+ok 122 - burst limit per minute
+  ---
+  duration_ms: 264.444628
+  type: 'test'
+  ...
+# Subtest: with Redis, limits survive a restart and the server fails closed
+ok 123 - with Redis, limits survive a restart and the server fails closed
+  ---
+  duration_ms: 1411.369367
+  type: 'test'
+  ...
+# Subtest: with no limit variables set, none of the site's own limits apply
+ok 124 - with no limit variables set, none of the site's own limits apply
+  ---
+  duration_ms: 399.913701
+  type: 'test'
+  ...
+# Subtest: the explanation is focused and the screen reader gets time before the browser prompt opens
+ok 125 - the explanation is focused and the screen reader gets time before the browser prompt opens
+  ---
+  duration_ms: 3.930228
+  type: 'test'
+  ...
+# Subtest: allowed, blocked and not asked yet are told apart, also where the browser cannot be asked
+ok 126 - allowed, blocked and not asked yet are told apart, also where the browser cannot be asked
+  ---
+  duration_ms: 2.607286
+  type: 'test'
+  ...
+# Subtest: an allowed microphone opens at once: no explanation, no focus move, no pause
+ok 127 - an allowed microphone opens at once: no explanation, no focus move, no pause
+  ---
+  duration_ms: 2.681472
+  type: 'test'
+  ...
+# Subtest: what to choose is named per browser, and nothing is promised that a site cannot do
+ok 128 - what to choose is named per browser, and nothing is promised that a site cannot do
+  ---
+  duration_ms: 2.496959
+  type: 'test'
+  ...
+# Subtest: first visit: the voice says what to choose before the browser asks
+ok 129 - first visit: the voice says what to choose before the browser asks
+  ---
+  duration_ms: 1.313791
+  type: 'test'
+  ...
+# Subtest: a returning user who already heard the guide hears one short line
+ok 130 - a returning user who already heard the guide hears one short line
+  ---
+  duration_ms: 1.20919
+  type: 'test'
+  ...
+# Subtest: a blocked microphone: the exact steps are spoken, then shown, and the microphone is never opened
+ok 131 - a blocked microphone: the exact steps are spoken, then shown, and the microphone is never opened
+  ---
+  duration_ms: 0.801627
+  type: 'test'
+  ...
+# Subtest: the first successful permission saves the microphone's device ID and name
+ok 132 - the first successful permission saves the microphone's device ID and name
+  ---
+  duration_ms: 2.763675
+  type: 'test'
+  ...
+# Subtest: the next visit requests exactly the saved microphone
+ok 133 - the next visit requests exactly the saved microphone
+  ---
+  duration_ms: 0.904771
+  type: 'test'
+  ...
+# Subtest: an unplugged saved microphone falls back to the default and says so once, keeping the saved choice
+ok 134 - an unplugged saved microphone falls back to the default and says so once, keeping the saved choice
+  ---
+  duration_ms: 1.040659
+  type: 'test'
+  ...
+# Subtest: a browser that only renamed the device ID does not announce a fallback
+ok 135 - a browser that only renamed the device ID does not announce a fallback
+  ---
+  duration_ms: 1.921739
+  type: 'test'
+  ...
+# Subtest: the microphone list is built only from devices whose names are readable (after permission)
+ok 136 - the microphone list is built only from devices whose names are readable (after permission)
+  ---
+  duration_ms: 1.325811
+  type: 'test'
+  ...
+# Subtest: "change microphone" moves to the next microphone, saves it and reopens with it
+ok 137 - "change microphone" moves to the next microphone, saves it and reopens with it
+  ---
+  duration_ms: 1.491541
+  type: 'test'
+  ...
+# Subtest: the spoken command is recognised in every language and is not sent to the assistant
+ok 138 - the spoken command is recognised in every language and is not sent to the assistant
+  ---
+  duration_ms: 1.587663
+  type: 'test'
+  ...
+# Subtest: the page has a Change microphone button and list, hidden until microphones are known
+ok 139 - the page has a Change microphone button and list, hidden until microphones are known
+  ---
+  duration_ms: 0.358577
+  type: 'test'
+  ...
+# Subtest: H repeat instructions is a local command in every supported language
+ok 140 - H repeat instructions is a local command in every supported language
+  ---
+  duration_ms: 3.6202
+  type: 'test'
+  ...
+# Subtest: H the opening no longer asks for a language recording
+ok 141 - H the opening no longer asks for a language recording
+  ---
+  duration_ms: 0.319978
+  type: 'test'
+  ...
+# Subtest: H help repeats the operating instructions as well as available commands
+ok 142 - H help repeats the operating instructions as well as available commands
+  ---
+  duration_ms: 0.127967
+  type: 'test'
+  ...
+# Subtest: the instructions list the page's commands, every site language, and what the assistant cannot do
+ok 143 - the instructions list the page's commands, every site language, and what the assistant cannot do
+  ---
+  duration_ms: 4.239929
+  type: 'test'
+  ...
+# Subtest: the assistant can ask the page to open the language list, show the last answer or change the microphone
+ok 144 - the assistant can ask the page to open the language list, show the last answer or change the microphone
+  ---
+  duration_ms: 24.67022
+  type: 'test'
+  ...
+# Subtest: the browser carries out the command after the spoken reply
+ok 145 - the browser carries out the command after the spoken reply
+  ---
+  duration_ms: 0.316766
+  type: 'test'
+  ...
+# Subtest: a reply claiming a made, saved or sent file gets one push to say plainly what it can do
+ok 146 - a reply claiming a made, saved or sent file gets one push to say plainly what it can do
+  ---
+  duration_ms: 1.664441
+  type: 'test'
+  ...
+# Subtest: saying the text is on the page without putting it there is caught; putting it there is fine
+ok 147 - saying the text is on the page without putting it there is caught; putting it there is fine
+  ---
+  duration_ms: 1.466601
+  type: 'test'
+  ...
+# Subtest: ordinary sentences are not mistaken for claims, in several languages
+ok 148 - ordinary sentences are not mistaken for claims, in several languages
+  ---
+  duration_ms: 1.559865
+  type: 'test'
+  ...
+# Subtest: questions about changing the language open the language list, in more wordings
+ok 149 - questions about changing the language open the language list, in more wordings
+  ---
+  duration_ms: 2.708857
+  type: 'test'
+  ...
+# Subtest: the spoken help names every page command, in every language, and each named phrase works
+ok 150 - the spoken help names every page command, in every language, and each named phrase works
+  ---
+  duration_ms: 1.270432
+  type: 'test'
+  ...
+# Subtest: G1 touch starts recording and the speak-now cue only after 1500 ms
+ok 151 - G1 touch starts recording and the speak-now cue only after 1500 ms
+  ---
+  duration_ms: 3.100431
+  type: 'test'
+  ...
+# Subtest: G1 desktop still records and cues immediately
+ok 152 - G1 desktop still records and cues immediately
+  ---
+  duration_ms: 1.051481
+  type: 'test'
+  ...
+# Subtest: G1 ending during touch delay cannot record or cue later
+ok 153 - G1 ending during touch delay cannot record or cue later
+  ---
+  duration_ms: 1.737892
+  type: 'test'
+  ...
+# Subtest: G2 Copy status and last-answer attributes wait for speech to end
+ok 154 - G2 Copy status and last-answer attributes wait for speech to end
+  ---
+  duration_ms: 1.112646
+  type: 'test'
+  ...
+# Subtest: G2 conversation labels wait for speech to end
+ok 155 - G2 conversation labels wait for speech to end
+  ---
+  duration_ms: 0.919943
+  type: 'test'
+  ...
+# Subtest: G2 non-error announcements wait; errors can interrupt
+ok 156 - G2 non-error announcements wait; errors can interrupt
+  ---
+  duration_ms: 0.946893
+  type: 'test'
+  ...
+# Subtest: G3 goReady restores lost page focus: normal answer
+ok 157 - G3 goReady restores lost page focus: normal answer
+  ---
+  duration_ms: 0.972855
+  type: 'test'
+  ...
+# Subtest: G3 goReady restores lost page focus: nothing heard
+ok 158 - G3 goReady restores lost page focus: nothing heard
+  ---
+  duration_ms: 0.757321
+  type: 'test'
+  ...
+# Subtest: G3 goReady restores lost page focus: retry
+ok 159 - G3 goReady restores lost page focus: retry
+  ---
+  duration_ms: 0.900612
+  type: 'test'
+  ...
+# Subtest: G3 goReady restores lost page focus: language switch
+ok 160 - G3 goReady restores lost page focus: language switch
+  ---
+  duration_ms: 1.044943
+  type: 'test'
+  ...
+# Subtest: G3 goReady restores lost page focus: show last answer
+ok 161 - G3 goReady restores lost page focus: show last answer
+  ---
+  duration_ms: 0.741017
+  type: 'test'
+  ...
+# Subtest: G3 goReady restores lost page focus: page command
+ok 162 - G3 goReady restores lost page focus: page command
+  ---
+  duration_ms: 0.635942
+  type: 'test'
+  ...
+# Subtest: G3 goReady restores lost page focus: pendingTalk
+ok 163 - G3 goReady restores lost page focus: pendingTalk
+  ---
+  duration_ms: 0.697122
+  type: 'test'
+  ...
+# Subtest: G3 does not refocus Talk or steal deliberately chosen focus
+ok 164 - G3 does not refocus Talk or steal deliberately chosen focus
+  ---
+  duration_ms: 0.765488
+  type: 'test'
+  ...
+# Subtest: G4 headphones advice exists only in touch first-use/help in all nine languages
+ok 165 - G4 headphones advice exists only in touch first-use/help in all nine languages
+  ---
+  duration_ms: 0.284367
+  type: 'test'
+  ...
+# Subtest: G1 microphone removed during phone delay returns ready without a false cue
+ok 166 - G1 microphone removed during phone delay returns ready without a false cue
+  ---
+  duration_ms: 0.889843
+  type: 'test'
+  ...
+# Subtest: G3 actual completion path returns lost focus: normal
+ok 167 - G3 actual completion path returns lost focus: normal
+  ---
+  duration_ms: 1.426272
+  type: 'test'
+  ...
+# Subtest: G3 actual completion path returns lost focus: nothing heard
+ok 168 - G3 actual completion path returns lost focus: nothing heard
+  ---
+  duration_ms: 0.95367
+  type: 'test'
+  ...
+# Subtest: G3 actual completion path returns lost focus: retry
+ok 169 - G3 actual completion path returns lost focus: retry
+  ---
+  duration_ms: 1.723814
+  type: 'test'
+  ...
+# Subtest: G3 actual completion path returns lost focus: language
+ok 170 - G3 actual completion path returns lost focus: language
+  ---
+  duration_ms: 0.988766
+  type: 'test'
+  ...
+# Subtest: G3 actual completion path returns lost focus: show
+ok 171 - G3 actual completion path returns lost focus: show
+  ---
+  duration_ms: 0.874318
+  type: 'test'
+  ...
+# Subtest: G3 actual completion path returns lost focus: page command
+ok 172 - G3 actual completion path returns lost focus: page command
+  ---
+  duration_ms: 0.858853
+  type: 'test'
+  ...
+# Subtest: G3 actual completion path returns lost focus: interruption
+ok 173 - G3 actual completion path returns lost focus: interruption
+  ---
+  duration_ms: 0.908689
+  type: 'test'
+  ...
+# Subtest: G2 actual speech completion flushes queued Copy without changing voice rate
+ok 174 - G2 actual speech completion flushes queued Copy without changing voice rate
+  ---
+  duration_ms: 1.094529
+  type: 'test'
+  ...
+# Subtest: G2 a status scheduled just before speech also waits for its end
+ok 175 - G2 a status scheduled just before speech also waits for its end
+  ---
+  duration_ms: 0.835377
+  type: 'test'
+  ...
+# Subtest: G2 queued updates from an ended conversation are discarded
+ok 176 - G2 queued updates from an ended conversation are discarded
+  ---
+  duration_ms: 0.720841
+  type: 'test'
+  ...
+# Subtest: G2 translated labels are not rendered during speech
+ok 177 - G2 translated labels are not rendered during speech
+  ---
+  duration_ms: 0.974504
+  type: 'test'
+  ...
+# Subtest: G1 a microphone removed during language recording does not leave its caller waiting
+ok 178 - G1 a microphone removed during language recording does not leave its caller waiting
+  ---
+  duration_ms: 0.839199
+  type: 'test'
+  ...
+# Subtest: Brazilian forms are found, and the certain ones are changed to Portugal's Portuguese
+ok 179 - Brazilian forms are found, and the certain ones are changed to Portugal's Portuguese
+  ---
+  duration_ms: 154.777396
+  type: 'test'
+  ...
+# Subtest: the instructions spell out Portugal's words, 'estar a' and polite address without 'você'
+ok 180 - the instructions spell out Portugal's words, 'estar a' and polite address without 'você'
+  ---
+  duration_ms: 1.677042
+  type: 'test'
+  ...
+# Subtest: switched on: a Portuguese answer reaches the user in pt-PT
+ok 181 - switched on: a Portuguese answer reaches the user in pt-PT
+  ---
+  duration_ms: 99.619457
+  type: 'test'
+  ...
+# Subtest: switched off: nothing changes (Portuguese is not offered, the text is left alone)
+ok 182 - switched off: nothing changes (Portuguese is not offered, the text is left alone)
+  ---
+  duration_ms: 47.270435
+  type: 'test'
+  ...
+# Subtest: speech recognition sends Whisper the code pt when Portuguese is on, and never when it is off
+ok 183 - speech recognition sends Whisper the code pt when Portuguese is on, and never when it is off
+  ---
+  duration_ms: 18.869413
+  type: 'test'
+  ...
+# Subtest: spoken commands in Portugal's everyday and polite forms
+ok 184 - spoken commands in Portugal's everyday and polite forms
+  ---
+  duration_ms: 2.889623
+  type: 'test'
+  ...
+# Subtest: first disclosure precedes microphone; no language recording is required
+ok 185 - first disclosure precedes microphone; no language recording is required
+  ---
+  duration_ms: 2.526021
+  type: 'test'
+  ...
+# Subtest: return greeting keeps one AI disclosure without repeating the full privacy notice
+ok 186 - return greeting keeps one AI disclosure without repeating the full privacy notice
+  ---
+  duration_ms: 1.800666
+  type: 'test'
+  ...
+# Subtest: ending during disclosure never opens the microphone
+ok 187 - ending during disclosure never opens the microphone
+  ---
+  duration_ms: 0.727525
+  type: 'test'
+  ...
+# Subtest: ending clears conversation memory; finishing a recording preserves existing context
+ok 188 - ending clears conversation memory; finishing a recording preserves existing context
+  ---
+  duration_ms: 0.958273
+  type: 'test'
+  ...
+# Subtest: all six notices name the Swiss operator and distinguish aggregate counts from API chat storage
+ok 189 - all six notices name the Swiss operator and distinguish aggregate counts from API chat storage
+  ---
+  duration_ms: 0.683844
+  type: 'test'
+  ...
+# Subtest: microphone guide finishes before browser permission, and repeats after a failed request
+ok 190 - microphone guide finishes before browser permission, and repeats after a failed request
+  ---
+  duration_ms: 1.649872
+  type: 'test'
+  ...
+# Subtest: known guide is not repeated and touch guidance precedes the browser prompt
+ok 191 - known guide is not repeated and touch guidance precedes the browser prompt
+  ---
+  duration_ms: 1.968816
+  type: 'test'
+  ...
+# Subtest: return visit respects actual granted permission, not the stored guide
+ok 192 - return visit respects actual granted permission, not the stored guide
+  ---
+  duration_ms: 0.847788
+  type: 'test'
+  ...
+# Subtest: return visit respects actual prompt permission, not the stored guide
+ok 193 - return visit respects actual prompt permission, not the stored guide
+  ---
+  duration_ms: 0.799367
+  type: 'test'
+  ...
+# Subtest: return visit respects actual denied permission, not the stored guide
+ok 194 - return visit respects actual denied permission, not the stored guide
+  ---
+  duration_ms: 1.823989
+  type: 'test'
+  ...
+# Subtest: return visit respects actual unknown permission, not the stored guide
+ok 195 - return visit respects actual unknown permission, not the stored guide
+  ---
+  duration_ms: 1.55149
+  type: 'test'
+  ...
+# Subtest: granted permission skips guide even on a fresh visit
+ok 196 - granted permission skips guide even on a fresh visit
+  ---
+  duration_ms: 0.791923
+  type: 'test'
+  ...
+# Subtest: ending while permission is checked does not speak or capture
+ok 197 - ending while permission is checked does not speak or capture
+  ---
+  duration_ms: 0.732622
+  type: 'test'
+  ...
+# Subtest: permission query rejection and missing support fall back safely
+ok 198 - permission query rejection and missing support fall back safely
+  ---
+  duration_ms: 1.352628
+  type: 'test'
+  ...
+# Subtest: voice does not tell Groq an ordinary caller has a disability
+ok 199 - voice does not tell Groq an ordinary caller has a disability
+  ---
+  duration_ms: 18.313446
+  type: 'test'
+  ...
+# Subtest: text API does not tell Groq an ordinary caller has a disability
+ok 200 - text API does not tell Groq an ordinary caller has a disability
+  ---
+  duration_ms: 6.047449
+  type: 'test'
+  ...
+# Subtest: the prompt change preserves a caller's own relevant words
+ok 201 - the prompt change preserves a caller's own relevant words
+  ---
+  duration_ms: 1.890745
+  type: 'test'
+  ...
+# Subtest: upstream errors do not leak echoed content into application logs or responses
+ok 202 - upstream errors do not leak echoed content into application logs or responses
+  ---
+  duration_ms: 273.736938
+  type: 'test'
+  ...
+# Subtest: empty and duplicated credentials cannot multiply routing capacity or expose keys
+ok 203 - empty and duplicated credentials cannot multiply routing capacity or expose keys
+  ---
+  duration_ms: 1.366927
+  type: 'test'
+  ...
+# Subtest: normal traffic stays on the first usable key, and records only measured tokens
+ok 204 - normal traffic stays on the first usable key, and records only measured tokens
+  ---
+  duration_ms: 0.431437
+  type: 'test'
+  ...
+# Subtest: definite 429 selects second then third key, respects cooldown, and separates model scopes
+ok 205 - definite 429 selects second then third key, respects cooldown, and separates model scopes
+  ---
+  duration_ms: 1.3411
+  type: 'test'
+  ...
+# Subtest: all rejected keys return the last response then suppress dispatch until retry is due
+ok 206 - all rejected keys return the last response then suppress dispatch until retry is due
+  ---
+  duration_ms: 0.538914
+  type: 'test'
+  ...
+# Subtest: network failure and uncertain POST are never replayed
+ok 207 - network failure and uncertain POST are never replayed
+  ---
+  duration_ms: 0.174187
+  type: 'test'
+  ...
+# Subtest: HTTP 400 does not silently switch accounts
+ok 208 - HTTP 400 does not silently switch accounts
+  ---
+  duration_ms: 0.109394
+  type: 'test'
+  ...
+# Subtest: HTTP 401 does not silently switch accounts
+ok 209 - HTTP 401 does not silently switch accounts
+  ---
+  duration_ms: 0.167874
+  type: 'test'
+  ...
+# Subtest: HTTP 403 does not silently switch accounts
+ok 210 - HTTP 403 does not silently switch accounts
+  ---
+  duration_ms: 0.072398
+  type: 'test'
+  ...
+# Subtest: HTTP 404 does not silently switch accounts
+ok 211 - HTTP 404 does not silently switch accounts
+  ---
+  duration_ms: 0.237463
+  type: 'test'
+  ...
+# Subtest: HTTP 432 does not silently switch accounts
+ok 212 - HTTP 432 does not silently switch accounts
+  ---
+  duration_ms: 0.265903
+  type: 'test'
+  ...
+# Subtest: HTTP 500 does not silently switch accounts
+ok 213 - HTTP 500 does not silently switch accounts
+  ---
+  duration_ms: 0.09592
+  type: 'test'
+  ...
+# Subtest: HTTP 503 does not silently switch accounts
+ok 214 - HTTP 503 does not silently switch accounts
+  ---
+  duration_ms: 0.086152
+  type: 'test'
+  ...
+# Subtest: billing/account access blocks never trigger alternate-account requests
+ok 215 - billing/account access blocks never trigger alternate-account requests
+  ---
+  duration_ms: 0.131926
+  type: 'test'
+  ...
+# Subtest: QA primary-only mode cannot spend another account allowance after 429
+ok 216 - QA primary-only mode cannot spend another account allowance after 429
+  ---
+  duration_ms: 0.099211
+  type: 'test'
+  ...
+# Subtest: missing primary credential cannot silently turn a secondary into the QA account
+ok 217 - missing primary credential cannot silently turn a secondary into the QA account
+  ---
+  duration_ms: 0.106003
+  type: 'test'
+  ...
+# Subtest: cancelled work cannot dispatch or fail over
+ok 218 - cancelled work cannot dispatch or fail over
+  ---
+  duration_ms: 0.12056
+  type: 'test'
+  ...
+# Subtest: Retry-After handles seconds, dates and malformed headers without a hot loop
+ok 219 - Retry-After handles seconds, dates and malformed headers without a hot loop
+  ---
+  duration_ms: 0.071945
+  type: 'test'
+  ...
+# Subtest: every privacy locale avoids claiming zero retention across unverified additional accounts
+ok 220 - every privacy locale avoids claiming zero retention across unverified additional accounts
+  ---
+  duration_ms: 1.453659
+  type: 'test'
+  ...
+# Subtest: real HTTP routes use three Groq and two Tavily credentials while QA remains primary-only
+ok 221 - real HTTP routes use three Groq and two Tavily credentials while QA remains primary-only
+  ---
+  duration_ms: 287.914088
+  type: 'test'
+  ...
+# Subtest: one valid voice request counts once, regardless of retained history
+ok 222 - one valid voice request counts once, regardless of retained history
+  ---
+  duration_ms: 230.896591
+  type: 'test'
+  ...
+# Subtest: model fallback and web-tool rounds add no extra question submissions
+ok 223 - model fallback and web-tool rounds add no extra question submissions
+  ---
+  duration_ms: 22.721883
+  type: 'test'
+  ...
+# Subtest: invalid requests and payloads without a latest user question do not count
+ok 224 - invalid requests and payloads without a latest user question do not count
+  ---
+  duration_ms: 18.020344
+  type: 'test'
+  ...
+# Subtest: synthetic flag alone, QA envelope and invalid QA requests never count
+ok 225 - synthetic flag alone, QA envelope and invalid QA requests never count
+  ---
+  duration_ms: 21.136043
+  type: 'test'
+  ...
+# Subtest: a failed answer still counts one submitted question and the text API remains excluded
+ok 226 - a failed answer still counts one submitted question and the text API remains excluded
+  ---
+  duration_ms: 17.61569
+  type: 'test'
+  ...
+# Subtest: a counter failure cannot prevent a validated voice question from being answered
+ok 227 - a counter failure cannot prevent a validated voice question from being answered
+  ---
+  duration_ms: 2.26515
+  type: 'test'
+  ...
+# limits: REDIS_URL is not set, so usage counters reset when the server restarts.
+# Subtest: a timetable keeps its stops in order and says which way it travels, worked out from the times
+ok 228 - a timetable keeps its stops in order and says which way it travels, worked out from the times
+  ---
+  duration_ms: 5.473765
+  type: 'test'
+  ...
+# Subtest: a PDF that arrives as one long line is cut into pieces and the asked-for table is found
+ok 229 - a PDF that arrives as one long line is cut into pieces and the asked-for table is found
+  ---
+  duration_ms: 0.543766
+  type: 'test'
+  ...
+# Subtest: times written 4:01a or 11:44P count as times
+ok 230 - times written 4:01a or 11:44P count as times
+  ---
+  duration_ms: 0.284556
+  type: 'test'
+  ...
+# Subtest: a timetable whose times run down columns is flagged as unreliable instead of being read as rows
+ok 231 - a timetable whose times run down columns is flagged as unreliable instead of being read as rows
+  ---
+  duration_ms: 0.526302
+  type: 'test'
+  ...
+# Subtest: the page's own dates are found, also inside long PDF text, and the newest year is known
+ok 232 - the page's own dates are found, also inside long PDF text, and the newest year is known
+  ---
+  duration_ms: 2.01804
+  type: 'test'
+  ...
+# Subtest: a long article is split into parts at paragraph ends
+ok 233 - a long article is split into parts at paragraph ends
+  ---
+  duration_ms: 0.566676
+  type: 'test'
+  ...
+# Subtest: a page is read with Tavily Extract's advanced setting and every read is counted first
+ok 234 - a page is read with Tavily Extract's advanced setting and every read is counted first
+  ---
+  duration_ms: 3.323784
+  type: 'test'
+  ...
+# Subtest: DAILY_TAVILY_EXTRACTS limits page reads, and reads are counted when no limit is set
+ok 235 - DAILY_TAVILY_EXTRACTS limits page reads, and reads are counted when no limit is set
+  ---
+  duration_ms: 75.554836
+  type: 'test'
+  ...
+# Subtest: read_page gives the relevant part, the page's dates and useful links, never the whole page
+ok 236 - read_page gives the relevant part, the page's dates and useful links, never the whole page
+  ---
+  duration_ms: 2.50361
+  type: 'test'
+  ...
+# Subtest: read_page warns about a lost table layout and an old page instead of passing them on as facts
+ok 237 - read_page warns about a lost table layout and an old page instead of passing them on as facts
+  ---
+  duration_ms: 1.3978
+  type: 'test'
+  ...
+# Subtest: a long article is read in numbered parts
+ok 238 - a long article is read in numbered parts
+  ---
+  duration_ms: 1.128787
+  type: 'test'
+  ...
+# Subtest: a timetable question must read a page after searching, and the search excerpts shrink once it is read
+ok 239 - a timetable question must read a page after searching, and the search excerpts shrink once it is read
+  ---
+  duration_ms: 15.713102
+  type: 'test'
+  ...
+# Subtest: a named service with no word for train still counts as a timetable question
+ok 240 - a named service with no word for train still counts as a timetable question
+  ---
+  duration_ms: 5.003352
+  type: 'test'
+  ...
+# Subtest: a timetable answer gets at most two searches, each followed by a read, and after two unusable pages the model must answer
+ok 241 - a timetable answer gets at most two searches, each followed by a read, and after two unusable pages the model must answer
+  ---
+  duration_ms: 3.23006
+  type: 'test'
+  ...
+# Subtest: the same page is not read twice in one answer
+ok 242 - the same page is not read twice in one answer
+  ---
+  duration_ms: 2.205686
+  type: 'test'
+  ...
+# Subtest: when the model refuses the required read and wants to search again, the turn goes on instead of failing
+ok 243 - when the model refuses the required read and wants to search again, the turn goes on instead of failing
+  ---
+  duration_ms: 3.760554
+  type: 'test'
+  ...
+# Subtest: "check the website" after a search gets one push to read the page instead
+ok 244 - "check the website" after a search gets one push to read the page instead
+  ---
+  duration_ms: 1.951201
+  type: 'test'
+  ...
+# Subtest: reading aloud: part 1 by default, one part per turn, and the position goes back to the browser
+ok 245 - reading aloud: part 1 by default, one part per turn, and the position goes back to the browser
+  ---
+  duration_ms: 1.071032
+  type: 'test'
+  ...
+# Subtest: "continue" goes on from the part the browser says was read last
+ok 246 - "continue" goes on from the part the browser says was read last
+  ---
+  duration_ms: 2.302769
+  type: 'test'
+  ...
+# Subtest: ordinary chat does not carry the research rules
+ok 247 - ordinary chat does not carry the research rules
+  ---
+  duration_ms: 0.891327
+  type: 'test'
+  ...
+# Subtest: the browser keeps the reading position and sends it with the next question
+ok 248 - the browser keeps the reading position and sends it with the next question
+  ---
+  duration_ms: 0.491326
+  type: 'test'
+  ...
+# Subtest: the privacy notice says that page addresses go to Tavily and that page text is kept for 20 minutes, in every language
+ok 249 - the privacy notice says that page addresses go to Tavily and that page text is kept for 20 minutes, in every language
+  ---
+  duration_ms: 1.234769
+  type: 'test'
+  ...
+# Subtest: a per-minute token limit that frees up within seconds is waited for, then the same model is asked again
+ok 250 - a per-minute token limit that frees up within seconds is waited for, then the same model is asked again
+  ---
+  duration_ms: 1253.456021
+  type: 'test'
+  ...
+# Subtest: a long wait or a daily limit is not waited for
+ok 251 - a long wait or a daily limit is not waited for
+  ---
+  duration_ms: 1.990583
+  type: 'test'
+  ...
+# Subtest: no research model is called by default when Tavily is unavailable
+ok 252 - no research model is called by default when Tavily is unavailable
+  ---
+  duration_ms: 3.749888
+  type: 'test'
+  ...
+# Subtest: retired model overrides never trigger Groq calls
+ok 253 - retired model overrides never trigger Groq calls
+  ---
+  duration_ms: 1.662804
+  type: 'test'
+  ...
+# Subtest: working Tavily results are preserved without another model call
+ok 254 - working Tavily results are preserved without another model call
+  ---
+  duration_ms: 1.844526
+  type: 'test'
+  ...
+# Subtest: an explicitly configured research model can still be used
+ok 255 - an explicitly configured research model can still be used
+  ---
+  duration_ms: 0.85735
+  type: 'test'
+  ...
+# Subtest: an inaccessible custom model is blocked after its first error
+ok 256 - an inaccessible custom model is blocked after its first error
+  ---
+  duration_ms: 1.046684
+  type: 'test'
+  ...
+# Subtest: a transient rate limit does not permanently block a custom model
+ok 257 - a transient rate limit does not permanently block a custom model
+  ---
+  duration_ms: 0.939754
+  type: 'test'
+  ...
+# Subtest: current-information research never substitutes an unverified custom-model report
+ok 258 - current-information research never substitutes an unverified custom-model report
+  ---
+  duration_ms: 0.994476
+  type: 'test'
+  ...
+# Subtest: every language has every string
+ok 259 - every language has every string
+  ---
+  duration_ms: 223.00169
+  type: 'test'
+  ...
+# Subtest: page is rendered in the Accept-Language language
+ok 260 - page is rendered in the Accept-Language language
+  ---
+  duration_ms: 20.523471
+  type: 'test'
+  ...
+# Subtest: page has one h1, one main and an empty alert
+ok 261 - page has one h1, one main and an empty alert
+  ---
+  duration_ms: 4.273506
+  type: 'test'
+  ...
+# Subtest: raw templates and server files are not served
+ok 262 - raw templates and server files are not served
+  ---
+  duration_ms: 9.369224
+  type: 'test'
+  ...
+# Subtest: API errors are reported without leaking details
+ok 263 - API errors are reported without leaking details
+  ---
+  duration_ms: 29.818323
+  type: 'test'
+  ...
+# Subtest: legal pages exist in every language
+ok 264 - legal pages exist in every language
+  ---
+  duration_ms: 22.407571
+  type: 'test'
+  ...
+# Subtest: About is server-rendered in all six languages with the same confirmed profile and contact
+ok 265 - About is server-rendered in all six languages with the same confirmed profile and contact
+  ---
+  duration_ms: 14.277149
+  type: 'test'
+  ...
+# Subtest: About honours the language header and safely rejects malicious or unsupported language values
+ok 266 - About honours the language header and safely rejects malicious or unsupported language values
+  ---
+  duration_ms: 8.605287
+  type: 'test'
+  ...
+# Subtest: organizations page keeps the invitation without regional pilot references in all six languages
+ok 267 - organizations page keeps the invitation without regional pilot references in all six languages
+  ---
+  duration_ms: 17.963559
+  type: 'test'
+  ...
+# Subtest: organizations language safely follows the allowlisted URL then the header
+ok 268 - organizations language safely follows the allowlisted URL then the header
+  ---
+  duration_ms: 14.255111
+  type: 'test'
+  ...
+# Subtest: the original local portrait is served without external image or font requests
+ok 269 - the original local portrait is served without external image or font requests
+  ---
+  duration_ms: 7.182944
+  type: 'test'
+  ...
+# Subtest: home has two footer links; Privacy Policy and Terms sit next to Start (never more than three footer links)
+ok 270 - home has two footer links; Privacy Policy and Terms sit next to Start (never more than three footer links)
+  ---
+  duration_ms: 10.888799
+  type: 'test'
+  ...
+# Subtest: security headers are set
+ok 271 - security headers are set
+  ---
+  duration_ms: 1.563507
+  type: 'test'
+  ...
+# Subtest: reply language detection picks the language the text is written in
+ok 272 - reply language detection picks the language the text is written in
+  ---
+  duration_ms: 0.821005
+  type: 'test'
+  ...
+# Subtest: aggregate counts include refreshes without identifying or deduplicating visitors
+ok 273 - aggregate counts include refreshes without identifying or deduplicating visitors
+  ---
+  duration_ms: 51.713716
+  type: 'test'
+  ...
+# Subtest: old visit beacons are harmless no-ops and cannot inject identities into counts
+ok 274 - old visit beacons are harmless no-ops and cannot inject identities into counts
+  ---
+  duration_ms: 19.229989
+  type: 'test'
+  ...
+# Thu, 19 Nov 2026 11:25:53 GMT router deprecated handlers that are Promise-like are deprecated, use a native Promise instead at node_modules/router/lib/route.js:157:13
+# Subtest: private counter is protected, uncacheable and labels counts as visits not people
+ok 275 - private counter is protected, uncacheable and labels counts as visits not people
+  ---
+  duration_ms: 11.444978
+  type: 'test'
+  ...
+# Subtest: reset requires the private form token even with valid Basic credentials
+ok 276 - reset requires the private form token even with valid Basic credentials
+  ---
+  duration_ms: 17.423346
+  type: 'test'
+  ...
+# Subtest: public database TLS verifies certificates and URL options cannot disable it
+ok 277 - public database TLS verifies certificates and URL options cannot disable it
+  ---
+  duration_ms: 2.117352
+  type: 'test'
+  ...
+# Subtest: migration removes identifier tables and stores only date/count aggregates
+ok 278 - migration removes identifier tables and stores only date/count aggregates
+  ---
+  duration_ms: 1.868509
+  type: 'test'
+  ...
+# Subtest: failed aggregate writes preserve the batch and do not duplicate on retry
+ok 279 - failed aggregate writes preserve the batch and do not duplicate on retry
+  ---
+  duration_ms: 2.711469
+  type: 'test'
+  ...
+# Subtest: cleanup applies seven-day aggregate retention without reading visitor records
+ok 280 - cleanup applies seven-day aggregate retention without reading visitor records
+  ---
+  duration_ms: 1.563744
+  type: 'test'
+  ...
+# Subtest: visits and voice questions are independent day-only counters in memory and the database
+ok 281 - visits and voice questions are independent day-only counters in memory and the database
+  ---
+  duration_ms: 3.260197
+  type: 'test'
+  ...
+# Subtest: seven Zurich calendar days, not UTC dates or 168 elapsed hours, govern both counters
+ok 282 - seven Zurich calendar days, not UTC dates or 168 elapsed hours, govern both counters
+  ---
+  duration_ms: 3.843281
+  type: 'test'
+  ...
+# Subtest: private activity page labels submitted voice questions without claiming answered or human counts
+ok 283 - private activity page labels submitted voice questions without claiming answered or human counts
+  ---
+  duration_ms: 6.273715
+  type: 'test'
+  ...
+# Subtest: database reset clears both aggregates with the existing date-only table delete
+ok 284 - database reset clears both aggregates with the existing date-only table delete
+  ---
+  duration_ms: 1.760777
+  type: 'test'
+  ...
+# Subtest: capability check exposes only safe model/configuration contract
+ok 285 - capability check exposes only safe model/configuration contract
+  ---
+  duration_ms: 179.514168
+  type: 'test'
+  ...
+# Subtest: actual chat counts both model calls, permits only one search, reports usage
+ok 286 - actual chat counts both model calls, permits only one search, reports usage
+  ---
+  duration_ms: 77.87656
+  type: 'test'
+  ...
+# Subtest: exhausted tokens refuse paid dispatch and exhausted search makes no Tavily call
+ok 287 - exhausted tokens refuse paid dispatch and exhausted search makes no Tavily call
+  ---
+  duration_ms: 15.446093
+  type: 'test'
+  ...
+# Subtest: actual speech route charges measured audio, before contacting provider
+ok 288 - actual speech route charges measured audio, before contacting provider
+  ---
+  duration_ms: 13.281891
+  type: 'test'
+  ...
+# Subtest: missing explicit synthetic label rejects budget envelope
+ok 289 - missing explicit synthetic label rejects budget envelope
+  ---
+  duration_ms: 2.150863
+  type: 'test'
+  ...
+# Subtest: empty or malformed chat inputs never dispatch a paid provider request
+ok 290 - empty or malformed chat inputs never dispatch a paid provider request
+  ---
+  duration_ms: 8.786574
+  type: 'test'
+  ...
+# Subtest: ordinary requests do not acquire accounting or quotas
+ok 291 - ordinary requests do not acquire accounting or quotas
+  ---
+  duration_ms: 1.232602
+  type: 'test'
+  ...
+# Subtest: QA reserves before dispatch, refunds only measured usage and bounds tool calls
+ok 292 - QA reserves before dispatch, refunds only measured usage and bounds tool calls
+  ---
+  duration_ms: 1.028545
+  type: 'test'
+  ...
+# Subtest: no provider dispatch when token allowance is too small
+ok 293 - no provider dispatch when token allowance is too small
+  ---
+  duration_ms: 0.213033
+  type: 'test'
+  ...
+# Subtest: unknown/failing usage keeps its reservation; third hidden call refused
+ok 294 - unknown/failing usage keeps its reservation; third hidden call refused
+  ---
+  duration_ms: 0.263941
+  type: 'test'
+  ...
+# Subtest: concurrent async requests cannot share QA accounting
+ok 295 - concurrent async requests cannot share QA accounting
+  ---
+  duration_ms: 5.815874
+  type: 'test'
+  ...
+1..295
+# tests 295
+# suites 0
+# pass 295
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4519.469609

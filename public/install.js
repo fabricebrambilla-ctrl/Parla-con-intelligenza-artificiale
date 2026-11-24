@@ -34,6 +34,9 @@
   "nl": "De app is al geopend als geïnstalleerde app.",
   "pt": "A aplicação já está aberta como aplicação instalada."
 };
+  READY["pt-BR"] = "Ative o botão Instalar o aplicativo e confirme no navegador. Um pedido de voz, por si só, não pode abrir a confirmação de instalação.";
+  HELP["pt-BR"] = "Chrome no Android: diga «instala a aplicativo», ative o botão Instalar se aparecer e confirme no navegador. iPhone ou iPad: no Safari, escolha Compartilhar, Adicionar ao tela principal e Adicionar (ative Abrir como aplicativo web, se disponível). Windows ou Mac: use a opção de instalação do navegador; o Safari no Mac oferece Arquivo, Adicionar à Dock. A instalação e as conversas precisam de Internet.";
+  INSTALLED["pt-BR"] = "O aplicativo já está aberto como aplicativo instalado.";
   let deferredPrompt = null;
   let installed = false;
   const button = document.getElementById('installApp');

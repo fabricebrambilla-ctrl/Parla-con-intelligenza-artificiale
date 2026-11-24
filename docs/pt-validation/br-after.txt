@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: the browser's region is respected: pt-BR gets Brazilian, pt-PT and bare pt get Portugal's
+ok 1 - the browser's region is respected: pt-BR gets Brazilian, pt-PT and bare pt get Portugal's
+  ---
+  duration_ms: 134.032068
+  type: 'test'
+  ...
+# Subtest: every interface string exists in Brazilian Portuguese, in Brazilian wording
+ok 2 - every interface string exists in Brazilian Portuguese, in Brazilian wording
+  ---
+  duration_ms: 2.523289
+  type: 'test'
+  ...
+# Subtest: a Brazilian browser gets the Brazilian page and both Portuguese buttons when both are on
+ok 3 - a Brazilian browser gets the Brazilian page and both Portuguese buttons when both are on
+  ---
+  duration_ms: 27.171863
+  type: 'test'
+  ...
+# Subtest: with Brazilian off, a Brazilian browser gets Portugal's Portuguese (pt only) or English (all off)
+ok 4 - with Brazilian off, a Brazilian browser gets Portugal's Portuguese (pt only) or English (all off)
+  ---
+  duration_ms: 11.562038
+  type: 'test'
+  ...
+# Subtest: Brazilian chat: Brazilian instructions, answer not turned into Portugal's Portuguese, Brazilian voice
+ok 5 - Brazilian chat: Brazilian instructions, answer not turned into Portugal's Portuguese, Brazilian voice
+  ---
+  duration_ms: 107.818727
+  type: 'test'
+  ...
+# Subtest: Brazilian speech recognition sends Whisper the language pt, not pt-BR
+ok 6 - Brazilian speech recognition sends Whisper the language pt, not pt-BR
+  ---
+  duration_ms: 7.676444
+  type: 'test'
+  ...
+# Subtest: spoken: Portugal or Brazil can be named, and a question about Brazil is not a command
+ok 7 - spoken: Portugal or Brazil can be named, and a question about Brazil is not a command
+  ---
+  duration_ms: 6.427881
+  type: 'test'
+  ...
+# Subtest: a Portuguese user is asked Portugal or Brazil once, before the instructions, when both are on
+ok 8 - a Portuguese user is asked Portugal or Brazil once, before the instructions, when both are on
+  ---
+  duration_ms: 5.226834
+  type: 'test'
+  ...
+# Subtest: the question records once, transcribes as Portuguese and remembers the answer
+ok 9 - the question records once, transcribes as Portuguese and remembers the answer
+  ---
+  duration_ms: 2.873602
+  type: 'test'
+  ...
+# Subtest: the Brazilian voice is preferred for Brazilian Portuguese, and Portugal's for Portugal
+ok 10 - the Brazilian voice is preferred for Brazilian Portuguese, and Portugal's for Portugal
+  ---
+  duration_ms: 1.910354
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 444.577786

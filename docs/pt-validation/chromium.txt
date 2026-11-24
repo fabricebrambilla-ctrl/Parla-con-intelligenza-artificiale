@@ -1,0 +1,2 @@
+{"NEW_LANGUAGES":"(unset)","portugueseButton":0,"htmlLang":"en","iniciarConversa":false,"falarComIA":false}
+{"NEW_LANGUAGES":"nl,pt","portugueseButton":1,"htmlLang":"pt-PT","iniciarConversa":true,"falarComIA":true}

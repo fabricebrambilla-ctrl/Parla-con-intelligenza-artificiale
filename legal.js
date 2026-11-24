@@ -443,6 +443,55 @@ const ACCESSIBILITY = {
   }
 };
 
+ACCESSIBILITY["pt-BR"] = {
+  "title": "Declaração de acessibilidade: Fale com a Inteligência Artificial",
+  "h1": "Declaração de acessibilidade",
+  "sections": [
+    [
+      "Autorização do microfone e atalho de teclado",
+      "O navegador está pedindo o microfone. Escolha Permitir. Use Tab ou Shift+Tab entre as opções do navegador e depois Enter."
+    ],
+    [
+      "O nosso objetivo",
+      "Este site foi feito para ser usado inteiramente por voz e com leitores de tela. Procuramos cumprir as Diretrizes de Acessibilidade para o Conteúdo da Web (WCAG) 2.2, nível AA, e a norma europeia EN 301 549."
+    ],
+    [
+      "Como usar",
+      "Fale à vontade. Pergunte sobre horários de trens, restaurantes ou notícias atuais. Fale para me interromper. Peça para repetir as instruções ou explicar uma função. Diga fale mais rápido, fale português ou mude o microfone. Pressione Ctrl para pausar. Use o botão principal ou diga pausa."
+    ],
+    [
+      "O que pode dizer",
+      [
+        "“Repete”: ouvir de novo a última resposta.",
+        "“Mudar de língua”, ou por exemplo “fala inglês”: mudar de língua.",
+        "“Mostra a última resposta”: a última resposta como texto na página, com um botão Copiar; “esconde a resposta” desliga-o.",
+        "“Mudar de microfone”: usar o microfone seguinte.",
+        "“Ajuda”: ouvir o que pode dizer.",
+        "“Adeus”: terminar a conversa.",
+        "Em pausa. Pressione o botão ou Ctrl para continuar."
+      ]
+    ],
+    [
+      "Comandos para o seu leitor de tela",
+      "Use Tab ou Shift+Tab entre as opções do navegador e depois Enter. Pressione Ctrl para pausar. Use o botão principal ou diga pausa."
+    ],
+    [
+      "Leitores de tela e dispositivos suportados",
+      "Foi pensado para o JAWS, o NVDA e o Narrador no Windows, o VoiceOver no Mac e no iPhone, o TalkBack no Android e o Orca no Linux, com versões atuais do Chrome, Edge, Firefox e Safari. Não são necessários fones de ouvido nem configurações especiais."
+    ],
+    [
+      "Limitações conhecidas",
+      "A interrupção por voz e a redução de eco estão implementadas, aguardando testes em dispositivos reais. As alto-falantes e os leitores de tela podem causar eco. O NVDA ou o JAWS podem interceptar Ctrl; nesse caso, use o botão principal. A pausa fecha o microfone: continue com o botão ou Ctrl. Os testes automáticos não substituem os testes com pessoas cegas."
+    ],
+    [
+      "Comentários",
+      "Se alguma coisa não funcionar para si, escreva para {email}. Todas as mensagens são lidas."
+    ]
+  ],
+  "updated": "Última atualização:",
+  "back": "Voltar à página da conversa"
+};
+
 const POLICY_LINKS = [
   ["Groq", "https://groq.com/privacy-policy"],
   ["Tavily", "https://tavily.com/privacy"],

@@ -208,7 +208,7 @@ module.exports.pt = {
     ],
     [
       "Preferências do navegador",
-      "O navegador lembra-se da língua escolhida e de se já apresentou a introdução e as informações de privacidade. Pode apagar estas preferências nas definições de dados de sites do navegador. Não há cookies de publicidade nem identificadores persistentes de visitantes. Os identificadores de visitantes mais antigos são removidos quando a página atualizada é carregada."
+      "O navegador lembra-se da língua escolhida (e, em português, se prefere a versão de Portugal ou a do Brasil) e de se já apresentou a introdução e as informações de privacidade. Pode apagar estas preferências nas definições de dados de sites do navegador. Não há cookies de publicidade nem identificadores persistentes de visitantes. Os identificadores de visitantes mais antigos são removidos quando a página atualizada é carregada."
     ],
     [
       "O que a aplicação guarda",
@@ -239,6 +239,55 @@ module.exports.pt = {
   "back": "Voltar à página da conversa"
 };
 
+module.exports["pt-BR"] = {
+  "title": "Aviso de privacidade: Fale com a Inteligência Artificial",
+  "h1": "Aviso de privacidade",
+  "sections": [
+    [
+      "Quem é o responsável",
+      "Fabrice Brambilla administra este projeto pessoal a partir da Suíça. Contato: brambillafabrice@gmail.com."
+    ],
+    [
+      "Sua voz e suas perguntas",
+      "Quando você escolhe gravar, o navegador capta o áudio e o envia para o nosso servidor e para a Groq, para gerar uma transcrição e uma resposta. As mensagens anteriores da conversa atual servem de contexto. Não gravamos áudios de voz nem transcrições de conversas de voz no banco de dados do aplicativo. Encerrar a conversa apaga o texto da memória da página. As respostas são lidas com a voz do seu navegador ou dispositivo; se uma voz opcional na nuvem estiver ativada, o texto da resposta é enviado para a Fish Audio ou para a Groq. Uma voz do dispositivo pode, por sua vez, usar o serviço na nuvem do fabricante do dispositivo."
+    ],
+    [
+      "Pesquisas na web",
+      "Para obter informações atuais, uma pergunta curta em texto pode ser enviada à Tavily. Ela pode conter detalhes da sua pergunta. Seu áudio não é enviado ao serviço de pesquisa. A Tavily pode usar outros índices de pesquisa, conforme a política que publica. Evite colocar informações pessoais ou confidenciais nas perguntas."
+    ],
+    [
+      "Preferências do navegador",
+      "O navegador lembra o idioma escolhido (e, em português, se você prefere a versão de Portugal ou a do Brasil) e se já apresentou a introdução e as informações de privacidade. Você pode apagar essas preferências nas configurações de dados de sites do navegador. Não há cookies de publicidade nem identificadores permanentes de visitantes. Os identificadores de visitantes mais antigos são removidos quando a página atualizada é carregada."
+    ],
+    [
+      "O que o aplicativo armazena",
+      "As estatísticas de uso contêm apenas uma data, o total de aberturas da página e o total de perguntas de voz enviadas, e são armazenadas para os últimos sete dias corridos, no fuso horário Europe/Zurich. Uma pergunta de voz válida é contada quando é enviada, mesmo que a resposta falhe depois. Os testes sintéticos sinalizados e a API de texto separada não entram nos totais. Essas estatísticas não têm identificadores de visitantes, endereços IP, áudio, texto das conversas nem o horário de cada solicitação. Recarregamentos, envios repetidos e automações não sinalizadas podem aumentar os totais; eles não identificam pessoas nem confirmam uso humano. A API de texto separada mantém os identificadores de chat e as mensagens na memória do servidor até serem apagados, até uma reinicialização, por falta de espaço ou cerca de 24 horas depois da última mensagem; a expiração é verificada no acesso e numa limpeza periódica. Quem tiver o identificador de um chat pode acessar esse chat, por isso mantenha-o em sigilo."
+    ],
+    [
+      "Fornecedores e países",
+      "O servidor do aplicativo está hospedado na Render, em Frankfurt, na Alemanha. A Groq processa as solicitações nos Estados Unidos. A Groq pode armazenar o conteúdo enviado conforme as configurações de dados da conta e a política que publica; os metadados de uso são armazenados. Não foi verificado, para todas as contas usadas por este aplicativo, que nenhum conteúdo é armazenado. A Tavily e os serviços de voz opcionais podem tratar dados nos Estados Unidos e em outros países indicados em suas políticas e nas informações sobre suboperadores. A Render e outros fornecedores podem armazenar informações técnicas e de segurança conforme suas próprias regras. As condições de tratamento e de transferência internacional dos fornecedores continuam valendo; o fato de o aplicativo não gravar nada não significa que nenhum fornecedor trate dados. Informações dos fornecedores:"
+    ],
+    [
+      "Finalidade e informações sensíveis",
+      "Os dados normais da conversa são tratados para prestar o serviço que você pede. O tratamento técnico também protege o funcionamento e a segurança. Quando o RGPD (o regulamento europeu de proteção de dados) se aplica, as bases para o tratamento normal do serviço e para a segurança são, respectivamente, o artigo 6, parágrafo 1, alínea b, e o artigo 6, parágrafo 1, alínea f. O serviço não pede que você revele uma deficiência, histórico de saúde, informações financeiras ou documentos de identificação. Não compartilhe dados pessoais sensíveis ou confidenciais. Iniciar uma conversa ou permitir o microfone não é um consentimento explícito geral para o tratamento de categorias especiais de dados, nos termos do artigo 9 do RGPD."
+    ],
+    [
+      "Suas escolhas e direitos",
+      "A gravação só começa depois que você escolhe falar e permite o microfone no navegador. Encerre a conversa para parar novas gravações; isso não recupera informações já enviadas. Você pode entrar em contato com o Fabrice para pedir acesso, correção, exclusão ou limitação, ou para se opor, nos termos da lei aplicável. Podemos precisar de informações para identificar os registros em questão; não é necessária uma conta. Você pode apresentar uma reclamação ao Comissário Federal Suíço de Proteção de Dados e Transparência (FDPIC) ou à autoridade competente do país onde mora. Os registros dos fornecedores e o armazenamento dos chats da API são independentes das contagens totais de visitas."
+    ],
+    [
+      "IA e limitações",
+      "Você está falando com um assistente de inteligência artificial, não com uma pessoa. As respostas podem estar erradas. Confirme você mesmo as informações importantes. Este é um projeto de informação geral, não um serviço médico, de emergência, financeiro ou jurídico. Ele não decide sobre direitos, não faz diagnósticos nem toma decisões sobre você."
+    ],
+    [
+      "Comentários e contato profissional",
+      "Se você nos enviar um e-mail, sua mensagem e seus dados de contato são usados para responder e melhorar o projeto. Para um convite de feedback profissional, os dados de contato vêm das informações de contato profissional publicadas pela organização. Guardamos apenas a correspondência e o registro de envio ou de pedido para não ser contatado necessários para tratar a conversa e evitar convites repetidos. Você pode se opor respondendo ou escrevendo para o contato acima. Não vendemos listas de contatos nem enviamos convites de acompanhamento automaticamente."
+    ]
+  ],
+  "updated": "Última atualização:",
+  "back": "Voltar para a página da conversa"
+};
+
 // Additions that must stay true to what the page really stores and sends.
 // 2026-11-15: the browser also remembers the chosen microphone and the agreed version.
 const REMEMBERED = {
@@ -251,6 +300,7 @@ const REMEMBERED = {
   ja: "また、選択したマイク（技術的な ID と名前）、マイクの案内を聞いたこと、「開始」を押して同意したプライバシーポリシーと利用規約の版も記憶します。",
   nl: " Hij onthoudt ook welke microfoon je koos (de technische ID en de naam), dat je de uitleg over de microfoon hebt gehoord, en de versie van het privacybeleid en de voorwaarden waarmee je akkoord ging door op Starten te drukken.",
   pt: " Lembra-se também do microfone que escolheu (o identificador técnico e o nome), de que ouviu as instruções sobre o microfone e da versão da política de privacidade e dos termos que aceitou ao premir Iniciar.",
+  "pt-BR": " Também lembra o microfone que você escolheu (o identificador técnico e o nome), que você ouviu as instruções sobre o microfone e a versão da política de privacidade e dos termos que você aceitou ao pressionar Iniciar.",
 };
 for (const lang of Object.keys(REMEMBERED)) {
   const prefs = module.exports[lang].sections[3];
@@ -269,6 +319,7 @@ const READ_PAGES = {
   ja: "ウェブページの内容から答えるため、そのページのアドレス（通常は検索で見つかったもの）もTavilyに送信され、Tavilyがページの本文を返します。アプリは読んだページの本文（あなたの言葉は含みません）を最大20分間メモリに保持し、記事を分けて読み上げるときに再取得しないようにします。",
   nl: " Om te antwoorden op basis van een webpagina wordt ook het adres van die pagina (meestal gevonden met de zoekopdracht) naar Tavily gestuurd, dat de tekst van de pagina teruggeeft. De app bewaart de tekst van gelezen pagina's, nooit je woorden, tot 20 minuten in het geheugen, zodat een artikel dat in delen wordt voorgelezen niet opnieuw wordt opgehaald.",
   pt: " Para responder a partir de uma página web, o endereço dessa página (normalmente encontrada pela pesquisa) também é enviado à Tavily, que devolve o texto da página. A aplicação guarda na memória o texto das páginas lidas, nunca as suas palavras, durante até 20 minutos, para que um artigo lido por partes não seja descarregado de novo.",
+  "pt-BR": " Para responder a partir de uma página da web, o endereço dessa página (normalmente encontrada pela pesquisa) também é enviado à Tavily, que devolve o texto da página. O aplicativo mantém na memória o texto das páginas lidas, nunca as suas palavras, por até 20 minutos, para que um artigo lido em partes não seja baixado de novo.",
 };
 for (const lang of Object.keys(READ_PAGES)) module.exports[lang].sections[2][1] += READ_PAGES[lang];
 
@@ -283,6 +334,7 @@ const SHOW_LAST = {
   ja: "回答の文字表示をオンにすると、その選択を記憶します。回答そのものは開いているページの中にだけ残ります。",
   nl: " Als je de tekst van de antwoorden aanzet, onthoudt hij die keuze; de antwoorden zelf blijven alleen in de geopende pagina.",
   pt: " Se ligar o texto das respostas, lembra-se dessa escolha; as respostas em si ficam apenas na página aberta.",
+  "pt-BR": " Se você ativar o texto das respostas, ele lembra essa escolha; as respostas em si ficam apenas na página aberta.",
 };
 for (const lang of Object.keys(SHOW_LAST)) module.exports[lang].sections[3][1] += SHOW_LAST[lang];
 
@@ -298,6 +350,7 @@ const DEVICE_COUNTS = {
   nl: "Gebruiksstatistieken bevatten dagelijkse paginaopeningen en ingediende gesproken vragen, plus anonieme bezoektotalen per besturingssysteem, browser en hoofdversie, bewaard gedurende zeven kalenderdagen in de tijdzone Europe/Zurich. Deze totalen tellen bezoeken, geen unieke personen; ze bewaren geen volledige browseridentificatie, IP-adres of bezoekers-ID en zijn niet gekoppeld aan gesprekken. Het besturingssysteem en de browser worden ook tijdens de huidige sessie aan de AI doorgegeven voor passende instructies; er wordt geen apparaatprofiel per gebruiker opgeslagen.",
   pt: "As estatísticas incluem aberturas diárias da página e perguntas de voz enviadas, além de totais anónimos de visitas por sistema operativo, navegador e versão principal, guardados durante sete dias de calendário no fuso Europe/Zurich. Estes totais contam visitas, não pessoas únicas; não guardam a identificação completa do navegador, endereços IP nem identificadores de visitantes e não estão ligados às conversas. O sistema operativo e o navegador também são enviados à IA na sessão atual para adaptar as instruções; não é guardado um perfil de dispositivo por utilizador.",
 };
+DEVICE_COUNTS["pt-BR"] = "As estatísticas incluem aberturas diárias da página e perguntas de voz enviadas, além de totais anônimos de visitas por sistema operacional, navegador e versão principal, guardados durante sete dias de calendário no fuso Europe/Zurich. Esses totais contam visitas, não pessoas únicas; não guardam a identificação completa do navegador, endereços IP nem identificadores de visitantes e não estão ligados às conversas. O sistema operacional e o navegador também são enviados à IA na sessão atual para adaptar as instruções; não é guardado um perfil de dispositivo por usuário.";
 for (const [lang, text] of Object.entries(DEVICE_COUNTS)) {
   const section = module.exports[lang].sections[4];
   // Replace the former inventory sentence; preserve all other disclosures.

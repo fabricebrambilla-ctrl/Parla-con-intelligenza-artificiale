@@ -15,3 +15,29 @@ module.exports = Object.fromEntries(Object.entries(copy).map(([lang, c]) => [lan
  sections: [[c[1], c[2]], [c[3], c[4]], [c[5], c[6]], [c[7], c[8]]],
  back: c[9], updated: c[10]
 }]));
+
+// Brazilian Portuguese uses the same controls, with localized instructions.
+module.exports["pt-BR"] = {
+  "title": "Instruções: Talk with AI",
+  "h1": "Instruções",
+  "sections": [
+    [
+      "Começar e falar",
+      "Pressione Iniciar uma vez, ou selecione o botão e pressione Enter. Permita o microfone quando o navegador pedir. Depois fale livremente; falar interrompe o assistente."
+    ],
+    [
+      "Pausa e continuação",
+      "No Windows e no Mac, pressione e solte apenas Ctrl para parar a voz e desligar o microfone. Repita para continuar. Também pode usar o botão principal ou dizer «pausa». Em pausa, o microfone está desligado: continue com o botão ou Ctrl. O leitor de tela pode interceptar Ctrl; o botão continua disponível."
+    ],
+    [
+      "Comandos de voz",
+      "Diga «fale mais rápido», «fale mais devagar», «mude o idioma para português», «mude o microfone», «repita as instruções» ou «leia o aviso de privacidade». Pergunte como funciona qualquer função. Diga adeus para terminar."
+    ],
+    [
+      "Instalação",
+      "Chrome no Android: diga «instala a aplicativo», ative o botão Instalar se aparecer e confirme no navegador. iPhone ou iPad: no Safari, escolha Compartilhar, Adicionar ao tela principal e Adicionar (ative Abrir como aplicativo web, se disponível). Windows ou Mac: use a opção de instalação do navegador; o Safari no Mac oferece Arquivo, Adicionar à Dock. A instalação e as conversas precisam de Internet."
+    ]
+  ],
+  "back": "Voltar à conversa",
+  "updated": "Última atualização:"
+};

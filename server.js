@@ -8,6 +8,7 @@ const LEGAL = require("./legal.js");
 const ABOUT = require("./about.js");
 const { limit, takeTavilySearch, takeTavilyExtract, tavilyExtractCount } = require("./limits.js");
 const PAGE = require("./page-text.js");
+const { brazilianForms, toPortugal } = require("./pt-pt.js");
 // Test only: prints which pages were searched and read (never what the user said beyond the search query).
 const TRACE_RESEARCH = process.env.TRACE_RESEARCH === "1";
 const stats = require("./stats.js");
@@ -51,7 +52,8 @@ const TTS_ENABLED = process.env.GROQ_TTS === "on";
 const FISH_URL = process.env.FISH_BASE_URL || "https://api.fish.audio/v1/tts";
 const FISH_MODEL = process.env.FISH_MODEL || "s2.1-pro-free";
 // A voice from the Fish Audio voice library for each language (FISH_VOICE_IT, ...), or one for all (FISH_VOICE).
-const fishVoice = (lang) => process.env["FISH_VOICE_" + lang.toUpperCase()] || process.env.FISH_VOICE || "";
+// Brazilian Portuguese (pt-BR) reads FISH_VOICE_PT_BR.
+const fishVoice = (lang) => process.env["FISH_VOICE_" + lang.toUpperCase().replace("-", "_")] || process.env.FISH_VOICE || "";
 // Set when Groq refuses Orpheus for this key (e.g. its terms were not accepted); then it is
 // never called again until the server restarts, so it causes no more errors in the Groq logs.
 let orpheusBlocked = false;
@@ -331,7 +333,8 @@ app.post(
       const form = new FormData();
       form.append("file", new Blob([buf], { type: "audio/wav" }), "speech.wav");
       form.append("model", STT_MODEL);
-      if (!auto) form.append("language", pickLang(req.query.lang));
+      // Whisper takes only the language ("pt"), not the country: pt-BR is sent as "pt".
+      if (!auto) form.append("language", pickLang(req.query.lang).split("-")[0]);
       form.append("response_format", "verbose_json");
       form.append("temperature", "0");
 
@@ -659,8 +662,16 @@ function systemPrompt(lang, context, agent = false) {
     `This interface is designed for spoken replies and screen-reader access; everything you write is read aloud. Today's date is ${date}.\n` +
     `Do not infer the user's health, disability, age or other personal attributes from their use of this service.\n` +
     `Language: reply in ${I18N.META[lang].english} unless the user clearly switches language; then reply in their language.\n` +
-    (lang === "pt" ? `Write Portugal's Portuguese, not Brazilian: "ecrã", "telemóvel", "utilizador", "autocarro", "comboio", ` +
-      `"está a fazer" (not "está fazendo"), and the polite "o senhor" or a form without "você".\n` : "") +
+    (lang === "pt" ? `Write Portugal's Portuguese, not Brazilian (pt-PT, as spoken in Portugal). ` +
+      `Words: "ecrã" (not "tela"), "telemóvel" (not "celular"), "ficheiro" (not "arquivo"), "descarregar" (not "baixar"), ` +
+      `"aceder" and "acedam" (not "acessar", "acessem"), "utilizador", "equipa", "contacto", "registo", "autocarro", "comboio", ` +
+      `"pequeno-almoço", "casa de banho", "aplicação", "facto". Grammar: "estar a" plus the infinitive ("está a fazer", never ` +
+      `"está fazendo"); pronouns after the verb in statements ("diga-me", "chama-se", not "me diga", "se chama"). ` +
+      `Address the user politely in the third person without "você" (for example "Pode dizer-me…?", "Quer que continue?").\n` :
+     lang === "pt-BR" ? `Write Brazilian Portuguese (pt-BR, as spoken in Brazil), not Portugal's Portuguese. ` +
+      `Words: "tela", "celular", "arquivo", "baixar", "acessar", "usuário", "equipe", "contato", "registro", "ônibus", "trem", ` +
+      `"café da manhã", "banheiro", "aplicativo", "fato". Grammar: the gerund ("está fazendo", not "está a fazer"). ` +
+      `Address the user as "você", kindly and naturally (for example "Você quer que eu continue?").\n` : "") +
     `How to talk: like a kind, knowledgeable friend on the phone. Use natural, everyday spoken language, short sentences and ` +
     `contractions where the language has them. Answer in 2 to 4 sentences, then, when useful, offer to say more or ask one short ` +
     `follow-up question. Exact times from a timetable and a page you are reading aloud may be longer. Remember what was said earlier in the conversation. Don't start with filler like "Great question" or ` +
@@ -853,12 +864,26 @@ function validReading(r) {
   return { url, part, parts };
 }
 
+// Portuguese answers in Portugal's Portuguese: certain Brazilian forms are changed, the rest are only
+// logged (the form names, never the answer). No provider call. Only while Portuguese is switched on.
+function portugal(reply, lang) {
+  if (!reply || !I18N.LANGS.includes("pt") || !reply.text || I18N.detectLang(reply.text, lang) !== "pt") return reply;
+  const forms = brazilianForms(reply.text + " " + (reply.box || ""));
+  if (!forms.length) return reply;
+  console.log("[pt-PT] Brazilian forms in an answer: " + forms.join(", "));
+  return { ...reply, text: toPortugal(reply.text), ...(reply.box ? { box: toPortugal(reply.box) } : {}) };
+}
+
+async function runChat(options) {
+  return portugal(await runChatTurn(options), options.lang);
+}
+
 // One assistant turn, shared by the voice site and the agent API.
 // Calls the model, runs any tools, and returns { text, end, reading }.
 // `stop` (an AbortSignal) cancels it; `onSearching` is called once when a web search starts;
 // `agent` keeps the model's text as written instead of cleaning it for speech;
 // `reading` is the page being read aloud in parts, if any.
-async function runChat({ lang, context = "", messages: history, stop = null, onSearching = () => {}, agent = false, reading = null, device = null }) {
+async function runChatTurn({ lang, context = "", messages: history, stop = null, onSearching = () => {}, agent = false, reading = null, device = null }) {
   const cleaned = cleanMessages(history).slice(-20);
   const question = cleaned.filter(m => m.role === "user").at(-1)?.content || "";
   const action = unsupportedAction(question);
