@@ -1,0 +1,2 @@
+Short: Press Start, allow microphone access if asked, and speak. Speak over a reply to interrupt.
+Detailed: The main button pauses or resumes. Pausing closes the microphone, so use the button or a lone Ctrl tap to resume. End conversation, Escape or goodbye ends the session. Screen readers may intercept Ctrl. Ask to repeat the instructions.

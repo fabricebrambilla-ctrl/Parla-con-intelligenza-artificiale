@@ -1,0 +1,2 @@
+Short: Ask to change language, speak faster or slower, choose a microphone, repeat instructions or show the last answer.
+Detailed: Ask to list microphones, use a named microphone, change language, repeat, read the site pages, show or hide the last answer, or install the app when supported. Speed ranges from 0.6 to 1.6. The public page uses session speed. An organization can remember settings on your own device with permission. Pause closes the microphone, so use the main button or Ctrl to resume.

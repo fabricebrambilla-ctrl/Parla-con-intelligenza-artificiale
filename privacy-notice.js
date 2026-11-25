@@ -357,3 +357,18 @@ for (const [lang, text] of Object.entries(DEVICE_COUNTS)) {
   const stop = ['zh', 'ja'].includes(lang) ? '。' : '.';
   section[1] = text + ' ' + section[1].slice(section[1].indexOf(stop) + 1).trim();
 }
+// The original page keeps no conversation history. Scope that statement for
+// readers who reach this general notice from an organization page.
+const organizationScope={
+  en:'On the public home page, conversations are not saved. An organization page has its own notice: its staff can see questions and answers for the stated retention period.',
+  fr:"La page d’accueil publique ne conserve pas les conversations. Chaque page d’organisme a sa propre notice. Son personnel peut consulter les questions et les réponses pendant la durée indiquée.",
+  it:"La pagina iniziale pubblica non salva le conversazioni. Ogni pagina di un’organizzazione ha una propria informativa. Il personale può vedere domande e risposte per il periodo indicato.",
+  pt:"A página inicial pública não guarda conversas. Cada página de uma organização tem um aviso próprio. A equipa pode consultar as perguntas e respostas durante o período indicado.",
+  'pt-BR':"A página inicial pública não salva conversas. Cada página de organização tem seu próprio aviso. A equipe pode consultar as perguntas e respostas pelo prazo indicado.",
+  nl:"De openbare startpagina bewaart geen gesprekken. Elke organisatiepagina heeft een eigen privacyverklaring. Medewerkers kunnen vragen en antwoorden tijdens de vermelde bewaartermijn bekijken.",
+  bg:"Публичната начална страница не съхранява разговори. Страницата на всяка организация има собствено уведомление. Служителите могат да виждат въпросите и отговорите за посочения срок.",
+  ru:"Общедоступная главная страница не сохраняет разговоры. На странице организации есть отдельное уведомление. Сотрудники могут видеть вопросы и ответы в течение указанного срока.",
+  zh:"公共主页不保存对话。每个机构页面都有自己的隐私说明。在注明的保存期限内，机构工作人员可以查看问题和回答。",
+  ja:"公開トップページでは会話を保存しません。団体のページには個別の通知があり、記載された保存期間中、職員は質問と回答を確認できます。"
+};
+for(const [lang,scope] of Object.entries(organizationScope))module.exports[lang].sections[0][1]=scope+' '+module.exports[lang].sections[0][1];

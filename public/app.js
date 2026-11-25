@@ -14,8 +14,10 @@
   var paused = false, continuous = false, speed = 1, spokenEcho = "", echoUntil = 0;
 
   // ---------- storage (never required to work) ----------
-  function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-  function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  var member=window.orgClient, explanations={};
+  if(member && member.profile.speed)speed=C.clampSpeed(member.profile.speed);
+  function get(k) { if(member && k==="lang")return member.language; try { return localStorage.getItem(member?member.prefix+k:k); } catch (e) { return null; } }
+  function set(k, v) { if(member && k==="lang"){member.language=v;return;} try { localStorage.setItem(member?member.prefix+k:k,v); } catch (e) {} }
 
   // Previous releases saved a tracking identifier. It is no longer needed.
   try { localStorage.removeItem("anonId"); } catch (e) {}
@@ -62,7 +64,7 @@
     // Keep the chosen language on the other pages too.
     $("instructionsLink").href = "/instructions?lang=" + lang;
     $("aboutLink").href = "/about?lang=" + lang;
-    $("privacyLink").href = "/privacy?lang=" + lang;
+    $("privacyLink").href = (typeof member!=="undefined" && member?"/"+member.slug:"")+"/privacy?lang=" + lang;
     $("termsLink").href = "/terms?lang=" + lang;
     $("accessibilityLink").href = "/accessibility?lang=" + lang;
     var opts = langsBox.querySelectorAll("[data-set-lang]");
@@ -711,7 +713,9 @@
 
   // /api/chat sends lines of JSON: maybe {"type":"searching"}, then the reply.
   async function chat(body, onSearching) {
-    var res = await request("/api/chat", {
+    body.state={language:lang,speed:speed,details:member?member.profile:{},explained:member?member.explained:Object.keys(explanations),repeatPreference:explanations};
+    if(member)body.sid=member.sid;
+    var res = await request(member?"/api/org/"+member.slug+"/chat":"/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -1007,9 +1011,9 @@
     return CHANGE_LANG.some(function (w) { return padded.indexOf(" " + w + " ") !== -1; }) ? "ask" : null;
   }
 
-  async function runCommand(cmd) {
+  async function runCommand(cmd,question) {
     var my = session, reply;
-    if (cmd === "pause") return togglePause();
+    if (cmd === "pause") {if(typeof member!=="undefined" && member && question)member.record(question,tt("pause"));return togglePause();}
     if (cmd === "resume") return paused ? togglePause() : goReady();
     if (cmd === "faster" || cmd === "slower") {
       speed = C.clampSpeed(speed + (cmd === "faster" ? .1 : -.1));
@@ -1025,11 +1029,12 @@
       else reply = tt("micOnlyOne");
     }
     else if (cmd === "install") { reply = window.requestAppInstall ? window.requestAppInstall(lang) : tt("installLabel"); }
+    else if(typeof member!=="undefined" && member && cmd==="page:privacy")reply=document.body.dataset.welcome;
     else if (cmd.indexOf("page:") === 0) {
       var page = await api("/api/site-page/" + cmd.slice(5) + "?lang=" + lang, { method:"GET" });
       if (my !== session) return; reply = page.text;
     }
-    else if (cmd === "repeat") { if (lastSaid) { await say(lastSaid, lastSaidLang); if (my === session) goReady(); return; } reply = tk("voiceHelp"); }
+    else if (cmd === "repeat") { if (lastSaid) { if(typeof member!=="undefined" && member && question)member.record(question,lastSaid);await say(lastSaid, lastSaidLang); if (my === session) goReady(); return; } reply = tk("voiceHelp"); }
     else if (cmd === "help") reply = tk("greeting") + " " + tk("voiceHelp");
     else if (cmd === "show") reply = showLast() ? tt("lastShown") : tt("lastNone");
     else if (cmd === "hide") { hideLast(true); reply = tt("lastHidden"); }
@@ -1042,9 +1047,10 @@
       if (cmd === "ask") await chooseLanguage(my);
       else { lang = cmd; set("lang", lang); set("langChosen", "1"); if (/^pt/.test(lang)) set("ptVariant", lang); renderTexts(); }
       if (my !== session) return;
-      reply = tt("langChanged");
+      reply = tt("langChanged")+" "+I.META[lang].english+".";
     }
     if (my !== session) return;
+    if(typeof member!=="undefined" && member && question)member.record(question,reply);
     await say(reply);
     if (my === session) goReady();
   }
@@ -1123,27 +1129,29 @@
     choosing = false;
   }
 
-  async function handleUtterance(wav) {
+  async function handleUtterance(wav,typed) {
     var my = session;
     setState("processing");
     startThinking();
     try {
-      var r1 = await api("/api/transcribe?lang=" + lang, {
+      var r1 = typed ? {text:typed} : await api("/api/transcribe?lang=" + lang + (member && member.input?"&format="+member.input:""), {
         method: "POST", headers: { "Content-Type": "audio/wav" }, body: wav
       });
       if (my !== session) return;
       var text = String(r1.text || "").trim();
       if (performance.now() < echoUntil) text = C.stripEcho(text, spokenEcho);
       if (!text) { stopThinking(); return goReady(); }
+      if(member)member.count("question");
       var cmd = voiceCommand(text);
       // A named microphone is selected only when the entire utterance matches its label.
       var requestedMic = text.toLowerCase().replace(/^(?:use|switch to|usa|utilise|utilisez|използвай|используй|使用|使って|gebruik|usa o)\s+/u, "").trim();
       var named = mics.find(function(m) { return m.label.toLowerCase() === requestedMic; });
       if (named) cmd = "mic:" + named.label.toLowerCase();
-      if (cmd) { stopThinking(); return runCommand(cmd); }
+      if (cmd) { stopThinking(); return runCommand(cmd,text); }
       transcript.push({ role: "user", content: text });
 
       if (isGoodbye(text)) {
+        if(member)member.record(text,tt("farewell"));
         stopThinking();
         await say(tt("farewell"));
         if (my === session) endConversation();
@@ -1165,13 +1173,15 @@
       failures = 0;
       readingPage = r2.reading || null;
       var reply = String(r2.text || "");
+      if(member){member.show(r2.input,()=>talkBtn.focus());var changed=member.apply(r2.deviceTool,lang,speed);if(changed){reply=changed;member.record(text,changed);}}
       // Long content the assistant put in the text box is shown at once; it said so in its reply.
       if (r2.box) { rememberAnswer(String(r2.box)); showLast(); }
       else if (reply && r2.command !== "show_last_answer") rememberAnswer(reply);
       // Spoken by a voice of the language the reply is written in, not always the page's language.
       var replyLang = I.LANGS.indexOf(r2.lang) !== -1 ? r2.lang : lang;
       if (reply) { transcript.push({ role: "assistant", content: reply }); lastSaid = reply; lastSaidLang = replyLang; }
-      await say(reply || (r2.end ? tt("farewell") : ""), reply ? replyLang : lang);
+      var interrupted=await say(reply || (r2.end ? tt("farewell") : ""), reply ? replyLang : lang);
+      if(!interrupted && r2.explanation)explanations[r2.explanation.process]=r2.explanation.repeat;
       if (my !== session) return;
       if (r2.end) return endConversation();
       // The assistant asked the page to carry out one of its own commands.
@@ -1198,6 +1208,7 @@
       return announce("errSupport");
     }
     alertBox.textContent = "";
+    if(typeof member!=="undefined" && member)member.start();
     active = true;
     paused = false; continuous = false;
     failures = 0;
@@ -1256,6 +1267,7 @@
     var firstMicGuide = micAsk && get("micPermissionGuide") !== "2026-11-23";
     var micWords = micAsk ? micShortText() : "";
     var disclosure = (firstPrivacyNotice ? tt("aiDisclosure") + " " + tt("agreeSpoken") : "") + (micWords ? " " + micWords : "");
+    if(typeof member!=="undefined" && member)disclosure=document.body.dataset.welcome+" "+disclosure;
     var disclosureInterrupted = disclosure.trim() ? await say(disclosure) : false;
     if (my !== session) return;
     if (firstPrivacyNotice && !disclosureInterrupted) set("agreementHeard", AGREEMENT_VERSION);
@@ -1264,6 +1276,7 @@
     micFallbackSaid = false;
     try {
       await ensureMic();
+      if(typeof member!=="undefined" && member)member.count("microphone");
       if (my === session && firstMicGuide && !disclosureInterrupted) set("micPermissionGuide", "2026-11-23");
     } catch (e) {
       if (my === session) giveUp(micErrorKey(e));
@@ -1299,6 +1312,7 @@
   function endConversation(silent) {
     if (!active) return;
     active = false;
+    if(typeof member!=="undefined" && member)member.end();
     paused = false; continuous = false;
     session++;
     choosing = false;
@@ -1325,6 +1339,13 @@
     setTimeout(function () { announce(code); }, 700);
   }
 
+  if(member)$("detailForm").addEventListener("submit",function(event){
+    event.preventDefault();
+    if(!member.input || !active || paused || state==="processing")return;
+    var typed=$("detailValue").value.trim();if(!typed)return;
+    if(stopSpeaking)stopSpeaking();
+    session++;rec=null;handleUtterance(null,typed);
+  });
   // ---------- buttons ----------
   async function togglePause() {
     if (!active) return;

@@ -1,0 +1,2 @@
+Short: The public home page saves no conversation history. An organization can see questions and answers asked on its page.
+Detailed: The current conversation is used to answer follow-ups. Organization staff can search their retained questions, answers and contact requests. The page gives the retention period. Remembered profile details are stored on your device with permission. Forgetting a device profile does not erase retained staff records.

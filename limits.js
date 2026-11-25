@@ -233,3 +233,10 @@ async function statsIdAllowed(req, id) {
 
 module.exports = { LIMITS, limit, agentLimit, takeTavilySearch, takeTavilyExtract, tavilyExtractCount, statsIdAllowed, clientId, clientIp, normalize };
 
+
+// Charge each outgoing Resend attempt. AI requests use the existing request guard.
+module.exports.takeOrgEmail=async function(org,sid,req){
+  const prefix='orgmail:'+day()+':'+org+':';
+  const counts=await Promise.all([sid,pseudonym(clientIp(req)),'all'].map((key,i)=>store.incr(prefix+i+':'+key,1,DAY)));
+  return counts[0]<=3 && counts[1]<=10 && counts[2]<=100;
+};

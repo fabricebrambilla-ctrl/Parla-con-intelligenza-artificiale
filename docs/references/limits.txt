@@ -1,0 +1,2 @@
+Short: I can speak, search, and read supported web pages. I cannot see your screen or control your device.
+Detailed: I cannot create files, control other apps or send general email. Organization pages can pass a confirmed request to configured staff only. A sent event request is not a booking confirmation. I cannot promise when anyone will reply.

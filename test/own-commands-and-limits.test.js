@@ -51,7 +51,7 @@ test("a reply claiming a made, saved or sent file gets one push to say plainly w
   assert.equal(reply.text, "I can't make files, but here are the steps as text.");
   assert.match(t.calls[1].messages.at(-1).content, /no file was made/);
   const once = turn([{ content: "I made you a game file." }, { content: "I made you a game file." }]);
-  assert.equal((await once.run("game")).text, "I made you a game file.", "pushed once only, never a loop");
+  assert.equal((await once.run("game")).text, "I could not do that.", "a second unsupported claim never reaches the user");
   assert.equal(once.calls.length, 2);
 });
 

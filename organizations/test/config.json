@@ -1,0 +1,12 @@
+{
+  "name":"Lake Orchard Centre (fictional test organization)",
+  "welcome":"Welcome to the Lake Orchard Centre test page. All names, contacts and events here are invented test data.",
+  "defaultLanguage":"en",
+  "timezone":"Europe/Zurich",
+  "retentionDays":90,
+  "hours":{"Mon":["09:00","17:00"],"Tue":["09:00","17:00"],"Wed":["09:00","17:00"],"Thu":["09:00","17:00"],"Fri":["09:00","13:00"]},
+  "contacts":[{"name":"Alex Vale","job":"Member services coordinator","topics":["office","membership","general"],"phone":"+1 202-555-0105","email":"desk@example.invalid","hours":"weekday office hours","languages":["English","French"]},{"name":"Robin Moss","job":"Events coordinator","topics":["event","walk","workshop","session"],"phone":"+1 202-555-0112","email":"events@example.invalid","hours":"Tuesday 10:00 to 12:00","languages":["English","Italian"]}],
+  "recipients":["desk@example.invalid","events@example.invalid"],
+  "events":[{"name":"Garden walk","sessions":["2027-03-05 10:00","2027-03-12 10:00"]},{"name":"Audio workshop","sessions":["2027-03-09 14:00"]}],
+  "guardrailTopics":["medical advice","legal advice","financial advice"]
+}
